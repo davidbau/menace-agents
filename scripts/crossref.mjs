@@ -41,6 +41,45 @@ function redactSecrets(text) {
     .replace(/eyJ[A-Za-z0-9_-]{40,}/g, '<jwt_token>');
 }
 
+// Watchdog prompts — automated nudges sent when agents go idle.
+// These are not human-authored; tag them separately.
+const WATCHDOG_PROMPTS = [
+  'Please continue making improvements doing the most accurate work possible.',
+  'Continue making forward progress with the most careful work possible.',
+  'Are you confident in the work that has been accomplished?  If the work is a significant step forward and passes more tests than previous work, then please consider making a commit and push to main, adding documentation about what has been learned so far.',
+  'Please keep making progress doing careful, accurate work.',
+  'Please keep advancing with precise, thorough improvements.',
+  'Keep making meaningful improvements with careful attention to accuracy.',
+  'Keep improving and refining with precision and accuracy.',
+  'Continue refining and improving with maximum accuracy.',
+  'Please continue enhancing with meticulous, accurate work.',
+  'Continue advancing the work with precision and thoroughness.',
+  'Please continue with the most accurate work possible.',
+  'Continue doing precise, thorough work. Consult AGENTS.md for any project-specific guidelines you should follow.',
+  'Keep making careful, accurate improvements. If you haven\'t already, review AGENTS.md for guidance on this project.',
+  'Please continue making progress. Remember to check AGENTS.md for project guidelines and priorities.',
+  'Please consider making a commit and push to main, adding documentation about what has been learned so far, if the work is a significant step forward and passes more tests than previous work.',
+  // "Explore" personality prompts
+  'Keep going — think broadly and creatively about what to work on next.',
+  'Please continue. Be expansive in your thinking and thorough in your execution.',
+  'Keep up the momentum. Explore widely, then implement carefully.',
+  'Continue making progress. Cast a wide net when planning, then be precise when coding.',
+  'Please keep going. Think about the big picture and what would add the most value.',
+  'Continue your work. Be ambitious in scope but careful with the details.',
+  'Keep making progress. Don\'t be afraid to try creative approaches.',
+  'Please continue. Aim for broad coverage and be methodical in your implementation.',
+  'Keep going with bold, creative thinking and careful, bug-free execution.',
+  'Keep up the great work. If you haven\'t already, review AGENTS.md for guidance on this project.',
+  'Continue making progress with creative energy. Consult AGENTS.md for any project-specific guidelines you should follow.',
+  // Push prompts
+  'Have you made meaningful progress?  If the work is a solid step forward, please consider making a commit and push to main with a summary of what was accomplished and what areas were covered.',
+];
+const WATCHDOG_SET = new Set(WATCHDOG_PROMPTS);
+
+function isWatchdog(text) {
+  return WATCHDOG_SET.has(text.trim());
+}
+
 // Convert a timestamp to a "project day" date string.
 // Day boundary is 3AM Eastern Time — work past midnight stays on the same day.
 // This matches the natural rhythm of the project (late-night sessions).
@@ -199,7 +238,8 @@ function parseSessionLight(filePath) {
       if (d.userType && d.userType !== 'external') continue;
       const words = text.split(/\s+/).filter(Boolean).length;
       if (words >= 5) {
-        turns.push({ role: isSubagent ? 'agent-directive' : 'human', ts, text: redactSecrets(text), words });
+        const role = isSubagent ? 'agent-directive' : isWatchdog(text) ? 'watchdog' : 'human';
+        turns.push({ role, ts, text: redactSecrets(text), words });
       }
     } else if (d.type === 'assistant') {
       assistCount++;
@@ -244,10 +284,10 @@ function parseSessionLight(filePath) {
   }
 
   for (const turn of turns) {
-    if (turn.role === 'human' || turn.role === 'agent-directive') {
+    if (turn.role === 'human' || turn.role === 'agent-directive' || turn.role === 'watchdog') {
       flushAiBlock();
       events.push({
-        type: turn.role,  // 'human' or 'agent-directive'
+        type: turn.role,  // 'human', 'agent-directive', or 'watchdog'
         timestamp: turn.ts ? new Date(turn.ts).toISOString() : null,
         text: turn.text,
         words: turn.words,
@@ -301,7 +341,7 @@ function parseCodexSession(filePath) {
       const text = redactSecrets((d.payload.message || d.payload.text || '').trim());
       const words = text.split(/\s+/).filter(Boolean).length;
       if (words >= 3 && text.length > 5) {
-        turns.push({ role: 'human', ts, text, words });
+        turns.push({ role: isWatchdog(text) ? 'watchdog' : 'human', ts, text, words });
       }
     } else if (d.type === 'event_msg' && d.payload?.type === 'agent_message') {
       assistCount++;
