@@ -112,6 +112,9 @@ function findJsonlFiles(baseDir, subdir) {
   return files;
 }
 
+// Parse a session into a chronological event stream.
+// Groups consecutive assistant turns between human messages into "AI work blocks."
+// Returns { metadata, events[] } where each event is timestamped and typed.
 function parseSessionLight(filePath) {
   const raw = readFileSync(filePath, 'utf8');
   const lines = raw.trim().split('\n').filter(Boolean);
@@ -119,8 +122,10 @@ function parseSessionLight(filePath) {
   const sid = basename(filePath, '.jsonl');
 
   let model = null, gitBranch = null, firstTs = null, lastTs = null;
-  let userCount = 0, assistCount = 0, toolUses = 0;
-  const humanMessages = []; // substantive human text
+  let userCount = 0, assistCount = 0, totalToolUses = 0;
+
+  // Collect raw turns first
+  const turns = []; // { role, ts, text?, tools?, toolCounts?, snippets? }
 
   for (const line of lines) {
     let d;
@@ -139,37 +144,87 @@ function parseSessionLight(filePath) {
       let text = typeof content === 'string' ? content :
                  Array.isArray(content) ? content.filter(c => c.type === 'text').map(c => c.text).join('\n') : '';
       text = text.trim();
-      // Filter out system-generated content, not real human text
+      // Filter system-generated
       if (text.startsWith('This session is being continued')) continue;
       if (text.startsWith('<task-notification>')) continue;
       if (text.startsWith('[Request interrupted by user')) continue;
       if (text.startsWith('Your task is to create a detailed summary')) continue;
       if (d.isMeta) continue;
-      // Skip agent-spawned subagent prompts (userType !== 'external' means system/agent)
       if (d.userType && d.userType !== 'external') continue;
       const words = text.split(/\s+/).filter(Boolean).length;
       if (words >= 5) {
-        humanMessages.push({
-          timestamp: ts ? new Date(ts).toISOString() : null,
-          words,
-          text: text.substring(0, 300),
-        });
+        turns.push({ role: 'human', ts, text: text.substring(0, 500), words });
       }
     } else if (d.type === 'assistant') {
       assistCount++;
       if (d.message?.model) model = d.message.model;
       const blocks = Array.isArray(d.message?.content) ? d.message.content : [];
-      toolUses += blocks.filter(b => b.type === 'tool_use').length;
+      const tools = [];
+      let textSnippet = null;
+      for (const b of blocks) {
+        if (b.type === 'tool_use') {
+          totalToolUses++;
+          tools.push(b.name);
+        }
+        if (b.type === 'text' && b.text && !textSnippet) {
+          const t = b.text.trim();
+          if (t.length > 20 && !t.startsWith('<') && !t.startsWith('{'))
+            textSnippet = t.substring(0, 300);
+        }
+      }
+      turns.push({ role: 'assistant', ts, tools, textSnippet });
     }
   }
+
+  // Now group consecutive assistant turns into "AI work blocks"
+  const events = [];
+  let aiBlock = null; // accumulator for consecutive assistant turns
+
+  function flushAiBlock() {
+    if (!aiBlock) return;
+    const topTools = Object.entries(aiBlock.toolCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    events.push({
+      type: 'ai-work',
+      timestamp: aiBlock.startTs ? new Date(aiBlock.startTs).toISOString() : null,
+      turns: aiBlock.turns,
+      toolUses: aiBlock.totalTools,
+      topTools: topTools.map(([n, c]) => `${n}(${c})`).join(', '),
+      // Keep first and last substantive text snippet
+      snippets: aiBlock.snippets.slice(0, 1).concat(
+        aiBlock.snippets.length > 2 ? aiBlock.snippets.slice(-1) : []
+      ).map(s => s.substring(0, 200)),
+    });
+    aiBlock = null;
+  }
+
+  for (const turn of turns) {
+    if (turn.role === 'human') {
+      flushAiBlock();
+      events.push({
+        type: 'human',
+        timestamp: turn.ts ? new Date(turn.ts).toISOString() : null,
+        text: turn.text,
+        words: turn.words,
+      });
+    } else {
+      if (!aiBlock) aiBlock = { startTs: turn.ts, turns: 0, totalTools: 0, toolCounts: {}, snippets: [] };
+      aiBlock.turns++;
+      for (const t of turn.tools) {
+        aiBlock.totalTools++;
+        aiBlock.toolCounts[t] = (aiBlock.toolCounts[t] || 0) + 1;
+      }
+      if (turn.textSnippet) aiBlock.snippets.push(turn.textSnippet);
+    }
+  }
+  flushAiBlock();
 
   return {
     project, session: sid, model, gitBranch,
     startDate: firstTs ? new Date(firstTs).toISOString().slice(0, 10) : null,
     startTime: firstTs ? new Date(firstTs).toISOString() : null,
     durationMin: firstTs && lastTs ? Math.round((lastTs - firstTs) / 60000) : 0,
-    userCount, assistCount, toolUses,
-    humanMessages,
+    userCount, assistCount, toolUses: totalToolUses,
+    events,
   };
 }
 
@@ -208,31 +263,87 @@ for (const f of allFiles) {
 }
 console.error(`  ${sessions.length} sessions with human activity\n`);
 
-// --- Group by date ---
+// --- Group by date and build interleaved timeline ---
 const byDate = {};
+
+function ensureDay(date) {
+  if (!byDate[date]) byDate[date] = { lore: [], commits: [], sessions: [], events: [] };
+}
 
 for (const e of loreEntries) {
   if (!e.date) continue;
   if (dateFilter && e.date !== dateFilter) continue;
   if (e.date < cutoffDate && !dateFilter) continue;
-  if (!byDate[e.date]) byDate[e.date] = { lore: [], commits: [], sessions: [], humanMessages: [] };
+  ensureDay(e.date);
   byDate[e.date].lore.push(e);
 }
 
+const seenCommitHash = {};
 for (const c of commits) {
   if (dateFilter && c.date !== dateFilter) continue;
-  if (!byDate[c.date]) byDate[c.date] = { lore: [], commits: [], sessions: [], humanMessages: [] };
+  // Deduplicate commits by hash
+  if (seenCommitHash[c.hash]) continue;
+  seenCommitHash[c.hash] = true;
+  // Skip noise
+  if (c.subject?.startsWith('Notes added') || c.subject?.startsWith('Merge branch')) continue;
+  ensureDay(c.date);
   byDate[c.date].commits.push(c);
 }
 
 for (const s of sessions) {
   if (!s.startDate) continue;
   if (dateFilter && s.startDate !== dateFilter) continue;
-  if (!byDate[s.startDate]) byDate[s.startDate] = { lore: [], commits: [], sessions: [], humanMessages: [] };
+  ensureDay(s.startDate);
   byDate[s.startDate].sessions.push(s);
-  for (const m of s.humanMessages) {
-    byDate[s.startDate].humanMessages.push({ ...m, project: s.project, session: s.session });
+}
+
+// Build interleaved events per day: merge session events, commits, and LORE by timestamp.
+for (const [date, day] of Object.entries(byDate)) {
+  const allEvents = [];
+
+  // Session events (human messages + AI work blocks)
+  for (const s of day.sessions) {
+    const proj = s.project?.replace('quadro-project---mazesofmenace-', 'q:')
+                           .replace('quadro-project--', 'q:')
+                           .replace('quadro-claude', 'q:claude') || '';
+    const model = (s.model || '?').replace('claude-', '').replace('-20251001', '').replace('-20250929', '');
+    for (const ev of (s.events || [])) {
+      allEvents.push({
+        ...ev,
+        session: s.session,
+        project: proj,
+        model,
+        sessionDur: s.durationMin,
+      });
+    }
   }
+
+  // Commits as events
+  for (const c of day.commits) {
+    const ts = c.date + 'T' + (c.time || '00:00') + ':00';
+    allEvents.push({
+      type: 'commit',
+      timestamp: ts,
+      hash: c.hash,
+      subject: c.subject,
+      author: c.author,
+    });
+  }
+
+  // LORE as events (use date + 23:59 to sort at end, since LORE summarizes the day's work)
+  for (const e of day.lore) {
+    allEvents.push({
+      type: 'lore',
+      timestamp: date + 'T23:59:00',
+      title: e.title,
+      lineNum: e.lineNum,
+      summary: e.summary,
+    });
+  }
+
+  // Sort by timestamp
+  allEvents.sort((a, b) => (a.timestamp || '') < (b.timestamp || '') ? -1 : 1);
+  day.events = allEvents;
 }
 
 // --- 5. Summarize each day ---
@@ -240,7 +351,7 @@ function summarizeDay(day) {
   // Collect all text signals: commit subjects, LORE titles, human messages
   const commitSubjects = (day.commits || []).map(c => c.subject || '');
   const loreTitles = (day.lore || []).map(e => e.title || '');
-  const humanTexts = (day.humanMessages || []).map(m => m.text || '');
+  const humanTexts = (day.events || []).filter(e => e.type === 'human').map(e => e.text || '');
 
   // Extract commit prefixes (e.g., "parity:", "feat(shell):", "fix:")
   // Skip noise commits (git notes, merges)

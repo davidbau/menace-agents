@@ -3,360 +3,384 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mazes of Menace — Agent Analysis Timeline</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Meta-Menace — Agent Analysis</title>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f9f7f1;
-    --card-bg: #fff;
-    --card-border: #e0ddd5;
-    --text: #333;
-    --text-muted: #888;
-    --accent: #6b2c2c;
-    --accent-dark: #4a2020;
-    --lore: #8b6914;
-    --commit: #2d6a2d;
-    --human: #2a5599;
-    --session: #6b4c9a;
-    --correction: #b33;
-    --directive: #2a7a5a;
-    --question: #996b00;
-    --font-serif: 'EB Garamond', Georgia, serif;
-    --font-mono: 'DejaVu Sans Mono', 'Consolas', monospace;
+    --bg: #f9f7f1; --card-bg: #fff; --border: #e0ddd5;
+    --text: #333; --muted: #888; --light: #aaa;
+    --accent: #6b2c2c; --accent-dk: #4a2020; --accent-lt: #8b4c4c;
+    --lore: #8b6914; --commit: #2d6a2d; --human: #2a5599;
+    --session: #6b4c9a; --correction: #b33; --directive: #2a7a5a;
+    --question: #996b00; --ai: #555;
+    --serif: 'EB Garamond', Georgia, serif;
+    --mono: 'Consolas', 'DejaVu Sans Mono', monospace;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-serif);
-    line-height: 1.6;
-    padding: 2em;
-    max-width: 900px;
-    margin: 0 auto;
-  }
-  h1 {
-    color: var(--accent);
-    font-size: 2em;
-    font-weight: 700;
-    margin-bottom: 0.2em;
-    letter-spacing: -0.02em;
-  }
-  .subtitle { color: var(--text-muted); margin-bottom: 1.5em; font-size: 1.05em; font-style: italic; }
-  .summary-bar {
-    display: flex; gap: 2em; flex-wrap: wrap;
-    background: var(--card-bg); border: 1px solid var(--card-border);
-    border-radius: 6px; padding: 1em 1.5em;
-    margin-bottom: 1.5em; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-  }
-  .summary-bar .stat { text-align: center; }
-  .summary-bar .stat-num { font-size: 1.6em; font-weight: 700; color: var(--accent); }
-  .summary-bar .stat-label { color: var(--text-muted); font-size: 0.85em; }
+  body { background: var(--bg); color: var(--text); font-family: var(--serif); line-height: 1.55; }
 
-  .sparkline {
-    display: flex; align-items: flex-end; gap: 1px; height: 40px;
-    margin-bottom: 1.5em; background: var(--card-bg);
-    border: 1px solid var(--card-border); border-radius: 6px;
-    padding: 6px 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-  }
-  .spark-bar {
-    flex: 1; min-width: 4px; border-radius: 2px 2px 0 0;
-    background: #c5b899; position: relative; cursor: pointer;
-    transition: opacity 0.15s;
-  }
-  .spark-bar.has-lore { background: var(--lore); }
-  .spark-bar:hover { opacity: 0.7; }
-  .spark-bar .spark-tip {
-    display: none; position: absolute; bottom: 100%; left: 50%;
-    transform: translateX(-50%); background: var(--accent-dark); color: #fff;
-    padding: 0.2em 0.6em; border-radius: 4px; font-size: 0.75em;
-    white-space: nowrap; z-index: 10; font-family: var(--font-serif);
-  }
-  .spark-bar:hover .spark-tip { display: block; }
+  .layout { display: flex; height: 100vh; }
 
-  #search {
-    width: 100%; padding: 0.5em 1em; border-radius: 6px;
-    border: 1px solid var(--card-border); background: var(--card-bg);
-    color: var(--text); font-size: 1em; font-family: var(--font-serif);
-    margin-bottom: 1.5em; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  /* --- Left TOC --- */
+  .sidebar {
+    width: 230px; flex-shrink: 0; border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0.8em 0; background: #f4f1ea;
   }
-  #search::placeholder { color: #aaa; font-style: italic; }
-  #search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(107,44,44,0.15); }
+  .sidebar h2 { font-size: 1em; color: var(--accent); padding: 0 0.8em 0.4em; }
+  .sparkline { display: flex; align-items: flex-end; gap: 1px; height: 22px; padding: 0 0.8em 0.5em; }
+  .sb { flex: 1; min-width: 2px; border-radius: 1px 1px 0 0; background: #c5b899; cursor: pointer; }
+  .sb.hl { background: var(--lore); }
+  .toc-item {
+    display: block; padding: 0.25em 0.8em; cursor: pointer; font-size: 0.8em;
+    border-left: 3px solid transparent; text-decoration: none; color: var(--text); line-height: 1.25;
+  }
+  .toc-item:hover { background: rgba(107,44,44,0.04); }
+  .toc-item.active { border-left-color: var(--accent); background: rgba(107,44,44,0.07); }
+  .toc-item.hl { border-left-color: var(--lore); }
+  .td { font-weight: 600; color: var(--accent-dk); font-size: 0.9em; }
+  .ts { color: var(--muted); font-style: italic; display: block; font-size: 0.88em; }
 
-  .day {
-    background: var(--card-bg); border: 1px solid var(--card-border);
-    border-radius: 6px; margin-bottom: 1em;
-    overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    border-left: 4px solid #c5b899;
-  }
-  .day.has-lore { border-left-color: var(--lore); }
-  .day-header {
-    padding: 0.7em 1em; cursor: pointer; display: flex; align-items: baseline;
-    justify-content: space-between; user-select: none; gap: 0.8em;
-  }
-  .day-header:hover { background: rgba(107,44,44,0.03); }
-  .day-left { display: flex; align-items: baseline; gap: 0.6em; flex: 1; min-width: 0; }
-  .day-date { font-size: 1em; font-weight: 600; color: var(--accent); white-space: nowrap; }
-  .day-summary {
-    font-size: 0.9em; color: var(--text-muted); font-style: italic;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .day-badges { display: flex; gap: 0.4em; flex-wrap: nowrap; flex-shrink: 0; }
-  .badge {
-    font-size: 0.7em; padding: 0.15em 0.5em; border-radius: 10px;
-    font-weight: 600; white-space: nowrap; font-family: -apple-system, sans-serif;
-  }
-  .badge-lore { background: rgba(139,105,20,0.12); color: var(--lore); }
-  .badge-commit { background: rgba(45,106,45,0.1); color: var(--commit); }
-  .badge-session { background: rgba(107,76,154,0.1); color: var(--session); }
-  .badge-human { background: rgba(42,85,153,0.1); color: var(--human); }
+  /* --- Main --- */
+  .main { flex: 1; overflow-y: auto; padding: 1.2em 2em; min-width: 0; }
+  .main h1 { font-size: 1.5em; color: var(--accent); margin-bottom: 0.1em; }
+  .main .sub { color: var(--muted); font-style: italic; margin-bottom: 1.5em; font-size: 0.95em; }
 
-  .day-body { display: none; padding: 0 1em 0.8em; }
-  .day.open .day-body { display: block; }
-  .day.open .arrow { transform: rotate(90deg); }
-  .arrow {
-    display: inline-block; transition: transform 0.2s; color: var(--text-muted);
-    margin-right: 0.3em; font-size: 0.7em;
+  .day { margin-bottom: 2em; scroll-margin-top: 0.5em; }
+  .day-hdr { font-size: 1.15em; font-weight: 600; color: var(--accent); margin-bottom: 0.3em;
+    border-bottom: 1px solid var(--border); padding-bottom: 0.2em; }
+  .day-sum { font-weight: 400; font-style: italic; color: var(--muted); font-size: 0.85em; margin-left: 0.5em; }
+
+  /* Events */
+  .ev { margin: 0.2em 0; }
+
+  .ev-human {
+    padding: 0.3em 0.6em; border-radius: 4px; font-size: 0.9em;
+    border-left: 3px solid var(--human); background: rgba(42,85,153,0.04); margin: 0.4em 0;
+  }
+  .ev-human.correction { border-left-color: var(--correction); background: rgba(180,50,50,0.03); }
+  .ev-human.directive { border-left-color: var(--directive); }
+  .ev-human.question { border-left-color: var(--question); }
+
+  .ev-ai {
+    padding: 0.2em 0.6em; font-size: 0.85em; color: var(--ai);
+    border-left: 3px solid #ddd; margin: 0.15em 0; cursor: pointer;
+  }
+  .ev-ai:hover { background: rgba(0,0,0,0.02); }
+  .ev-ai .detail { display: none; margin-top: 0.2em; }
+  .ev-ai.open .detail { display: block; }
+  .ai-tools { font-family: var(--mono); font-size: 0.85em; color: var(--session); }
+  .ai-snip { font-style: italic; color: var(--ai); margin-top: 0.1em; }
+
+  .ev-commit {
+    font-family: var(--mono); font-size: 0.82em; padding: 0.3em 0.6em; margin: 0.15em 0;
+    border-left: 3px solid var(--commit); background: rgba(45,106,45,0.04);
+    border-radius: 3px; display: flex; gap: 0.5em; align-items: baseline;
+  }
+  .ev-commit .ct { color: var(--muted); min-width: 4ch; }
+  .ev-commit .ch { color: var(--commit); font-weight: 600; }
+  .ev-commit .cm { color: var(--text); }
+
+  .ev-lore {
+    padding: 0.3em 0.6em; border-radius: 4px; font-size: 0.9em;
+    background: rgba(139,105,20,0.06); border-left: 3px solid var(--lore); margin: 0.4em 0;
+    color: var(--lore);
   }
 
-  .section-title {
-    font-size: 0.8em; font-weight: 700; text-transform: uppercase;
-    color: var(--text-muted); margin: 0.8em 0 0.3em; letter-spacing: 0.06em;
-    font-family: -apple-system, sans-serif;
+  @keyframes highlight-flash {
+    0% { background: rgba(255,200,0,0.5); box-shadow: 0 0 12px rgba(255,200,0,0.4); }
+    100% { background: transparent; box-shadow: none; }
   }
+  .ev.highlight { animation: highlight-flash 2.5s ease-out; scroll-margin-top: 40vh; }
 
-  .lore-entry {
-    padding: 0.3em 0.6em; margin: 0.15em 0; border-radius: 3px;
-    background: rgba(139,105,20,0.06); font-size: 0.9em;
-    border-left: 3px solid var(--lore);
-  }
-  .commit-entry {
-    font-family: var(--font-mono); font-size: 0.78em;
-    padding: 0.15em 0; display: flex; gap: 0.5em;
-  }
-  .commit-hash { color: var(--text-muted); min-width: 7ch; }
-  .commit-time { color: var(--text-muted); min-width: 5ch; }
-  .commit-msg { color: var(--text); }
-
-  .human-msg {
-    padding: 0.3em 0.6em; margin: 0.15em 0; border-radius: 3px;
-    font-size: 0.9em; border-left: 3px solid var(--human);
-    background: rgba(42,85,153,0.04);
-  }
-  .human-msg.correction { border-left-color: var(--correction); background: rgba(180,50,50,0.04); }
-  .human-msg.directive { border-left-color: var(--directive); }
-  .human-msg.question { border-left-color: var(--question); }
-  .human-time { color: var(--text-muted); font-size: 0.8em; min-width: 5ch; display: inline-block; }
-  .human-tag {
-    font-size: 0.65em; padding: 0.1em 0.4em; border-radius: 8px;
-    font-weight: 600; margin-left: 0.3em; font-family: -apple-system, sans-serif;
+  .ev-time { color: var(--light); font-size: 0.8em; margin-right: 0.3em; }
+  .tag {
+    font-size: 0.6em; padding: 0.1em 0.3em; border-radius: 5px;
+    font-weight: 600; font-family: -apple-system, sans-serif; margin-right: 0.2em; vertical-align: 1px;
   }
   .tag-correction { background: rgba(180,50,50,0.12); color: var(--correction); }
-  .tag-directive { background: rgba(42,122,90,0.12); color: var(--directive); }
-  .tag-question { background: rgba(153,107,0,0.12); color: var(--question); }
-  .tag-redirect { background: rgba(180,100,30,0.12); color: #b06420; }
+  .tag-directive { background: rgba(42,122,90,0.1); color: var(--directive); }
+  .tag-question { background: rgba(153,107,0,0.1); color: var(--question); }
+  .tag-ai { background: rgba(107,76,154,0.1); color: var(--session); }
 
-  .session-row {
-    font-size: 0.82em; padding: 0.1em 0; display: flex; gap: 0.6em;
-    color: var(--text-muted); font-family: var(--font-mono);
-  }
-  .session-dur { min-width: 5ch; text-align: right; color: var(--session); font-weight: 600; }
-  .session-model { min-width: 12ch; }
+  /* Commit groups */
+  .commit-group { margin: 0.2em 0; }
+  .cg-hdr { font-size: 0.75em; color: var(--commit); cursor: pointer; padding: 0.1em 0.6em;
+    border-left: 3px solid rgba(45,106,45,0.3); font-family: -apple-system, sans-serif; }
+  .cg-hdr:hover { background: rgba(0,0,0,0.02); }
+  .cg-body { display: none; }
+  .commit-group.open .cg-body { display: block; }
 
-  .show-more {
-    color: var(--text-muted); font-size: 0.85em; cursor: pointer;
-    padding: 0.2em 0; font-style: italic;
+  .show-more { color: var(--accent-lt); font-size: 0.82em; cursor: pointer; font-style: italic; padding: 0.2em 0.6em; }
+  .show-more:hover { color: var(--accent); text-decoration: underline; }
+
+  /* Filters */
+  .filters { display: flex; gap: 0.4em; flex-wrap: wrap; margin-bottom: 1em; }
+  .fbtn {
+    padding: 0.2em 0.6em; border-radius: 12px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); cursor: pointer; font-size: 0.75em;
+    font-family: -apple-system, sans-serif;
   }
-  .show-more:hover { color: var(--accent); }
+  .fbtn.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .fbtn:hover { border-color: var(--accent-lt); }
+
+  /* --- Right search --- */
+  .search-panel {
+    width: 280px; flex-shrink: 0; border-left: 1px solid var(--border);
+    overflow-y: auto; padding: 0.8em; background: #f4f1ea; display: flex; flex-direction: column;
+  }
+  .search-panel h3 { font-size: 0.9em; color: var(--accent); margin-bottom: 0.4em; }
+  #search {
+    width: 100%; padding: 0.35em 0.6em; border-radius: 5px;
+    border: 1px solid var(--border); background: #fff; color: var(--text);
+    font-family: var(--serif); font-size: 0.85em; margin-bottom: 0.4em;
+  }
+  #search:focus { outline: none; border-color: var(--accent); }
+  #sc { font-size: 0.75em; color: var(--muted); margin-bottom: 0.3em; }
+  .sr { flex: 1; overflow-y: auto; }
+  .hit {
+    padding: 0.3em 0.4em; margin: 0.15em 0; border-radius: 3px;
+    background: #fff; border: 1px solid var(--border); cursor: pointer;
+    font-size: 0.78em; line-height: 1.25;
+  }
+  .hit:hover { border-color: var(--accent); }
+  .hd { font-weight: 600; color: var(--accent-dk); font-size: 0.85em; }
+  .hs { color: var(--light); font-size: 0.8em; }
+  .hx { color: var(--text); }
+  .hx mark { background: rgba(255,215,0,0.35); color: inherit; padding: 0 1px; border-radius: 2px; }
 </style>
 </head>
 <body>
-<h1>Mazes of Menace</h1>
-<p class="subtitle">Agent Analysis Timeline &mdash; a chronicle of human and AI collaboration</p>
-
-<div class="summary-bar" id="summary"></div>
-<div class="sparkline" id="sparkline"></div>
-<input type="text" id="search" placeholder="Search human messages, LORE entries, commit messages&hellip;">
-<div id="timeline"></div>
-
+<div class="layout">
+  <div class="sidebar" id="sidebar">
+    <h2>Meta-Menace</h2>
+    <div class="sparkline" id="spark"></div>
+    <div id="toc"></div>
+  </div>
+  <div class="main" id="main">
+    <h1>Agent Analysis Timeline</h1>
+    <p class="sub">A chronicle of human and AI collaboration on Mazes of Menace</p>
+    <div class="filters" id="filters">
+      <button class="fbtn on" data-f="human">Human</button>
+      <button class="fbtn on" data-f="ai-work">AI work</button>
+      <button class="fbtn on" data-f="commit">Commits</button>
+      <button class="fbtn on" data-f="lore">LORE</button>
+    </div>
+    <div id="timeline"></div>
+  </div>
+  <div class="search-panel">
+    <h3>Search</h3>
+    <input type="text" id="search" placeholder="Search everything&hellip;">
+    <div id="sc"></div>
+    <div class="sr" id="sr"></div>
+  </div>
+</div>
 <script>
-let DATA = [];
-let searchTerm = '';
+let DATA=[], SHOW={human:true,'ai-work':true,commit:true,lore:true};
 
-async function loadData() {
-  const resp = await fetch('data/timeline.jsonl');
-  const text = await resp.text();
-  DATA = text.trim().split('\n').map(l => JSON.parse(l));
-  renderAll();
+async function init() {
+  const r = await fetch('data/timeline.jsonl');
+  DATA = (await r.text()).trim().split('\n').map(l=>JSON.parse(l));
+  renderToc(); renderTimeline();
+  document.getElementById('filters').addEventListener('click', e => {
+    const b = e.target.closest('.fbtn'); if (!b) return;
+    const f = b.dataset.f; SHOW[f] = !SHOW[f]; b.classList.toggle('on'); renderTimeline();
+  });
 }
 
-function classify(text) {
-  if (!text) return '';
-  const t = text.trim().toLowerCase();
-  if (/^(no[, ]|don't|dont|stop|wrong|that's not|revert|undo|actually[, ]|wait[, ]|not that|no no)/i.test(t)) return 'correction';
-  if (/^(instead|rather|i meant|what i meant)/i.test(t)) return 'redirect';
-  if (/\?$/.test(t) || /^(what|why|how|where|when|which|can you|could you|is there|do we|does |did )/i.test(t)) return 'question';
-  if (/^(let's|lets|now |next|go ahead|please |add |fix |change |update |remove |create |make |implement|write |run |test |check |push|commit)/i.test(t)) return 'directive';
-  return '';
-}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function hl(t,q){if(!q)return esc(t);const re=new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`,'gi');return esc(t).replace(re,'<mark>$1</mark>');}
+function classify(t){if(!t)return'';t=t.trim();
+  if(/^(no[, ]|don't|dont|stop|wrong|that's not|revert|undo|actually[, ]|wait[, ]|not that|no no)/i.test(t))return'correction';
+  if(/^(instead|rather|i meant)/i.test(t))return'redirect';
+  if(/\?$/.test(t)||/^(what|why|how|where|when|which|can you|could you|is there|do we|does |did )/i.test(t))return'question';
+  if(/^(let's|lets|now |next|go ahead|please |add |fix |change |update |remove |create |make |implement|write |run |test |check |push|commit)/i.test(t))return'directive';
+  return'';}
+function tm(ts){return ts?.slice(11,16)||'';}
 
-function renderAll() {
-  let totalSessions = 0, totalCommits = 0, totalLore = 0, totalHuman = 0;
-  for (const d of DATA) {
-    totalSessions += d.sessions?.length || 0;
-    totalCommits += d.commits?.length || 0;
-    totalLore += d.lore?.length || 0;
-    totalHuman += d.humanMessages?.length || 0;
-  }
-  document.getElementById('summary').innerHTML = `
-    <div class="stat"><div class="stat-num">${DATA.length}</div><div class="stat-label">Days</div></div>
-    <div class="stat"><div class="stat-num">${totalSessions.toLocaleString()}</div><div class="stat-label">Sessions</div></div>
-    <div class="stat"><div class="stat-num">${totalCommits.toLocaleString()}</div><div class="stat-label">Commits</div></div>
-    <div class="stat"><div class="stat-num">${totalLore}</div><div class="stat-label">LORE entries</div></div>
-    <div class="stat"><div class="stat-num">${totalHuman.toLocaleString()}</div><div class="stat-label">Human messages</div></div>
-  `;
-
-  const maxCommits = Math.max(...DATA.map(d => d.commits?.length || 0));
-  document.getElementById('sparkline').innerHTML = DATA.map(d => {
-    const h = Math.max(2, Math.round((d.commits?.length || 0) / maxCommits * 36));
-    const hasLore = (d.lore?.length || 0) > 0;
-    return `<div class="spark-bar${hasLore ? ' has-lore' : ''}" style="height:${h}px" data-date="${d.date}">
-      <div class="spark-tip">${d.date}: ${d.commits?.length||0} commits${hasLore ? ', ' + d.lore.length + ' LORE' : ''}</div>
-    </div>`;
+function renderToc(){
+  const mx=Math.max(...DATA.map(d=>d.commits?.length||0));
+  document.getElementById('spark').innerHTML=DATA.map(d=>{
+    const h=Math.max(2,Math.round((d.commits?.length||0)/mx*18));
+    return`<div class="sb${d.lore?.length?' hl':''}" style="height:${h}px" data-d="${d.date}"></div>`;
   }).join('');
-
-  renderTimeline();
+  document.getElementById('toc').innerHTML=DATA.map(d=>
+    `<a class="toc-item${d.lore?.length?' hl':''}" data-d="${d.date}" href="#d-${d.date}">
+      <span class="td">${d.date}</span><span class="ts">${esc(d.summary||'')}</span></a>`
+  ).join('');
 }
 
-function matchesSearch(day) {
-  if (!searchTerm) return true;
-  const s = searchTerm.toLowerCase();
-  if (day.summary?.toLowerCase().includes(s)) return true;
-  if (day.lore?.some(e => e.title.toLowerCase().includes(s))) return true;
-  if (day.commits?.some(c => c.subject?.toLowerCase().includes(s))) return true;
-  if (day.humanMessages?.some(m => m.text.toLowerCase().includes(s))) return true;
-  return false;
+function renderTimeline(){
+  document.getElementById('timeline').innerHTML=DATA.map(renderDay).join('');
 }
 
-function renderTimeline() {
-  const container = document.getElementById('timeline');
-  const filtered = DATA.filter(matchesSearch).reverse();
+function renderDay(day){
+  const evts = (day.events||[]).filter(e => SHOW[e.type]);
+  if (!evts.length && !day.summary) return '';
+  return `<div class="day" id="d-${day.date}">
+    <div class="day-hdr">${day.date}<span class="day-sum">${esc(day.summary||'')}</span></div>
+    ${renderEvents(evts)}
+  </div>`;
+}
 
-  container.innerHTML = filtered.map(day => {
-    const nLore = day.lore?.length || 0;
-    const nSessions = day.sessions?.length || 0;
-    const nHuman = (day.humanMessages || []).filter(m => m.words >= 10).length;
-    const hasLore = nLore > 0;
-
-    const seenHash = new Set();
-    const uniqueCommits = (day.commits || []).filter(c => {
-      if (seenHash.has(c.hash)) return false;
-      seenHash.add(c.hash); return true;
-    }).filter(c => !c.subject?.startsWith('Notes added') && !c.subject?.startsWith('Merge branch'));
-    const nCommits = uniqueCommits.length;
-
-    return `<div class="day ${hasLore ? 'has-lore' : ''}" data-date="${day.date}">
-      <div class="day-header" onclick="this.parentElement.classList.toggle('open')">
-        <div class="day-left">
-          <span class="arrow">&#9654;</span>
-          <span class="day-date">${day.date}</span>
-          <span class="day-summary">${esc(day.summary || '')}</span>
+let evId = 0; // global event counter for unique IDs
+function renderEvents(evts){
+  const out = [];
+  let commitBuf = []; // accumulate adjacent commits
+  function flushCommits(){
+    if(!commitBuf.length) return;
+    if(commitBuf.length <= 5){
+      // Show individually
+      for(const c of commitBuf) out.push(renderCommit(c));
+    } else {
+      // Show first 3 visible, rest in collapsible group
+      const visible = commitBuf.slice(0, 3);
+      const hidden = commitBuf.slice(3);
+      for(const c of visible) out.push(renderCommit(c));
+      out.push(`<div class="commit-group">
+        <div class="cg-hdr" onclick="this.parentElement.classList.toggle('open')">
+          &#9654; ${hidden.length} more commits (${tm(hidden[0].timestamp)}&ndash;${tm(hidden[hidden.length-1].timestamp)})
         </div>
-        <div class="day-badges">
-          ${nLore ? `<span class="badge badge-lore">${nLore} lore</span>` : ''}
-          ${nCommits ? `<span class="badge badge-commit">${nCommits}</span>` : ''}
-          ${nSessions ? `<span class="badge badge-session">${nSessions} sess</span>` : ''}
-          ${nHuman ? `<span class="badge badge-human">${nHuman} human</span>` : ''}
-        </div>
-      </div>
-      <div class="day-body">
-        ${renderLore(day.lore)}
-        ${renderHumanMessages(day.humanMessages)}
-        ${renderCommits(uniqueCommits)}
-        ${renderSessions(day.sessions)}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function renderLore(entries) {
-  if (!entries?.length) return '';
-  return `<div class="section-title" style="color:var(--lore)">Lessons Learned</div>` +
-    entries.map(e => `<div class="lore-entry">${esc(e.title)}</div>`).join('');
-}
-
-function renderHumanMessages(msgs) {
-  if (!msgs?.length) return '';
-  const substantive = msgs.filter(m => m.words >= 10);
-  if (!substantive.length) return '';
-  const shown = substantive.slice(0, 15);
-  const rest = substantive.length - shown.length;
-  return `<div class="section-title" style="color:var(--human)">Human Messages (${substantive.length})</div>` +
-    shown.map(m => {
-      const cls = classify(m.text);
-      const clsClass = cls ? ` ${cls}` : '';
-      const tag = cls ? `<span class="human-tag tag-${cls}">${cls}</span>` : '';
-      const time = m.timestamp?.slice(11, 16) || '';
-      return `<div class="human-msg${clsClass}">
-        <span class="human-time">${time}</span>${tag} ${esc(m.text.substring(0, 300))}${m.text.length > 300 ? '&hellip;' : ''}
-      </div>`;
-    }).join('') +
-    (rest > 0 ? `<div class="show-more">+ ${rest} more&hellip;</div>` : '');
-}
-
-function renderCommits(commits) {
-  if (!commits?.length) return '';
-  const shown = commits.slice(0, 20);
-  const rest = commits.length - shown.length;
-  return `<div class="section-title" style="color:var(--commit)">Commits (${commits.length})</div>` +
-    shown.map(c => `<div class="commit-entry">
-      <span class="commit-time">${c.time || ''}</span>
-      <span class="commit-hash">${c.hash?.slice(0,8) || ''}</span>
-      <span class="commit-msg">${esc(c.subject?.substring(0, 80) || '')}</span>
-    </div>`).join('') +
-    (rest > 0 ? `<div class="show-more">+ ${rest} more commits&hellip;</div>` : '');
-}
-
-function renderSessions(sessions) {
-  if (!sessions?.length) return '';
-  const sorted = [...sessions].sort((a, b) => b.durationMin - a.durationMin);
-  const shown = sorted.slice(0, 8);
-  const rest = sorted.length - shown.length;
-  return `<div class="section-title" style="color:var(--session)">Sessions (${sessions.length})</div>` +
-    shown.map(s => {
-      const model = (s.model || '?').replace('claude-', '').replace('-20251001', '').replace('-20250929', '');
-      return `<div class="session-row">
-        <span class="session-dur">${s.durationMin}m</span>
-        <span class="session-model">${model}</span>
-        <span>${s.userCount}u/${s.assistCount}a/${s.toolUses}t</span>
-        <span>${s.project?.replace('quadro-project---mazesofmenace-', 'q:').replace('quadro-project--', 'q:').replace('quadro-claude', 'q:claude') || ''}</span>
-      </div>`;
-    }).join('') +
-    (rest > 0 ? `<div class="show-more">+ ${rest} more sessions&hellip;</div>` : '');
-}
-
-function esc(s) {
-  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-document.getElementById('search').addEventListener('input', e => {
-  searchTerm = e.target.value;
-  renderTimeline();
-});
-
-document.getElementById('sparkline').addEventListener('click', e => {
-  const bar = e.target.closest('.spark-bar');
-  if (!bar) return;
-  const date = bar.dataset.date;
-  const dayEl = document.querySelector(`.day[data-date="${date}"]`);
-  if (dayEl) {
-    dayEl.classList.add('open');
-    dayEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        <div class="cg-body">${hidden.map(renderCommit).join('')}</div>
+      </div>`);
+    }
+    commitBuf = [];
   }
-});
 
-loadData();
+  for(const e of evts){
+    if(e.type==='commit'){commitBuf.push(e);continue;}
+    flushCommits();
+    if(e.type==='human') out.push(renderHuman(e));
+    else if(e.type==='ai-work') out.push(renderAiWork(e));
+    else if(e.type==='lore') out.push(renderLore(e));
+  }
+  flushCommits();
+  return out.join('');
+}
+
+function renderHuman(e){
+  const cls=classify(e.text);
+  const tag=cls?`<span class="tag tag-${cls}">${cls}</span>`:'';
+  const id='ev-'+(evId++);
+  e._id=id;
+  return`<div class="ev ev-human${cls?' '+cls:''}" id="${id}">
+    <span class="ev-time">${tm(e.timestamp)}</span>${tag}${esc(e.text.substring(0,400))}${e.text.length>400?'&hellip;':''}
+  </div>`;
+}
+
+function renderAiWork(e){
+  const brief = e.turns===1&&e.toolUses<=2
+    ? `${e.topTools||'thinking'}`
+    : `${e.turns} turns, ${e.toolUses} tool calls: ${e.topTools||'(none)'}`;
+  const snips = (e.snippets||[]);
+  const id='ev-'+(evId++);
+  e._id=id;
+  return`<div class="ev ev-ai" id="${id}" onclick="this.classList.toggle('open')">
+    <span class="ev-time">${tm(e.timestamp)}</span>
+    <span class="tag tag-ai">AI</span>
+    ${esc(brief)}
+    ${snips.length?`<div class="detail">${snips.map(s=>`<div class="ai-snip">${esc(s)}</div>`).join('')}</div>`:''}
+  </div>`;
+}
+
+function renderCommit(c){
+  const id='ev-'+(evId++);
+  c._id=id;
+  return`<div class="ev ev-commit" id="${id}">
+    <span class="ct">${tm(c.timestamp)}</span><span class="ch">${c.hash?.slice(0,8)||''}</span> <span class="cm">${esc(c.subject?.substring(0,80)||'')}</span>
+  </div>`;
+}
+
+function renderLore(e){
+  const id='ev-'+(evId++);
+  e._id=id;
+  return`<div class="ev ev-lore" id="${id}">
+    <span class="ev-time">LORE</span> ${esc(e.title)}
+  </div>`;
+}
+
+// Search
+let sTo;
+document.getElementById('search').addEventListener('input',e=>{clearTimeout(sTo);sTo=setTimeout(()=>doSearch(e.target.value),200);});
+
+function doSearch(q){
+  const el=document.getElementById('sr'), sc=document.getElementById('sc');
+  if(!q||q.length<2){el.innerHTML='';sc.textContent='';return;}
+  const t=q.toLowerCase(), hits=[];
+  for(const day of DATA){
+    for(const e of(day.events||[])){
+      let text=null;
+      if(e.type==='human'&&e.text?.toLowerCase().includes(t)) text=e.text;
+      else if(e.type==='lore'&&e.title?.toLowerCase().includes(t)) text=e.title;
+      else if(e.type==='commit'&&e.subject?.toLowerCase().includes(t)) text=e.subject;
+      else if(e.type==='ai-work'){
+        const snip=(e.snippets||[]).find(s=>s.toLowerCase().includes(t));
+        if(snip) text=snip;
+        else if(e.topTools?.toLowerCase().includes(t)) text=e.topTools;
+      }
+      if(text) hits.push({date:day.date,type:e.type,text,evId:e._id});
+    }
+  }
+  sc.textContent=`${hits.length} results`;
+  // Deduplicate per day+type, show first 60
+  const seen=new Set();
+  const unique=hits.filter(h=>{const k=h.date+h.type+h.text.substring(0,50);if(seen.has(k))return false;seen.add(k);return true;});
+  el.innerHTML=unique.slice(0,60).map(h=>{
+    const i=h.text.toLowerCase().indexOf(t);
+    const s=Math.max(0,i-30), e2=Math.min(h.text.length,i+q.length+50);
+    const snip=(s>0?'&hellip;':'')+hl(h.text.substring(s,e2),q)+(e2<h.text.length?'&hellip;':'');
+    return`<div class="hit" onclick="jumpTo('${h.date}','${h.evId||''}')">
+      <span class="hd">${h.date}</span> <span class="hs">${h.type}</span>
+      <div class="hx">${snip}</div>
+    </div>`;
+  }).join('')+(unique.length>60?`<div style="color:var(--muted);font-size:0.75em;padding:0.3em">+${unique.length-60} more</div>`:'');
+}
+
+function jump(date){ jumpTo(date, ''); }
+
+function jumpTo(date, evId){
+  const mainEl = document.getElementById('main');
+  // Step 1: instant jump to the day
+  const dayEl = document.getElementById('d-'+date);
+  if(dayEl) dayEl.scrollIntoView({behavior:'instant',block:'start'});
+
+  // Update TOC
+  document.querySelectorAll('.toc-item').forEach(t=>t.classList.remove('active'));
+  const ti=document.querySelector(`.toc-item[data-d="${date}"]`);
+  if(ti){ti.classList.add('active');ti.scrollIntoView({block:'nearest'});}
+
+  // Step 2: if we have a specific event, smooth scroll to it and highlight
+  if(evId){
+    // Small delay to let the instant scroll settle
+    setTimeout(()=>{
+      const evEl = document.getElementById(evId);
+      if(!evEl) return;
+      // Open collapsed parents (commit groups, AI details)
+      const cg = evEl.closest('.commit-group');
+      if(cg) cg.classList.add('open');
+      // Smooth scroll to the event
+      evEl.scrollIntoView({behavior:'smooth',block:'center'});
+      // Flash highlight
+      evEl.classList.remove('highlight');
+      void evEl.offsetWidth; // force reflow
+      evEl.classList.add('highlight');
+    }, 50);
+  }
+}
+
+// TOC + sparkline click
+document.getElementById('toc').addEventListener('click',e=>{const i=e.target.closest('.toc-item');if(i){e.preventDefault();jump(i.dataset.d);}});
+document.getElementById('spark').addEventListener('click',e=>{const b=e.target.closest('.sb');if(b)jump(b.dataset.d);});
+
+// Scroll tracking
+const mainEl=document.getElementById('main');
+let raf;
+mainEl.addEventListener('scroll',()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=null;
+  let cur=null;for(const b of document.querySelectorAll('.day'))if(b.getBoundingClientRect().top<150)cur=b.id.replace('d-','');
+  if(cur){document.querySelectorAll('.toc-item').forEach(t=>t.classList.remove('active'));
+    const ti=document.querySelector(`.toc-item[data-d="${cur}"]`);if(ti){ti.classList.add('active');ti.scrollIntoView({block:'nearest'});}}
+});});
+
+init();
 </script>
 </body>
 </html>
