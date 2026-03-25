@@ -28,6 +28,19 @@ const days = hasFlag('--all') ? 99999 : parseInt(getArg('--days', '7'));
 const dateFilter = getArg('--date', null);
 const outputFile = getArg('--output', null);
 
+// Redact secrets from text before including in timeline data.
+function redactSecrets(text) {
+  if (!text) return text;
+  return text
+    .replace(/github_pat_[A-Za-z0-9_]{10,}/g, '<github_token>')
+    .replace(/ghp_[A-Za-z0-9]{20,}/g, '<github_token>')
+    .replace(/ghu_[A-Za-z0-9]{20,}/g, '<github_token>')
+    .replace(/sk-ant-[A-Za-z0-9_-]{20,}/g, '<anthropic_key>')
+    .replace(/sk-[A-Za-z0-9]{40,}/g, '<api_key>')
+    .replace(/AKIA[A-Z0-9]{16}/g, '<aws_key>')
+    .replace(/eyJ[A-Za-z0-9_-]{40,}/g, '<jwt_token>');
+}
+
 // Convert a UTC ISO string or ms timestamp to a local (EST/EDT) date string.
 // All day-grouping uses local time so sessions and their commits land on the same day.
 function localDate(ts) {
@@ -108,7 +121,7 @@ function parseGitCommits() {
         timestamp: utcIso,
         author,
         subject,
-        body: (body || '').trim(),
+        body: redactSecrets((body || '').trim()),
       });
     }
   } catch (e) {
@@ -174,7 +187,7 @@ function parseSessionLight(filePath) {
       if (d.userType && d.userType !== 'external') continue;
       const words = text.split(/\s+/).filter(Boolean).length;
       if (words >= 5) {
-        turns.push({ role: 'human', ts, text, words });
+        turns.push({ role: 'human', ts, text: redactSecrets(text), words });
       }
     } else if (d.type === 'assistant') {
       assistCount++;
@@ -190,7 +203,7 @@ function parseSessionLight(filePath) {
         if (b.type === 'text' && b.text && !textSnippet) {
           const t = b.text.trim();
           if (t.length > 20 && !t.startsWith('<') && !t.startsWith('{'))
-            textSnippet = t.substring(0, 300);
+            textSnippet = redactSecrets(t.substring(0, 300));
         }
       }
       turns.push({ role: 'assistant', ts, tools, textSnippet });
