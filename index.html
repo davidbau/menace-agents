@@ -456,16 +456,13 @@ function renderSubagentWork(e){
 
 // Keyword index — curated search suggestions organized by theme
 const KW_INDEX = {
-  'Games & Origins': ['nethack','hack','rogue','zork','dungeon','logo','basic','shell','spoilers','webhack','playable','mandelbrot'],
-  'People & History': ['fenlason','wichman','harvey','1982','1980','revolution','sudbury','reflections','vibe','steam','shovel','boston'],
-  'Parity & Testing': ['parity','divergence','prng','rng','isaac','coverage','session','replay','harness','regression','revert','goodhart'],
-  'C-to-JS Porting': ['async','await','promise','synchronous','getlin','curs','mklev','mkobj','makemon','muse','armoroff','refactor'],
-  'Gameplay Mechanics': ['cockatrice','hallucination','polymorph','genocide','dog_move','distfleeck','steed','swallow','pet',
-    'potion','scroll','wand','ring','trap','eating','pickup','combat','movement','travel'],
-  'Dungeon Features': ['fountain','altar','shop','vault','sokoban','maze','corridor','special','bones','level'],
-  'Tools & Infra': ['dbgmapdump','selfplay','campbot','smartbot','speedrun','watchdog','codex','claude','opus','quadro','swarm','server'],
-  'Process & Steering': ['campaign','iron','milestone','gate','burndown','blocked','stuck','correction','wrong','actually','instead','stop','wait'],
-  'UI & Display': ['cursor','blinking','terminal','display','screen','motd','profile','subshell','garamond','parchment'],
+  'Games': ['nethack','hack','rogue','zork','dungeon','logo','basic','shell','webhack'],
+  'History': ['fenlason','wichman','harvey','1982','reflections','vibe','revolution'],
+  'Parity': ['parity','divergence','prng','coverage','replay','harness','regression','goodhart'],
+  'Porting': ['async','await','getlin','mklev','makemon','muse','armoroff'],
+  'Mechanics': ['cockatrice','hallucination','polymorph','dog_move','distfleeck','steed','eating','pickup','combat','travel'],
+  'Tools': ['dbgmapdump','selfplay','campbot','smartbot','speedrun','codex','claude','quadro'],
+  'Process': ['campaign','milestone','gate','stuck','blocked','wrong','actually','revert'],
 };
 
 function renderKeywordIndex() {
