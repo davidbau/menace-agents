@@ -251,23 +251,34 @@ async function init() {
     const b = e.target.closest('.fbtn'); if (!b) return;
     const f = b.dataset.f;
 
-    // Find the first visible day block near the top of viewport
     const mainEl = document.getElementById('main');
     const headerH = document.querySelector('.main-header')?.offsetHeight || 0;
-    let anchorDay = null;
-    for (const dayEl of document.querySelectorAll('.day')) {
-      const r = dayEl.getBoundingClientRect();
-      if (r.bottom > headerH) { anchorDay = dayEl.id; break; }
+
+    // Before re-render: find all currently visible .ev elements and record their IDs + positions
+    const visibleEvs = [];
+    for (const ev of document.querySelectorAll('.ev')) {
+      const r = ev.getBoundingClientRect();
+      if (r.top >= headerH - 10 && r.top < mainEl.clientHeight) {
+        visibleEvs.push({ id: ev.id, top: r.top });
+      }
     }
 
+    // Apply the filter change
     SHOW[f] = !SHOW[f]; b.classList.toggle('on');
     if (f === 'agent-directive') SHOW['subagent-work'] = SHOW[f];
     renderTimeline();
 
-    // Restore scroll to the same day
-    if (anchorDay) {
-      const el = document.getElementById(anchorDay);
-      if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' });
+    // After re-render: find the first previously-visible element that still exists
+    for (const { id, top } of visibleEvs) {
+      const el = document.getElementById(id);
+      if (el) {
+        // Scroll so this element appears at roughly the same screen position
+        // But clamp to near the top of the visible area (just below sticky header)
+        const targetTop = Math.max(headerH + 5, Math.min(top, headerH + 100));
+        const elRect = el.getBoundingClientRect();
+        mainEl.scrollTop += (elRect.top - targetTop);
+        break;
+      }
     }
   });
 }
@@ -300,6 +311,7 @@ function renderToc(){
 }
 
 function renderTimeline(){
+  usedIds.clear();
   document.getElementById('timeline').innerHTML=DATA.map(renderDay).join('');
 }
 
@@ -312,7 +324,16 @@ function renderDay(day){
   </div>`;
 }
 
-let evId = 0; // global event counter for unique IDs
+// Stable event IDs based on timestamp+type so they survive re-renders
+const usedIds = new Set();
+function stableId(e) {
+  const base = 'ev-' + (e.timestamp||'').replace(/[^0-9T]/g,'') + '-' + (e.type||'').slice(0,3);
+  let id = base;
+  let n = 0;
+  while (usedIds.has(id)) id = base + '-' + (++n);
+  usedIds.add(id);
+  return id;
+}
 function renderEvents(evts){
   const out = [];
   let commitBuf = []; // accumulate adjacent commits
@@ -352,7 +373,7 @@ function renderEvents(evts){
 function renderHuman(e){
   const cls=classify(e.text);
   const tag=cls?`<span class="tag tag-${cls}">${cls}</span>`:'';
-  const id='ev-'+(evId++);
+  const id=stableId(e);
   e._id=id;
   const maxLen = 200;
   const isTrunc = e.text.length > maxLen;
@@ -368,7 +389,7 @@ function renderAiWork(e){
     ? `${e.topTools||'thinking'}`
     : `${e.turns} turns, ${e.toolUses} tool calls: ${e.topTools||'(none)'}`;
   const snips = (e.snippets||[]);
-  const id='ev-'+(evId++);
+  const id=stableId(e);
   e._id=id;
   return`<div class="ev ev-ai" id="${id}" onclick="this.classList.toggle('open')">
     <span class="ev-time">${tm(e.timestamp)}</span>
@@ -379,7 +400,7 @@ function renderAiWork(e){
 }
 
 function renderCommit(c){
-  const id='ev-'+(evId++);
+  const id=stableId(c);
   c._id=id;
   const hasBody = c.body && c.body.length > 0 && !c.body.startsWith('Co-Authored');
   const bodyClean = hasBody ? c.body.replace(/Co-Authored-By:.*$/gm, '').trim() : '';
@@ -389,7 +410,7 @@ function renderCommit(c){
 }
 
 function renderLore(e){
-  const id='ev-'+(evId++);
+  const id=stableId(e);
   e._id=id;
   return`<div class="ev ev-lore" id="${id}">
     <span class="ev-time">LORE</span> ${esc(e.title)}
@@ -397,7 +418,7 @@ function renderLore(e){
 }
 
 function renderAgentDirective(e){
-  const id='ev-'+(evId++);
+  const id=stableId(e);
   e._id=id;
   const maxLen = 150;
   const isTrunc = e.text.length > maxLen;
@@ -413,7 +434,7 @@ function renderSubagentWork(e){
     ? `${e.topTools||'thinking'}`
     : `${e.turns} turns, ${e.toolUses} tools: ${e.topTools||'(none)'}`;
   const snips = (e.snippets||[]);
-  const id='ev-'+(evId++);
+  const id=stableId(e);
   e._id=id;
   return`<div class="ev ev-subagent-work" id="${id}" onclick="this.classList.toggle('open')">
     <span class="ev-time">${tm(e.timestamp)}</span>
@@ -516,7 +537,7 @@ function jumpTo(date, evId){
   }
 
   // Smooth scroll and highlight
-  target.scrollIntoView({behavior:'smooth',block:'center'});
+  target.scrollIntoView({behavior:'instant',block:'center'});
   if(evId) target.classList.add('highlight');
 }
 
