@@ -1,44 +1,50 @@
 [
   {
-    "id": "genesis",
-    "title": "Chapter 1: Genesis — \"A faithful javascript port of nethack\"",
+    "id": "founding",
+    "name": "Founding",
     "dates": ["2026-02-06", "2026-02-07", "2026-02-08", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12"],
-    "summary": "The project launches with a single prompt on a Thursday evening. Within a week: ISAAC64 PRNG ported, C comparison framework built, level generation aligned, 126/126 special level files converted, Lua RNG infrastructure working, guidebook pager live on GitHub Pages. Codex joins on day 4. The founding insight: match every random number and everything else follows. By day 7, there are already 47 commits on special level parity and the options system is being refactored to match C defaults."
+    "summary": "One prompt launches the project. PRNG ported, comparison framework built, 126 special levels converted. Codex joins day 4. The insight: match every random number."
   },
   {
-    "id": "infrastructure",
-    "title": "Chapter 2: Infrastructure — Measuring the Unmeasurable",
-    "dates": ["2026-02-13", "2026-02-14", "2026-02-15", "2026-02-16", "2026-02-17", "2026-02-18"],
-    "summary": "Session recording goes deterministic. The oracle test framework is born: git notes per commit, class-balanced benchmarks, backfill scripts. The 1000-commit milestone passes. The human realizes the project needs systematic measurement, not just code accumulation. Selfplay agents start exploring the dungeon autonomously. The watchdog agent is taught to nudge other agents toward AGENTS.md. Project documentation gets its first serious review. The quality question surfaces: are the tests testing the right thing?"
+    "id": "measurement",
+    "name": "Measurement",
+    "dates": ["2026-02-13", "2026-02-14", "2026-02-15"],
+    "summary": "Session recording goes deterministic. Oracle test framework, git notes, 1000th commit. The shift from coding to measuring."
   },
   {
-    "id": "surface-porting",
-    "title": "Chapter 3: Surface Porting — CODEMATCH Sprint",
-    "dates": ["2026-02-19", "2026-02-20", "2026-02-21", "2026-02-22", "2026-02-23", "2026-02-24", "2026-02-25"],
-    "summary": "A massive porting sprint across both Claude and Codex. 73 CODEMATCH functions ported in a single day (mplayer, stairs, sounds, potions). Codex agents are told: \"examine all map-making functions not yet implemented\" and \"run the tests, analyze failures, find the easiest issue to fix.\" The human drives a CODEMATCH completeness audit. Animation system (tmp_at), HP/PW/regen, mkmaze water-level scaffolding. The model is switched to Sonnet for throughput. Feb 24 is the most Codex-intensive day: 782 human messages steering CODEMATCH work. The human pushes back on test-only rules: \"I hate this — the point is supposed to be faithful.\""
+    "id": "porting-grind",
+    "name": "Porting Grind",
+    "dates": ["2026-02-16", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20"],
+    "summary": "73 CODEMATCH functions in one day. Watchdog agent learns to nudge. Human pushes back on test-only rules. Model switched to Sonnet for throughput."
+  },
+  {
+    "id": "codex-sprint",
+    "name": "Codex Sprint",
+    "dates": ["2026-02-21", "2026-02-22", "2026-02-23", "2026-02-24", "2026-02-25"],
+    "summary": "Codex agents drive CODEMATCH: animation, HP/PW/regen, mkmaze, throw/beam paths. 782 human messages on Feb 24. The porting gets broad but shallow."
   },
   {
     "id": "iron-parity",
-    "title": "Chapter 4: Iron Parity — Campaign and Pivot",
+    "name": "Iron Parity",
     "dates": ["2026-02-26", "2026-02-27", "2026-02-28", "2026-03-01", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05"],
-    "summary": "The Iron Parity campaign launches with a C-to-JS translator using AST lowering — an ambitious attempt to automate the remaining porting at scale. The translator builds capability matrices, batch-promotes hundreds of functions. Meanwhile, monster movement parity (distfleeck), PES session reports, and the async revolution (28 unawaited calls fixed in a day). But on March 4, the human declares the Iron Parity campaign unsuccessful and pivots to direct parity fixes. The lesson: automated translation at scale produced quantity but not quality. \"Removing cruft will stop masking the missing display logic elsewhere.\""
+    "summary": "Automated C-to-JS translator campaign. Batch-promotes hundreds of functions. Async revolution: 28 unawaited calls. Then declared unsuccessful. Pivot to direct parity fixes."
   },
   {
-    "id": "multi-game",
-    "title": "Chapter 5: Multi-Game Expansion — Rogue, Hack, Shell, Logo",
+    "id": "expansion",
+    "name": "Expansion",
     "dates": ["2026-03-06", "2026-03-07", "2026-03-08", "2026-03-09", "2026-03-10", "2026-03-11"],
-    "summary": "The project explodes outward. Hack 1982 matures (CORR bitfield bug, step-0 RNG parity). Rogue 3.6 is ported from scratch — C harness built and function catalog in a single day. The input system gets overhauled: centralized --More-- via more(). Feature blitz: cockatrice petrification, steed system, synclock migration. March 11 produces 44 LORE lessons — the biggest learning day of the project. The steed system is a microcosm of NetHack's complexity: one feature touching everything. Sprintf/Strcpy replaced with template literals across the codebase."
+    "summary": "Rogue ported in a day. Hack matures. Cockatrice, steed, input overhaul. 44 LORE lessons on March 11. Six games running simultaneously."
   },
   {
-    "id": "coverage-ecosystem",
-    "title": "Chapter 6: Coverage, Shell, and the 1982 Universe",
+    "id": "ecosystem",
+    "name": "Ecosystem",
     "dates": ["2026-03-12", "2026-03-13", "2026-03-14", "2026-03-15", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19"],
-    "summary": "Systematic coverage push: Hack mon.js 59%→99%, Rogue 84%→99%. The shell easter egg is born: \"a little unix shell simulation.\" Dungeon speedrun walkthrough begins (226/616 points). The human intervenes on March 18: \"do not avoid the difficult divergences; we should prioritize 031-033 and persist.\" The switch to Opus for deeper reasoning. Shell login system, mail, talk command. The project transforms from \"port NetHack\" to \"recreate 1982 computing culture.\" 37 LORE lessons on March 14."
+    "summary": "Shell easter egg born. Rogue 84\u219999%. Dungeon speedruns. Human: \"do not avoid the difficult divergences.\" Switch to Opus. The project becomes a universe."
   },
   {
     "id": "convergence",
-    "title": "Chapter 7: Convergence — seed031, Unification, Reflection",
+    "name": "Convergence",
     "dates": ["2026-03-20", "2026-03-21", "2026-03-22", "2026-03-23", "2026-03-24", "2026-03-25"],
-    "summary": "The hardest and most productive days. Logo interpreter built from scratch. The Reflections essay takes shape. seed031 drives a cascade of 25 LORE lessons: stale depth caches, aklys stand-off range, chest take-out menus, resumed meals, pet oeaten timing, bones depth. Gate 8 session startup unification. The sh interpreter passes 166 unit tests. Terminal refactoring unifies all six games under one base class. Cursor parity verified. Shell login/subshell profiles match V7 Unix. The project is simultaneously at its most complex and most coherent. The human begins analyzing the agent logs themselves."
+    "summary": "Logo from scratch. Reflections essay. seed031 cascade: 25 LORE lessons. Terminal unification. The project becomes self-aware."
   }
 ]
