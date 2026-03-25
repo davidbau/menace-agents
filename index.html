@@ -51,7 +51,7 @@
   .main-header .sub { color: var(--muted); font-style: italic; font-size: 0.95em; }
   .main-body { padding: 1em 2em; }
 
-  .day { margin-bottom: 2em; scroll-margin-top: 5em; }
+  .day { margin-bottom: 2em; scroll-margin-top: 6.5em; }
   .day-hdr { font-size: 1.15em; font-weight: 600; color: var(--accent); margin-bottom: 0.1em;
     border-bottom: 1px solid var(--border); padding-bottom: 0.2em; }
   .day-hdr-full { display: block; }
@@ -187,7 +187,7 @@
 
   /* --- Right search --- */
   .search-panel {
-    width: 420px; flex-shrink: 0; border-left: 1px solid var(--border);
+    width: 340px; flex-shrink: 0; border-left: 1px solid var(--border);
     overflow-y: auto; padding: 0.8em; background: #f4f1ea; display: flex; flex-direction: column;
   }
   .search-panel h3 { font-size: 0.9em; color: var(--accent); margin-bottom: 0.4em; }
@@ -209,6 +209,15 @@
   .hs { color: var(--light); font-size: 0.8em; }
   .hx { color: var(--text); }
   .hx mark { background: rgba(255,215,0,0.35); color: inherit; padding: 0 1px; border-radius: 2px; }
+
+  .kw-index { margin-top: 0.5em; }
+  .kw-section { margin-bottom: 0.6em; }
+  .kw-hdr { font-size: 0.7em; font-weight: 700; color: var(--accent); text-transform: uppercase;
+    letter-spacing: 0.05em; margin-bottom: 0.2em; font-family: -apple-system, sans-serif; }
+  .kw { display: inline-block; font-size: 0.72em; padding: 0.1em 0.4em; margin: 0.1em;
+    border-radius: 4px; background: rgba(107,44,44,0.06); color: var(--accent-dk);
+    cursor: pointer; border: 1px solid transparent; font-family: var(--mono); }
+  .kw:hover { border-color: var(--accent); background: rgba(107,44,44,0.12); }
 </style>
 </head>
 <body>
@@ -238,6 +247,7 @@
     <input type="text" id="search" placeholder="Search everything&hellip;">
     <div id="sc"></div>
     <div class="sr" id="sr"></div>
+    <div class="kw-index" id="kw-index"></div>
   </div>
 </div>
 <script>
@@ -246,7 +256,7 @@ let DATA=[], SHOW={human:true,'ai-work':true,'agent-directive':true,'subagent-wo
 async function init() {
   const r = await fetch('data/timeline.jsonl');
   DATA = (await r.text()).trim().split('\n').map(l=>JSON.parse(l));
-  renderToc(); renderTimeline();
+  renderToc(); renderTimeline(); renderKeywordIndex();
   document.getElementById('filters').addEventListener('click', e => {
     const b = e.target.closest('.fbtn'); if (!b) return;
     const f = b.dataset.f;
@@ -444,13 +454,38 @@ function renderSubagentWork(e){
   </div>`;
 }
 
+// Keyword index — curated search suggestions organized by theme
+const KW_INDEX = {
+  'Games': ['nethack','hack','rogue','zork','dungeon','logo','basic','shell','spoilers'],
+  'People & History': ['fenlason','wichman','harvey','1982','1980','webhack','playable','mandelbrot','revolution','sudbury'],
+  'Parity & Testing': ['parity','divergence','prng','rng','isaac','coverage','session','replay','harness','regression','revert','figleaf','goodhart'],
+  'C Porting': ['async','await','promise','synchronous','getlin','curs','mklev','mkobj','makemon','muse','armoroff'],
+  'Monster Mechanics': ['cockatrice','hallucination','polymorph','genocide','dog_move','distfleeck','steed','swallow','pet'],
+  'Items & Actions': ['potion','scroll','wand','ring','trap','eating','pickup','combat','movement','travel'],
+  'Dungeon Features': ['fountain','altar','shop','vault','sokoban','maze','corridor','special','bones','level'],
+  'Infrastructure': ['dbgmapdump','selfplay','campbot','smartbot','speedrun','watchdog','codex','claude','opus','quadro','swarm','server'],
+  'Campaign & Process': ['campaign','iron','milestone','gate','burndown','blocked','stuck','correction','wrong','actually','instead','stop','wait'],
+  'UI & Display': ['cursor','blinking','terminal','display','screen','motd','profile','subshell','refactor','garamond','parchment','dejaVu'],
+  'Essay & Reflection': ['reflections','essay','vibe','metaprogramming','apprenticeship','empowerment','interpretability','steam','shovel','boston','grandfather','shanghai'],
+};
+
+function renderKeywordIndex() {
+  const el = document.getElementById('kw-index');
+  el.innerHTML = Object.entries(KW_INDEX).map(([section, words]) =>
+    `<div class="kw-section"><div class="kw-hdr">${section}</div>${
+      words.map(w => `<span class="kw" onclick="document.getElementById('search').value='${w}';doSearch('${w}')">${w}</span>`).join('')
+    }</div>`
+  ).join('');
+}
+
 // Search
 let sTo;
 document.getElementById('search').addEventListener('input',e=>{clearTimeout(sTo);sTo=setTimeout(()=>doSearch(e.target.value),200);});
 
 function doSearch(q){
-  const el=document.getElementById('sr'), sc=document.getElementById('sc');
-  if(!q||q.length<2){el.innerHTML='';sc.textContent='';return;}
+  const el=document.getElementById('sr'), sc=document.getElementById('sc'), kwi=document.getElementById('kw-index');
+  if(!q||q.length<2){el.innerHTML='';sc.textContent='';kwi.style.display='';return;}
+  kwi.style.display='none';
   const t=q.toLowerCase(), hits=[];
   for(const day of DATA){
     for(const e of(day.events||[])){
@@ -536,8 +571,8 @@ function jumpTo(date, evId){
     if(cg) cg.classList.add('open');
   }
 
-  // Smooth scroll and highlight
-  target.scrollIntoView({behavior:'instant',block:'center'});
+  // Jump: day headers go to top, specific events go to center
+  target.scrollIntoView({behavior:'instant', block: evId ? 'center' : 'start'});
   if(evId) target.classList.add('highlight');
 }
 
