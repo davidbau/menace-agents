@@ -28,6 +28,18 @@ const days = hasFlag('--all') ? 99999 : parseInt(getArg('--days', '7'));
 const dateFilter = getArg('--date', null);
 const outputFile = getArg('--output', null);
 
+// Convert a UTC ISO string or ms timestamp to a local (EST/EDT) date string.
+// All day-grouping uses local time so sessions and their commits land on the same day.
+function localDate(ts) {
+  const d = typeof ts === 'number' ? new Date(ts) : new Date(ts);
+  if (isNaN(d)) return null;
+  // Format as YYYY-MM-DD in local timezone
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 // --- 1. Parse LORE entries by date ---
 function parseLore() {
   const loreFile = join(WAVE_DIR, 'docs', 'LORE.md');
@@ -74,20 +86,29 @@ function parseLore() {
 function parseGitCommits() {
   const commits = [];
   try {
-    // Get commits from the wave repo
+    // Get commits — use NUL separator for safe parsing of full commit messages.
+    // %aI gives ISO date with timezone; we convert to UTC for consistent sorting.
     const log = execSync(
-      `git -C "${WAVE_DIR}" log --all --format="%H|%aI|%an|%s" --since="${days}days"`,
-      { encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 }
+      `git -C "${WAVE_DIR}" log --all --format="%H%x00%aI%x00%an%x00%s%x00%B%x00END" --since="${days}days"`,
+      { encoding: 'utf8', maxBuffer: 100 * 1024 * 1024 }
     );
-    for (const line of log.trim().split('\n')) {
-      if (!line) continue;
-      const [hash, isoDate, author, subject] = line.split('|');
+    for (const block of log.split('\x00END\n')) {
+      if (!block.trim()) continue;
+      const parts = block.trim().split('\x00');
+      if (parts.length < 5) continue;
+      const [hash, isoDate, author, subject, body] = parts;
+      // Convert to UTC for consistent cross-source sorting
+      const utc = new Date(isoDate);
+      if (isNaN(utc)) continue;
+      const utcIso = utc.toISOString();
       commits.push({
         hash: hash?.slice(0, 12),
-        date: isoDate?.slice(0, 10),
-        time: isoDate?.slice(11, 16),
+        date: localDate(utc),
+        time: utcIso.slice(11, 16),
+        timestamp: utcIso,
         author,
         subject,
+        body: (body || '').trim(),
       });
     }
   } catch (e) {
@@ -153,7 +174,7 @@ function parseSessionLight(filePath) {
       if (d.userType && d.userType !== 'external') continue;
       const words = text.split(/\s+/).filter(Boolean).length;
       if (words >= 5) {
-        turns.push({ role: 'human', ts, text: text.substring(0, 500), words });
+        turns.push({ role: 'human', ts, text, words });
       }
     } else if (d.type === 'assistant') {
       assistCount++;
@@ -220,7 +241,7 @@ function parseSessionLight(filePath) {
 
   return {
     project, session: sid, model, gitBranch,
-    startDate: firstTs ? new Date(firstTs).toISOString().slice(0, 10) : null,
+    startDate: firstTs ? localDate(firstTs) : null,
     startTime: firstTs ? new Date(firstTs).toISOString() : null,
     durationMin: firstTs && lastTs ? Math.round((lastTs - firstTs) / 60000) : 0,
     userCount, assistCount, toolUses: totalToolUses,
@@ -238,7 +259,7 @@ const commits = parseGitCommits();
 console.error(`  ${commits.length} commits`);
 
 console.error('Scanning agent sessions...');
-const cutoffDate = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+const cutoffDate = localDate(Date.now() - days * 86400000);
 
 const allFiles = [];
 for (const d of readdirSync(LOGS_DIR).filter(d => {
@@ -318,14 +339,14 @@ for (const [date, day] of Object.entries(byDate)) {
     }
   }
 
-  // Commits as events
+  // Commits as events (timestamp already in UTC from parsing)
   for (const c of day.commits) {
-    const ts = c.date + 'T' + (c.time || '00:00') + ':00';
     allEvents.push({
       type: 'commit',
-      timestamp: ts,
+      timestamp: c.timestamp || (c.date + 'T' + (c.time || '00:00') + ':00Z'),
       hash: c.hash,
       subject: c.subject,
+      body: c.body || '',
       author: c.author,
     });
   }

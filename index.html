@@ -54,12 +54,24 @@
   .ev { margin: 0.2em 0; }
 
   .ev-human {
-    padding: 0.3em 0.6em; border-radius: 4px; font-size: 0.9em;
+    padding: 0.3em 0.6em 0.3em 1.8em; border-radius: 4px; font-size: 0.9em;
     border-left: 3px solid var(--human); background: rgba(42,85,153,0.04); margin: 0.4em 0;
+    position: relative;
   }
+  .ev-human::before {
+    content: '→'; position: absolute; left: 0.4em; top: 0.3em;
+    color: var(--human); font-weight: 700; font-size: 0.9em;
+  }
+  .ev-human.truncated { cursor: pointer; }
+  .ev-human .full-text { display: none; }
+  .ev-human.expanded .full-text { display: inline; }
+  .ev-human.expanded .short-text { display: none; }
   .ev-human.correction { border-left-color: var(--correction); background: rgba(180,50,50,0.03); }
+  .ev-human.correction::before { color: var(--correction); }
   .ev-human.directive { border-left-color: var(--directive); }
+  .ev-human.directive::before { color: var(--directive); }
   .ev-human.question { border-left-color: var(--question); }
+  .ev-human.question::before { color: var(--question); }
 
   .ev-ai {
     padding: 0.2em 0.6em; font-size: 0.85em; color: var(--ai);
@@ -72,9 +84,14 @@
   .ai-snip { font-style: italic; color: var(--ai); margin-top: 0.1em; }
 
   .ev-commit {
-    font-family: var(--mono); font-size: 0.82em; padding: 0.3em 0.6em; margin: 0.15em 0;
+    font-family: var(--mono); font-size: 0.82em; padding: 0.3em 0.6em 0.3em 1.8em; margin: 0.15em 0;
     border-left: 3px solid var(--commit); background: rgba(45,106,45,0.04);
     border-radius: 3px; display: flex; gap: 0.5em; align-items: baseline;
+    position: relative;
+  }
+  .ev-commit::before {
+    content: '←'; position: absolute; left: 0.35em; top: 0.3em;
+    color: var(--commit); font-weight: 700; font-size: 0.9em;
   }
   .ev-commit .ct { color: var(--muted); min-width: 4ch; }
   .ev-commit .ch { color: var(--commit); font-weight: 600; }
@@ -262,8 +279,12 @@ function renderHuman(e){
   const tag=cls?`<span class="tag tag-${cls}">${cls}</span>`:'';
   const id='ev-'+(evId++);
   e._id=id;
-  return`<div class="ev ev-human${cls?' '+cls:''}" id="${id}">
-    <span class="ev-time">${tm(e.timestamp)}</span>${tag}${esc(e.text.substring(0,400))}${e.text.length>400?'&hellip;':''}
+  const maxLen = 200;
+  const isTrunc = e.text.length > maxLen;
+  const short = esc(e.text.substring(0, maxLen)) + (isTrunc ? '&hellip;' : '');
+  const full = esc(e.text);
+  return`<div class="ev ev-human${cls?' '+cls:''}${isTrunc?' truncated':''}" id="${id}"${isTrunc?` onclick="this.classList.toggle('expanded')"`:''}">
+    <span class="ev-time">${tm(e.timestamp)}</span>${tag}<span class="short-text">${short}</span>${isTrunc?`<span class="full-text">${full}</span>`:''}
   </div>`;
 }
 
@@ -285,8 +306,10 @@ function renderAiWork(e){
 function renderCommit(c){
   const id='ev-'+(evId++);
   c._id=id;
-  return`<div class="ev ev-commit" id="${id}">
-    <span class="ct">${tm(c.timestamp)}</span><span class="ch">${c.hash?.slice(0,8)||''}</span> <span class="cm">${esc(c.subject?.substring(0,80)||'')}</span>
+  const hasBody = c.body && c.body.length > 0 && !c.body.startsWith('Co-Authored');
+  const bodyClean = hasBody ? c.body.replace(/Co-Authored-By:.*$/gm, '').trim() : '';
+  return`<div class="ev ev-commit${hasBody?' truncated':''}" id="${id}"${hasBody?` onclick="this.classList.toggle('expanded')"`:''}>
+    <span class="ct">${tm(c.timestamp)}</span><span class="ch">${c.hash?.slice(0,8)||''}</span> <span class="cm">${esc(c.subject||'')}${bodyClean?`<span class="full-text" style="display:block;color:var(--muted);font-size:0.9em;margin-top:0.2em;white-space:pre-wrap">${esc(bodyClean)}</span>`:''}</span>
   </div>`;
 }
 
