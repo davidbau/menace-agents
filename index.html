@@ -254,8 +254,14 @@
 let DATA=[], SHOW={human:true,'ai-work':true,'agent-directive':true,'subagent-work':true,commit:true,lore:true};
 
 async function init() {
-  const r = await fetch('data/timeline.jsonl');
-  DATA = (await r.text()).trim().split('\n').map(l=>JSON.parse(l));
+  // Try relative path (local/same-origin), fall back to GitHub Pages
+  const DATA_URLS = ['data/timeline.jsonl', 'https://davidbau.github.io/menace-agents/data/timeline.jsonl'];
+  let text = null;
+  for (const url of DATA_URLS) {
+    try { const r = await fetch(url); if (r.ok) { text = await r.text(); break; } } catch {}
+  }
+  if (!text) { document.getElementById('timeline').textContent = 'Failed to load timeline data.'; return; }
+  DATA = text.trim().split('\n').map(l=>JSON.parse(l));
   renderToc(); renderTimeline(); renderKeywordIndex();
   document.getElementById('filters').addEventListener('click', e => {
     const b = e.target.closest('.fbtn'); if (!b) return;
