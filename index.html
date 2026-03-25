@@ -19,11 +19,11 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: var(--serif); line-height: 1.55; }
 
-  .layout { display: flex; height: 100vh; }
+  .layout { display: flex; height: 100vh; font-size: 15px; }
 
   /* --- Left TOC --- */
   .sidebar {
-    width: 230px; flex-shrink: 0; border-right: 1px solid var(--border);
+    width: 340px; flex-shrink: 0; border-right: 1px solid var(--border);
     overflow-y: auto; padding: 0.8em 0; background: #f4f1ea;
   }
   .sidebar h2 { font-size: 1em; color: var(--accent); padding: 0 0.8em 0.4em; }
@@ -83,6 +83,30 @@
   .ai-tools { font-family: var(--mono); font-size: 0.85em; color: var(--session); }
   .ai-snip { font-style: italic; color: var(--ai); margin-top: 0.1em; }
 
+  /* Subagent events — indented to show nesting */
+  .ev-agent-directive {
+    padding: 0.25em 0.5em 0.25em 2.5em; border-radius: 3px; font-size: 0.85em;
+    border-left: 3px solid var(--session); background: rgba(107,76,154,0.04);
+    margin: 0.2em 0 0.2em 1.5em; position: relative;
+  }
+  .ev-agent-directive::before {
+    content: 'AI →'; position: absolute; left: 0.3em; top: 0.25em;
+    color: var(--session); font-weight: 700; font-size: 0.8em;
+  }
+  .ev-agent-directive.truncated { cursor: pointer; }
+  .ev-agent-directive .full-text { display: none; }
+  .ev-agent-directive.expanded .full-text { display: inline; }
+  .ev-agent-directive.expanded .short-text { display: none; }
+
+  .ev-subagent-work {
+    padding: 0.15em 0.5em; font-size: 0.8em; color: var(--ai);
+    border-left: 3px solid rgba(107,76,154,0.3); margin: 0.1em 0 0.1em 1.5em;
+    cursor: pointer;
+  }
+  .ev-subagent-work:hover { background: rgba(0,0,0,0.02); }
+  .ev-subagent-work .detail { display: none; margin-top: 0.2em; }
+  .ev-subagent-work.open .detail { display: block; }
+
   .ev-commit {
     font-family: var(--mono); font-size: 0.82em; padding: 0.3em 0.6em 0.3em 1.8em; margin: 0.15em 0;
     border-left: 3px solid var(--commit); background: rgba(45,106,45,0.04);
@@ -93,6 +117,9 @@
     content: '←'; position: absolute; left: 0.35em; top: 0.3em;
     color: var(--commit); font-weight: 700; font-size: 0.9em;
   }
+  .ev-commit.truncated { cursor: pointer; }
+  .ev-commit .full-text { display: none; margin-top: 0.2em; color: var(--muted); font-size: 0.9em; white-space: pre-wrap; }
+  .ev-commit.expanded .full-text { display: block; }
   .ev-commit .ct { color: var(--muted); min-width: 4ch; }
   .ev-commit .ch { color: var(--commit); font-weight: 600; }
   .ev-commit .cm { color: var(--text); }
@@ -103,11 +130,11 @@
     color: var(--lore);
   }
 
-  @keyframes highlight-flash {
-    0% { background: rgba(255,200,0,0.5); box-shadow: 0 0 12px rgba(255,200,0,0.4); }
-    100% { background: transparent; box-shadow: none; }
+  .ev.highlight {
+    outline: 3px solid #e8c800;
+    outline-offset: 1px;
+    scroll-margin-top: 40vh;
   }
-  .ev.highlight { animation: highlight-flash 2.5s ease-out; scroll-margin-top: 40vh; }
 
   .ev-time { color: var(--light); font-size: 0.8em; margin-right: 0.3em; }
   .tag {
@@ -142,7 +169,7 @@
 
   /* --- Right search --- */
   .search-panel {
-    width: 280px; flex-shrink: 0; border-left: 1px solid var(--border);
+    width: 420px; flex-shrink: 0; border-left: 1px solid var(--border);
     overflow-y: auto; padding: 0.8em; background: #f4f1ea; display: flex; flex-direction: column;
   }
   .search-panel h3 { font-size: 0.9em; color: var(--accent); margin-bottom: 0.4em; }
@@ -179,6 +206,7 @@
     <div class="filters" id="filters">
       <button class="fbtn on" data-f="human">Human</button>
       <button class="fbtn on" data-f="ai-work">AI work</button>
+      <button class="fbtn on" data-f="agent-directive">Subagents</button>
       <button class="fbtn on" data-f="commit">Commits</button>
       <button class="fbtn on" data-f="lore">LORE</button>
     </div>
@@ -192,7 +220,7 @@
   </div>
 </div>
 <script>
-let DATA=[], SHOW={human:true,'ai-work':true,commit:true,lore:true};
+let DATA=[], SHOW={human:true,'ai-work':true,'agent-directive':true,'subagent-work':true,commit:true,lore:true};
 
 async function init() {
   const r = await fetch('data/timeline.jsonl');
@@ -200,7 +228,11 @@ async function init() {
   renderToc(); renderTimeline();
   document.getElementById('filters').addEventListener('click', e => {
     const b = e.target.closest('.fbtn'); if (!b) return;
-    const f = b.dataset.f; SHOW[f] = !SHOW[f]; b.classList.toggle('on'); renderTimeline();
+    const f = b.dataset.f;
+    SHOW[f] = !SHOW[f]; b.classList.toggle('on');
+    // Subagents toggle controls both agent-directive and subagent-work
+    if (f === 'agent-directive') SHOW['subagent-work'] = SHOW[f];
+    renderTimeline();
   });
 }
 
@@ -268,6 +300,8 @@ function renderEvents(evts){
     flushCommits();
     if(e.type==='human') out.push(renderHuman(e));
     else if(e.type==='ai-work') out.push(renderAiWork(e));
+    else if(e.type==='agent-directive') out.push(renderAgentDirective(e));
+    else if(e.type==='subagent-work') out.push(renderSubagentWork(e));
     else if(e.type==='lore') out.push(renderLore(e));
   }
   flushCommits();
@@ -309,7 +343,7 @@ function renderCommit(c){
   const hasBody = c.body && c.body.length > 0 && !c.body.startsWith('Co-Authored');
   const bodyClean = hasBody ? c.body.replace(/Co-Authored-By:.*$/gm, '').trim() : '';
   return`<div class="ev ev-commit${hasBody?' truncated':''}" id="${id}"${hasBody?` onclick="this.classList.toggle('expanded')"`:''}>
-    <span class="ct">${tm(c.timestamp)}</span><span class="ch">${c.hash?.slice(0,8)||''}</span> <span class="cm">${esc(c.subject||'')}${bodyClean?`<span class="full-text" style="display:block;color:var(--muted);font-size:0.9em;margin-top:0.2em;white-space:pre-wrap">${esc(bodyClean)}</span>`:''}</span>
+    <span class="ct">${tm(c.timestamp)}</span><span class="ch">${c.hash?.slice(0,8)||''}</span> <span class="cm">${esc(c.subject||'')}${bodyClean?`<span class="full-text">${esc(bodyClean)}</span>`:''}</span>
   </div>`;
 }
 
@@ -318,6 +352,33 @@ function renderLore(e){
   e._id=id;
   return`<div class="ev ev-lore" id="${id}">
     <span class="ev-time">LORE</span> ${esc(e.title)}
+  </div>`;
+}
+
+function renderAgentDirective(e){
+  const id='ev-'+(evId++);
+  e._id=id;
+  const maxLen = 150;
+  const isTrunc = e.text.length > maxLen;
+  const short = esc(e.text.substring(0, maxLen)) + (isTrunc ? '&hellip;' : '');
+  const full = esc(e.text);
+  return`<div class="ev ev-agent-directive${isTrunc?' truncated':''}" id="${id}"${isTrunc?` onclick="this.classList.toggle('expanded')"`:''}>
+    <span class="ev-time">${tm(e.timestamp)}</span><span class="short-text">${short}</span>${isTrunc?`<span class="full-text">${full}</span>`:''}
+  </div>`;
+}
+
+function renderSubagentWork(e){
+  const brief = e.turns===1&&e.toolUses<=2
+    ? `${e.topTools||'thinking'}`
+    : `${e.turns} turns, ${e.toolUses} tools: ${e.topTools||'(none)'}`;
+  const snips = (e.snippets||[]);
+  const id='ev-'+(evId++);
+  e._id=id;
+  return`<div class="ev ev-subagent-work" id="${id}" onclick="this.classList.toggle('open')">
+    <span class="ev-time">${tm(e.timestamp)}</span>
+    <span class="tag tag-ai">sub</span>
+    ${esc(brief)}
+    ${snips.length?`<div class="detail">${snips.map(s=>`<div class="ai-snip">${esc(s)}</div>`).join('')}</div>`:''}
   </div>`;
 }
 
@@ -332,10 +393,10 @@ function doSearch(q){
   for(const day of DATA){
     for(const e of(day.events||[])){
       let text=null;
-      if(e.type==='human'&&e.text?.toLowerCase().includes(t)) text=e.text;
+      if((e.type==='human'||e.type==='agent-directive')&&e.text?.toLowerCase().includes(t)) text=e.text;
       else if(e.type==='lore'&&e.title?.toLowerCase().includes(t)) text=e.title;
       else if(e.type==='commit'&&e.subject?.toLowerCase().includes(t)) text=e.subject;
-      else if(e.type==='ai-work'){
+      else if(e.type==='ai-work'||e.type==='subagent-work'){
         const snip=(e.snippets||[]).find(s=>s.toLowerCase().includes(t));
         if(snip) text=snip;
         else if(e.topTools?.toLowerCase().includes(t)) text=e.topTools;
@@ -361,33 +422,27 @@ function doSearch(q){
 function jump(date){ jumpTo(date, ''); }
 
 function jumpTo(date, evId){
-  const mainEl = document.getElementById('main');
-  // Step 1: instant jump to the day
-  const dayEl = document.getElementById('d-'+date);
-  if(dayEl) dayEl.scrollIntoView({behavior:'instant',block:'start'});
+  // Clear previous highlight
+  document.querySelectorAll('.ev.highlight').forEach(el => el.classList.remove('highlight'));
 
   // Update TOC
   document.querySelectorAll('.toc-item').forEach(t=>t.classList.remove('active'));
   const ti=document.querySelector(`.toc-item[data-d="${date}"]`);
   if(ti){ti.classList.add('active');ti.scrollIntoView({block:'nearest'});}
 
-  // Step 2: if we have a specific event, smooth scroll to it and highlight
+  // Scroll directly to specific event (or day if no event)
+  const target = evId ? document.getElementById(evId) : document.getElementById('d-'+date);
+  if(!target) return;
+
+  // Open collapsed parents
   if(evId){
-    // Small delay to let the instant scroll settle
-    setTimeout(()=>{
-      const evEl = document.getElementById(evId);
-      if(!evEl) return;
-      // Open collapsed parents (commit groups, AI details)
-      const cg = evEl.closest('.commit-group');
-      if(cg) cg.classList.add('open');
-      // Smooth scroll to the event
-      evEl.scrollIntoView({behavior:'smooth',block:'center'});
-      // Flash highlight
-      evEl.classList.remove('highlight');
-      void evEl.offsetWidth; // force reflow
-      evEl.classList.add('highlight');
-    }, 50);
+    const cg = target.closest('.commit-group');
+    if(cg) cg.classList.add('open');
   }
+
+  // Smooth scroll and highlight
+  target.scrollIntoView({behavior:'smooth',block:'center'});
+  if(evId) target.classList.add('highlight');
 }
 
 // TOC + sparkline click

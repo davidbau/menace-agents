@@ -150,6 +150,8 @@ function findJsonlFiles(baseDir, subdir) {
 // Groups consecutive assistant turns between human messages into "AI work blocks."
 // Returns { metadata, events[] } where each event is timestamped and typed.
 function parseSessionLight(filePath) {
+  const isSubagent = filePath.includes('/subagents/');
+
   const raw = readFileSync(filePath, 'utf8');
   const lines = raw.trim().split('\n').filter(Boolean);
   const project = relative(LOGS_DIR, filePath).split('/')[0];
@@ -187,7 +189,7 @@ function parseSessionLight(filePath) {
       if (d.userType && d.userType !== 'external') continue;
       const words = text.split(/\s+/).filter(Boolean).length;
       if (words >= 5) {
-        turns.push({ role: 'human', ts, text: redactSecrets(text), words });
+        turns.push({ role: isSubagent ? 'agent-directive' : 'human', ts, text: redactSecrets(text), words });
       }
     } else if (d.type === 'assistant') {
       assistCount++;
@@ -218,7 +220,7 @@ function parseSessionLight(filePath) {
     if (!aiBlock) return;
     const topTools = Object.entries(aiBlock.toolCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
     events.push({
-      type: 'ai-work',
+      type: isSubagent ? 'subagent-work' : 'ai-work',
       timestamp: aiBlock.startTs ? new Date(aiBlock.startTs).toISOString() : null,
       turns: aiBlock.turns,
       toolUses: aiBlock.totalTools,
@@ -232,10 +234,10 @@ function parseSessionLight(filePath) {
   }
 
   for (const turn of turns) {
-    if (turn.role === 'human') {
+    if (turn.role === 'human' || turn.role === 'agent-directive') {
       flushAiBlock();
       events.push({
-        type: 'human',
+        type: turn.role,  // 'human' or 'agent-directive'
         timestamp: turn.ts ? new Date(turn.ts).toISOString() : null,
         text: turn.text,
         words: turn.words,
@@ -286,7 +288,8 @@ const seenSessions = new Set(); // deduplicate same session in multiple dirs
 for (const f of allFiles) {
   try {
     const s = parseSessionLight(f);
-    if (s.userCount < 1) continue;
+    if (!s) continue;
+    if (s.events.length < 1) continue;
     // Deduplicate: same session UUID logged to both quadro-claude and quadro-project-*
     if (seenSessions.has(s.session)) continue;
     seenSessions.add(s.session);
