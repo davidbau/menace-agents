@@ -41,16 +41,26 @@ function redactSecrets(text) {
     .replace(/eyJ[A-Za-z0-9_-]{40,}/g, '<jwt_token>');
 }
 
-// Convert a UTC ISO string or ms timestamp to a local (EST/EDT) date string.
-// All day-grouping uses local time so sessions and their commits land on the same day.
-function localDate(ts) {
+// Convert a timestamp to a "project day" date string.
+// Day boundary is 3AM Eastern Time — work past midnight stays on the same day.
+// This matches the natural rhythm of the project (late-night sessions).
+function projectDay(ts) {
   const d = typeof ts === 'number' ? new Date(ts) : new Date(ts);
   if (isNaN(d)) return null;
-  // Format as YYYY-MM-DD in local timezone
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  // Subtract 3 hours so that 0:00–2:59 AM ET stays on the previous day
+  const shifted = new Date(d.getTime() - 3 * 3600000);
+  const y = shifted.getFullYear();
+  const m = String(shifted.getMonth() + 1).padStart(2, '0');
+  const day = String(shifted.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+}
+
+// Format a date string as "Wednesday February 6, 2026"
+function formatDayHeader(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return `${days[d.getDay()]} ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
 // --- 1. Parse LORE entries by date ---
@@ -116,7 +126,7 @@ function parseGitCommits() {
       const utcIso = utc.toISOString();
       commits.push({
         hash: hash?.slice(0, 12),
-        date: localDate(utc),
+        date: projectDay(utc),
         time: utcIso.slice(11, 16),
         timestamp: utcIso,
         author,
@@ -256,7 +266,7 @@ function parseSessionLight(filePath) {
 
   return {
     project, session: sid, model, gitBranch,
-    startDate: firstTs ? localDate(firstTs) : null,
+    startDate: firstTs ? projectDay(firstTs) : null,
     startTime: firstTs ? new Date(firstTs).toISOString() : null,
     durationMin: firstTs && lastTs ? Math.round((lastTs - firstTs) / 60000) : 0,
     userCount, assistCount, toolUses: totalToolUses,
@@ -274,7 +284,7 @@ const commits = parseGitCommits();
 console.error(`  ${commits.length} commits`);
 
 console.error('Scanning agent sessions...');
-const cutoffDate = localDate(Date.now() - days * 86400000);
+const cutoffDate = projectDay(Date.now() - days * 86400000);
 
 const allFiles = [];
 for (const d of readdirSync(LOGS_DIR).filter(d => {
@@ -526,7 +536,7 @@ for (const date of sortedDates) {
 }
 
 if (outputFile) {
-  const out = sortedDates.map(date => JSON.stringify({ date, summary: byDate[date].summary, ...byDate[date] })).join('\n') + '\n';
+  const out = sortedDates.map(date => JSON.stringify({ date, dayHeader: formatDayHeader(date), summary: byDate[date].summary, ...byDate[date] })).join('\n') + '\n';
   writeFileSync(outputFile, out);
   console.error(`Written to ${outputFile}`);
 } else {
