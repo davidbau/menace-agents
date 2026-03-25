@@ -1,0 +1,436 @@
+#!/usr/bin/env node
+/**
+ * crossref.mjs — Cross-reference LORE entries, git commits, agent sessions,
+ * and human messages into a unified day-by-day timeline.
+ *
+ * Usage:
+ *   node crossref.mjs                     # Last 7 days
+ *   node crossref.mjs --days 30           # Last 30 days
+ *   node crossref.mjs --all               # Everything
+ *   node crossref.mjs --date 2026-03-22   # One specific day
+ *   node crossref.mjs --output timeline.jsonl  # Machine-readable output
+ */
+
+import { readFileSync, readdirSync, statSync, writeFileSync } from 'fs';
+import { join, basename, relative, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const LOGS_DIR = join(__dirname, '..', '..', 'agent-logs');
+const WAVE_DIR = join(__dirname, '..', '..', 'wave');
+
+// --- CLI ---
+const args = process.argv.slice(2);
+const getArg = (flag, def) => { const i = args.indexOf(flag); return i >= 0 && i + 1 < args.length ? args[i + 1] : def; };
+const hasFlag = (flag) => args.includes(flag);
+const days = hasFlag('--all') ? 99999 : parseInt(getArg('--days', '7'));
+const dateFilter = getArg('--date', null);
+const outputFile = getArg('--output', null);
+
+// --- 1. Parse LORE entries by date ---
+function parseLore() {
+  const loreFile = join(WAVE_DIR, 'docs', 'LORE.md');
+  let content;
+  try { content = readFileSync(loreFile, 'utf8'); } catch { return []; }
+
+  const entries = [];
+  const lines = content.split('\n');
+  let currentEntry = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.startsWith('## ')) {
+      // Save previous
+      if (currentEntry) entries.push(currentEntry);
+      // Parse date from heading
+      const dateMatch = line.match(/(\d{4}-\d{2}-\d{2})/);
+      const title = line.replace(/^## /, '').trim();
+      currentEntry = {
+        date: dateMatch ? dateMatch[1] : null,
+        title,
+        lineNum: i + 1,
+        bodyLines: [],
+      };
+    } else if (currentEntry) {
+      currentEntry.bodyLines.push(line);
+    }
+  }
+  if (currentEntry) entries.push(currentEntry);
+
+  // Compute summary for each entry (first non-empty paragraph)
+  for (const e of entries) {
+    const body = e.bodyLines.join('\n').trim();
+    const firstPara = body.split(/\n\n/)[0]?.trim() || '';
+    e.summary = firstPara.substring(0, 200);
+    e.bodyLength = body.length;
+    delete e.bodyLines;
+  }
+
+  return entries;
+}
+
+// --- 2. Parse git commits by date ---
+function parseGitCommits() {
+  const commits = [];
+  try {
+    // Get commits from the wave repo
+    const log = execSync(
+      `git -C "${WAVE_DIR}" log --all --format="%H|%aI|%an|%s" --since="${days}days"`,
+      { encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 }
+    );
+    for (const line of log.trim().split('\n')) {
+      if (!line) continue;
+      const [hash, isoDate, author, subject] = line.split('|');
+      commits.push({
+        hash: hash?.slice(0, 12),
+        date: isoDate?.slice(0, 10),
+        time: isoDate?.slice(11, 16),
+        author,
+        subject,
+      });
+    }
+  } catch (e) {
+    console.error('Warning: could not read git log:', e.message?.split('\n')[0]);
+  }
+  return commits;
+}
+
+// --- 3. Parse agent sessions (lightweight — just metadata + human messages) ---
+function findJsonlFiles(baseDir, subdir) {
+  const dir = subdir ? join(baseDir, subdir) : baseDir;
+  const files = [];
+  try {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isFile() && entry.name.endsWith('.jsonl') && entry.name !== 'history.jsonl') {
+        files.push(join(dir, entry.name));
+      } else if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'memory' && entry.name !== 'node_modules') {
+        files.push(...findJsonlFiles(dir, entry.name));
+      }
+    }
+  } catch (e) {}
+  return files;
+}
+
+function parseSessionLight(filePath) {
+  const raw = readFileSync(filePath, 'utf8');
+  const lines = raw.trim().split('\n').filter(Boolean);
+  const project = relative(LOGS_DIR, filePath).split('/')[0];
+  const sid = basename(filePath, '.jsonl');
+
+  let model = null, gitBranch = null, firstTs = null, lastTs = null;
+  let userCount = 0, assistCount = 0, toolUses = 0;
+  const humanMessages = []; // substantive human text
+
+  for (const line of lines) {
+    let d;
+    try { d = JSON.parse(line); } catch { continue; }
+
+    const ts = d.timestamp ? (typeof d.timestamp === 'string' ? new Date(d.timestamp).getTime() : d.timestamp) : null;
+    if (ts) {
+      if (!firstTs || ts < firstTs) firstTs = ts;
+      if (!lastTs || ts > lastTs) lastTs = ts;
+    }
+    if (d.gitBranch) gitBranch = d.gitBranch;
+
+    if (d.type === 'user') {
+      userCount++;
+      const content = d.message?.content;
+      let text = typeof content === 'string' ? content :
+                 Array.isArray(content) ? content.filter(c => c.type === 'text').map(c => c.text).join('\n') : '';
+      text = text.trim();
+      // Filter out system-generated content, not real human text
+      if (text.startsWith('This session is being continued')) continue;
+      if (text.startsWith('<task-notification>')) continue;
+      if (text.startsWith('[Request interrupted by user')) continue;
+      if (text.startsWith('Your task is to create a detailed summary')) continue;
+      if (d.isMeta) continue;
+      // Skip agent-spawned subagent prompts (userType !== 'external' means system/agent)
+      if (d.userType && d.userType !== 'external') continue;
+      const words = text.split(/\s+/).filter(Boolean).length;
+      if (words >= 5) {
+        humanMessages.push({
+          timestamp: ts ? new Date(ts).toISOString() : null,
+          words,
+          text: text.substring(0, 300),
+        });
+      }
+    } else if (d.type === 'assistant') {
+      assistCount++;
+      if (d.message?.model) model = d.message.model;
+      const blocks = Array.isArray(d.message?.content) ? d.message.content : [];
+      toolUses += blocks.filter(b => b.type === 'tool_use').length;
+    }
+  }
+
+  return {
+    project, session: sid, model, gitBranch,
+    startDate: firstTs ? new Date(firstTs).toISOString().slice(0, 10) : null,
+    startTime: firstTs ? new Date(firstTs).toISOString() : null,
+    durationMin: firstTs && lastTs ? Math.round((lastTs - firstTs) / 60000) : 0,
+    userCount, assistCount, toolUses,
+    humanMessages,
+  };
+}
+
+// --- 4. Build cross-reference ---
+console.error('Parsing LORE...');
+const loreEntries = parseLore();
+console.error(`  ${loreEntries.length} entries (${loreEntries.filter(e => e.date).length} dated)`);
+
+console.error('Parsing git commits...');
+const commits = parseGitCommits();
+console.error(`  ${commits.length} commits`);
+
+console.error('Scanning agent sessions...');
+const cutoffDate = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+
+const allFiles = [];
+for (const d of readdirSync(LOGS_DIR).filter(d => {
+  try { return statSync(join(LOGS_DIR, d)).isDirectory(); } catch { return false; }
+})) {
+  allFiles.push(...findJsonlFiles(LOGS_DIR, d));
+}
+
+const sessions = [];
+const seenSessions = new Set(); // deduplicate same session in multiple dirs
+for (const f of allFiles) {
+  try {
+    const s = parseSessionLight(f);
+    if (s.userCount < 1) continue;
+    // Deduplicate: same session UUID logged to both quadro-claude and quadro-project-*
+    if (seenSessions.has(s.session)) continue;
+    seenSessions.add(s.session);
+    if (s.startDate && s.startDate < cutoffDate && !dateFilter) continue;
+    if (dateFilter && s.startDate !== dateFilter) continue;
+    sessions.push(s);
+  } catch {}
+}
+console.error(`  ${sessions.length} sessions with human activity\n`);
+
+// --- Group by date ---
+const byDate = {};
+
+for (const e of loreEntries) {
+  if (!e.date) continue;
+  if (dateFilter && e.date !== dateFilter) continue;
+  if (e.date < cutoffDate && !dateFilter) continue;
+  if (!byDate[e.date]) byDate[e.date] = { lore: [], commits: [], sessions: [], humanMessages: [] };
+  byDate[e.date].lore.push(e);
+}
+
+for (const c of commits) {
+  if (dateFilter && c.date !== dateFilter) continue;
+  if (!byDate[c.date]) byDate[c.date] = { lore: [], commits: [], sessions: [], humanMessages: [] };
+  byDate[c.date].commits.push(c);
+}
+
+for (const s of sessions) {
+  if (!s.startDate) continue;
+  if (dateFilter && s.startDate !== dateFilter) continue;
+  if (!byDate[s.startDate]) byDate[s.startDate] = { lore: [], commits: [], sessions: [], humanMessages: [] };
+  byDate[s.startDate].sessions.push(s);
+  for (const m of s.humanMessages) {
+    byDate[s.startDate].humanMessages.push({ ...m, project: s.project, session: s.session });
+  }
+}
+
+// --- 5. Summarize each day ---
+function summarizeDay(day) {
+  // Collect all text signals: commit subjects, LORE titles, human messages
+  const commitSubjects = (day.commits || []).map(c => c.subject || '');
+  const loreTitles = (day.lore || []).map(e => e.title || '');
+  const humanTexts = (day.humanMessages || []).map(m => m.text || '');
+
+  // Extract commit prefixes (e.g., "parity:", "feat(shell):", "fix:")
+  // Skip noise commits (git notes, merges)
+  const realCommits = commitSubjects.filter(s =>
+    !s.startsWith('Notes added') && !s.startsWith('Merge branch') && !s.startsWith('merge:'));
+  const prefixCounts = {};
+  for (const s of realCommits) {
+    const m = s.match(/^(\w+(?:\([^)]+\))?)\s*:/);
+    if (m) prefixCounts[m[1]] = (prefixCounts[m[1]] || 0) + 1;
+  }
+
+  // Extract key topics from commit messages (skip git-notes noise)
+  const topicWords = {};
+  const stopwords = new Set(['the','a','an','in','on','at','to','for','of','and','is','it','with','from','as','by','that','this','not','but','or','be','are','was','were','has','have','had','do','does','did','will','would','can','could','should','may','might','shall','into','all','no','up','out','its','use','add','fix','set','get','new','when','after','before','notes','added','git','merge','branch','main','copy','resolve','conflicts','remote']);
+  for (const s of [...realCommits, ...loreTitles]) {
+    // Strip prefix like "parity:" or "feat(shell):"
+    const body = s.replace(/^\w+(?:\([^)]+\))?\s*:\s*/, '').toLowerCase();
+    for (const w of body.split(/[\s,;:.()\[\]{}'"!?\/]+/)) {
+      if (w.length > 2 && !stopwords.has(w) && !/^\d+$/.test(w)) {
+        topicWords[w] = (topicWords[w] || 0) + 1;
+      }
+    }
+  }
+
+  // Find dominant prefix
+  const sortedPrefixes = Object.entries(prefixCounts).sort((a, b) => b[1] - a[1]);
+  const topPrefix = sortedPrefixes[0]?.[0] || '';
+
+  // Find top topic words
+  const sortedTopics = Object.entries(topicWords).sort((a, b) => b[1] - a[1]);
+  const topWords = sortedTopics.slice(0, 8).map(([w]) => w);
+
+  // Game-specific topics — detect from commit prefixes and explicit project references,
+  // not from common English words that happen to match game names.
+  const games = [];
+  // Use commit prefixes like "feat(hack):", "fix(rogue):", "parity(nethack):" and
+  // session project names as reliable signals, not body text.
+  const projNames = (day.sessions || []).map(s => s.project || '');
+  const prefixGames = Object.keys(prefixCounts).join(' ').toLowerCase();
+  const commitPrefixText = realCommits.map(s => {
+    const m = s.match(/^(\w+)\((\w+)\)/); return m ? m[2] : '';
+  }).join(' ').toLowerCase();
+  // Also look for paths like hack/js, rogue/js, shell/js in commit messages
+  const pathText = realCommits.join(' ').toLowerCase();
+
+  if (pathText.includes('nethack') || pathText.includes('seed0') || pathText.includes('js/cmd.') ||
+      pathText.includes('js/allmain') || pathText.includes('comparator') || pathText.includes('c-harness') ||
+      projNames.some(p => p.includes('ux') || p.includes('game') || p.includes('mazes')))
+    games.push('NetHack');
+  if (commitPrefixText.includes('hack') || pathText.includes('hack/js') || pathText.includes('hack/hack-c') ||
+      pathText.includes('firsthack') || projNames.some(p => p === 'project-wave'))
+    if (!games.includes('NetHack') || pathText.includes('hack/')) games.push('Hack');
+  if (commitPrefixText.includes('rogue') || pathText.includes('rogue/js') || pathText.includes('rogue/test'))
+    games.push('Rogue');
+  if (commitPrefixText.includes('shell') || pathText.includes('shell/') || pathText.includes('shell.js'))
+    games.push('Shell');
+  if (pathText.includes('dungeon/') || pathText.includes('zork') || projNames.some(p => p.includes('menace') && pathText.includes('dungeon')))
+    games.push('Dungeon');
+  if (commitPrefixText.includes('logo') || pathText.includes('logo/js') || pathText.includes('logo/'))
+    games.push('Logo');
+  if (commitPrefixText.includes('basic') || pathText.includes('basic/js') || pathText.includes('basic/'))
+    games.push('BASIC');
+  // Deduplicate Hack if NetHack is the real subject
+  if (games.includes('Hack') && games.includes('NetHack') && !pathText.includes('hack/'))
+    games.splice(games.indexOf('Hack'), 1);
+
+  // Build summary from patterns
+  const nCommits = (day.commits || []).length;
+  const nLore = (day.lore || []).length;
+
+  // Detect major themes
+  const themes = [];
+  if (topPrefix === 'parity' || topWords.includes('parity') || topWords.includes('diverge') || topWords.includes('rng'))
+    themes.push('C parity work');
+  if (topPrefix.startsWith('feat') || topWords.includes('implement') || topWords.includes('port'))
+    themes.push('new features');
+  if (topPrefix === 'fix' || topWords.includes('bug') || topWords.includes('regression'))
+    themes.push('bug fixes');
+  if (topPrefix === 'refactor' || topWords.includes('refactor') || topWords.includes('cleanup'))
+    themes.push('refactoring');
+  if (topPrefix === 'docs' || topWords.includes('docs') || topWords.includes('lore'))
+    themes.push('documentation');
+  if (topWords.includes('test') || topWords.includes('session') || topWords.includes('coverage'))
+    themes.push('testing');
+  if (topWords.includes('harness') || topWords.includes('recorder') || topWords.includes('dbgmapdump'))
+    themes.push('infrastructure');
+  if (topWords.includes('display') || topWords.includes('screen') || topWords.includes('render') || topWords.includes('cursor'))
+    themes.push('display');
+  if (topWords.includes('shell') || topWords.includes('profile') || topWords.includes('login'))
+    themes.push('shell');
+  if (topWords.includes('monster') || topWords.includes('combat') || topWords.includes('attack'))
+    themes.push('combat mechanics');
+  if (topWords.includes('level') || topWords.includes('mklev') || topWords.includes('map'))
+    themes.push('level generation');
+  if (topWords.includes('eat') || topWords.includes('food') || topWords.includes('hunger'))
+    themes.push('eating/food');
+  if (topWords.includes('save') || topWords.includes('restore'))
+    themes.push('save/restore');
+  if (topWords.includes('pet') || topWords.includes('dog'))
+    themes.push('pet AI');
+  if (topWords.includes('pickup') || topWords.includes('invent') || topWords.includes('object'))
+    themes.push('inventory/objects');
+  if (topWords.includes('travel') || topWords.includes('run') || topWords.includes('move'))
+    themes.push('movement');
+  if (topWords.includes('gate') || topWords.includes('startup') || topWords.includes('migrate'))
+    themes.push('session startup');
+
+  // Build the summary string
+  const gameStr = games.length > 0 ? games.join(', ') : '';
+  const themeStr = themes.length > 0 ? themes.slice(0, 3).join(', ') : topWords.slice(0, 3).join(', ');
+
+  let summary = '';
+  if (gameStr && themeStr) summary = `${gameStr}: ${themeStr}`;
+  else if (themeStr) summary = themeStr;
+  else if (gameStr) summary = gameStr;
+  else if (nCommits > 0) summary = `${nCommits} commits`;
+  else summary = 'quiet day';
+
+  if (nLore > 3) summary += ` (${nLore} lessons)`;
+
+  return summary;
+}
+
+// --- Output ---
+const sortedDates = Object.keys(byDate).sort();
+
+// Add summaries — use hand-written summaries from day-summaries.json if available,
+// fall back to auto-generated ones for new days.
+let handSummaries = {};
+try {
+  handSummaries = JSON.parse(readFileSync(join(__dirname, '..', 'data', 'day-summaries.json'), 'utf8'));
+} catch {}
+for (const date of sortedDates) {
+  byDate[date].summary = handSummaries[date] || summarizeDay(byDate[date]);
+}
+
+if (outputFile) {
+  const out = sortedDates.map(date => JSON.stringify({ date, summary: byDate[date].summary, ...byDate[date] })).join('\n') + '\n';
+  writeFileSync(outputFile, out);
+  console.error(`Written to ${outputFile}`);
+} else {
+  for (const date of sortedDates) {
+    const day = byDate[date];
+    console.log(`\n${'═'.repeat(70)}`);
+    console.log(`  ${date}    ${day.sessions.length} sessions  ${day.commits.length} commits  ${day.lore.length} LORE entries`);
+    console.log(`${'═'.repeat(70)}`);
+
+    if (day.lore.length > 0) {
+      console.log(`\n  LORE (lessons learned):`);
+      for (const e of day.lore) {
+        console.log(`    L${e.lineNum}: ${e.title.substring(0, 90)}`);
+      }
+    }
+
+    if (day.commits.length > 0) {
+      console.log(`\n  COMMITS:`);
+      // Deduplicate by hash
+      const seen = new Set();
+      for (const c of day.commits) {
+        if (seen.has(c.hash)) continue;
+        seen.add(c.hash);
+        console.log(`    ${c.time} ${c.hash} ${c.author?.substring(0, 15).padEnd(15)} ${c.subject?.substring(0, 65)}`);
+      }
+    }
+
+    if (day.sessions.length > 0) {
+      console.log(`\n  SESSIONS (${day.sessions.length}):`);
+      // Show top sessions by duration
+      const topSessions = [...day.sessions].sort((a, b) => b.durationMin - a.durationMin).slice(0, 8);
+      for (const s of topSessions) {
+        const model = (s.model || '?').replace('claude-', '').substring(0, 15);
+        console.log(`    ${s.durationMin}m  ${s.project.substring(0, 25).padEnd(25)}  ${model.padEnd(15)}  ${s.userCount}u/${s.assistCount}a/${s.toolUses}t`);
+      }
+      if (day.sessions.length > 8) console.log(`    ... and ${day.sessions.length - 8} more`);
+    }
+
+    if (day.humanMessages.length > 0) {
+      // Show a sample of substantive human messages (skip very short ones)
+      const substantive = day.humanMessages.filter(m => m.words >= 10).sort((a, b) => b.words - a.words);
+      if (substantive.length > 0) {
+        console.log(`\n  HUMAN MESSAGES (${substantive.length} substantive, ${day.humanMessages.length} total):`);
+        // Show diverse sample: longest, a correction, a question, etc.
+        const sample = substantive.slice(0, 8);
+        for (const m of sample) {
+          const time = m.timestamp?.slice(11, 16) || '??:??';
+          const text = m.text.replace(/\n/g, ' ').substring(0, 100);
+          console.log(`    ${time}  "${text}"`);
+        }
+        if (substantive.length > 8) console.log(`    ... and ${substantive.length - 8} more`);
+      }
+    }
+  }
+}

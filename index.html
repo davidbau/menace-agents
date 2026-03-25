@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mazes of Menace — Agent Analysis Timeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f9f7f1;
+    --card-bg: #fff;
+    --card-border: #e0ddd5;
+    --text: #333;
+    --text-muted: #888;
+    --accent: #6b2c2c;
+    --accent-dark: #4a2020;
+    --lore: #8b6914;
+    --commit: #2d6a2d;
+    --human: #2a5599;
+    --session: #6b4c9a;
+    --correction: #b33;
+    --directive: #2a7a5a;
+    --question: #996b00;
+    --font-serif: 'EB Garamond', Georgia, serif;
+    --font-mono: 'DejaVu Sans Mono', 'Consolas', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-serif);
+    line-height: 1.6;
+    padding: 2em;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  h1 {
+    color: var(--accent);
+    font-size: 2em;
+    font-weight: 700;
+    margin-bottom: 0.2em;
+    letter-spacing: -0.02em;
+  }
+  .subtitle { color: var(--text-muted); margin-bottom: 1.5em; font-size: 1.05em; font-style: italic; }
+  .summary-bar {
+    display: flex; gap: 2em; flex-wrap: wrap;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 6px; padding: 1em 1.5em;
+    margin-bottom: 1.5em; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .summary-bar .stat { text-align: center; }
+  .summary-bar .stat-num { font-size: 1.6em; font-weight: 700; color: var(--accent); }
+  .summary-bar .stat-label { color: var(--text-muted); font-size: 0.85em; }
+
+  .sparkline {
+    display: flex; align-items: flex-end; gap: 1px; height: 40px;
+    margin-bottom: 1.5em; background: var(--card-bg);
+    border: 1px solid var(--card-border); border-radius: 6px;
+    padding: 6px 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .spark-bar {
+    flex: 1; min-width: 4px; border-radius: 2px 2px 0 0;
+    background: #c5b899; position: relative; cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .spark-bar.has-lore { background: var(--lore); }
+  .spark-bar:hover { opacity: 0.7; }
+  .spark-bar .spark-tip {
+    display: none; position: absolute; bottom: 100%; left: 50%;
+    transform: translateX(-50%); background: var(--accent-dark); color: #fff;
+    padding: 0.2em 0.6em; border-radius: 4px; font-size: 0.75em;
+    white-space: nowrap; z-index: 10; font-family: var(--font-serif);
+  }
+  .spark-bar:hover .spark-tip { display: block; }
+
+  #search {
+    width: 100%; padding: 0.5em 1em; border-radius: 6px;
+    border: 1px solid var(--card-border); background: var(--card-bg);
+    color: var(--text); font-size: 1em; font-family: var(--font-serif);
+    margin-bottom: 1.5em; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  #search::placeholder { color: #aaa; font-style: italic; }
+  #search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(107,44,44,0.15); }
+
+  .day {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 6px; margin-bottom: 1em;
+    overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    border-left: 4px solid #c5b899;
+  }
+  .day.has-lore { border-left-color: var(--lore); }
+  .day-header {
+    padding: 0.7em 1em; cursor: pointer; display: flex; align-items: baseline;
+    justify-content: space-between; user-select: none; gap: 0.8em;
+  }
+  .day-header:hover { background: rgba(107,44,44,0.03); }
+  .day-left { display: flex; align-items: baseline; gap: 0.6em; flex: 1; min-width: 0; }
+  .day-date { font-size: 1em; font-weight: 600; color: var(--accent); white-space: nowrap; }
+  .day-summary {
+    font-size: 0.9em; color: var(--text-muted); font-style: italic;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .day-badges { display: flex; gap: 0.4em; flex-wrap: nowrap; flex-shrink: 0; }
+  .badge {
+    font-size: 0.7em; padding: 0.15em 0.5em; border-radius: 10px;
+    font-weight: 600; white-space: nowrap; font-family: -apple-system, sans-serif;
+  }
+  .badge-lore { background: rgba(139,105,20,0.12); color: var(--lore); }
+  .badge-commit { background: rgba(45,106,45,0.1); color: var(--commit); }
+  .badge-session { background: rgba(107,76,154,0.1); color: var(--session); }
+  .badge-human { background: rgba(42,85,153,0.1); color: var(--human); }
+
+  .day-body { display: none; padding: 0 1em 0.8em; }
+  .day.open .day-body { display: block; }
+  .day.open .arrow { transform: rotate(90deg); }
+  .arrow {
+    display: inline-block; transition: transform 0.2s; color: var(--text-muted);
+    margin-right: 0.3em; font-size: 0.7em;
+  }
+
+  .section-title {
+    font-size: 0.8em; font-weight: 700; text-transform: uppercase;
+    color: var(--text-muted); margin: 0.8em 0 0.3em; letter-spacing: 0.06em;
+    font-family: -apple-system, sans-serif;
+  }
+
+  .lore-entry {
+    padding: 0.3em 0.6em; margin: 0.15em 0; border-radius: 3px;
+    background: rgba(139,105,20,0.06); font-size: 0.9em;
+    border-left: 3px solid var(--lore);
+  }
+  .commit-entry {
+    font-family: var(--font-mono); font-size: 0.78em;
+    padding: 0.15em 0; display: flex; gap: 0.5em;
+  }
+  .commit-hash { color: var(--text-muted); min-width: 7ch; }
+  .commit-time { color: var(--text-muted); min-width: 5ch; }
+  .commit-msg { color: var(--text); }
+
+  .human-msg {
+    padding: 0.3em 0.6em; margin: 0.15em 0; border-radius: 3px;
+    font-size: 0.9em; border-left: 3px solid var(--human);
+    background: rgba(42,85,153,0.04);
+  }
+  .human-msg.correction { border-left-color: var(--correction); background: rgba(180,50,50,0.04); }
+  .human-msg.directive { border-left-color: var(--directive); }
+  .human-msg.question { border-left-color: var(--question); }
+  .human-time { color: var(--text-muted); font-size: 0.8em; min-width: 5ch; display: inline-block; }
+  .human-tag {
+    font-size: 0.65em; padding: 0.1em 0.4em; border-radius: 8px;
+    font-weight: 600; margin-left: 0.3em; font-family: -apple-system, sans-serif;
+  }
+  .tag-correction { background: rgba(180,50,50,0.12); color: var(--correction); }
+  .tag-directive { background: rgba(42,122,90,0.12); color: var(--directive); }
+  .tag-question { background: rgba(153,107,0,0.12); color: var(--question); }
+  .tag-redirect { background: rgba(180,100,30,0.12); color: #b06420; }
+
+  .session-row {
+    font-size: 0.82em; padding: 0.1em 0; display: flex; gap: 0.6em;
+    color: var(--text-muted); font-family: var(--font-mono);
+  }
+  .session-dur { min-width: 5ch; text-align: right; color: var(--session); font-weight: 600; }
+  .session-model { min-width: 12ch; }
+
+  .show-more {
+    color: var(--text-muted); font-size: 0.85em; cursor: pointer;
+    padding: 0.2em 0; font-style: italic;
+  }
+  .show-more:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<h1>Mazes of Menace</h1>
+<p class="subtitle">Agent Analysis Timeline &mdash; a chronicle of human and AI collaboration</p>
+
+<div class="summary-bar" id="summary"></div>
+<div class="sparkline" id="sparkline"></div>
+<input type="text" id="search" placeholder="Search human messages, LORE entries, commit messages&hellip;">
+<div id="timeline"></div>
+
+<script>
+let DATA = [];
+let searchTerm = '';
+
+async function loadData() {
+  const resp = await fetch('data/timeline.jsonl');
+  const text = await resp.text();
+  DATA = text.trim().split('\n').map(l => JSON.parse(l));
+  renderAll();
+}
+
+function classify(text) {
+  if (!text) return '';
+  const t = text.trim().toLowerCase();
+  if (/^(no[, ]|don't|dont|stop|wrong|that's not|revert|undo|actually[, ]|wait[, ]|not that|no no)/i.test(t)) return 'correction';
+  if (/^(instead|rather|i meant|what i meant)/i.test(t)) return 'redirect';
+  if (/\?$/.test(t) || /^(what|why|how|where|when|which|can you|could you|is there|do we|does |did )/i.test(t)) return 'question';
+  if (/^(let's|lets|now |next|go ahead|please |add |fix |change |update |remove |create |make |implement|write |run |test |check |push|commit)/i.test(t)) return 'directive';
+  return '';
+}
+
+function renderAll() {
+  let totalSessions = 0, totalCommits = 0, totalLore = 0, totalHuman = 0;
+  for (const d of DATA) {
+    totalSessions += d.sessions?.length || 0;
+    totalCommits += d.commits?.length || 0;
+    totalLore += d.lore?.length || 0;
+    totalHuman += d.humanMessages?.length || 0;
+  }
+  document.getElementById('summary').innerHTML = `
+    <div class="stat"><div class="stat-num">${DATA.length}</div><div class="stat-label">Days</div></div>
+    <div class="stat"><div class="stat-num">${totalSessions.toLocaleString()}</div><div class="stat-label">Sessions</div></div>
+    <div class="stat"><div class="stat-num">${totalCommits.toLocaleString()}</div><div class="stat-label">Commits</div></div>
+    <div class="stat"><div class="stat-num">${totalLore}</div><div class="stat-label">LORE entries</div></div>
+    <div class="stat"><div class="stat-num">${totalHuman.toLocaleString()}</div><div class="stat-label">Human messages</div></div>
+  `;
+
+  const maxCommits = Math.max(...DATA.map(d => d.commits?.length || 0));
+  document.getElementById('sparkline').innerHTML = DATA.map(d => {
+    const h = Math.max(2, Math.round((d.commits?.length || 0) / maxCommits * 36));
+    const hasLore = (d.lore?.length || 0) > 0;
+    return `<div class="spark-bar${hasLore ? ' has-lore' : ''}" style="height:${h}px" data-date="${d.date}">
+      <div class="spark-tip">${d.date}: ${d.commits?.length||0} commits${hasLore ? ', ' + d.lore.length + ' LORE' : ''}</div>
+    </div>`;
+  }).join('');
+
+  renderTimeline();
+}
+
+function matchesSearch(day) {
+  if (!searchTerm) return true;
+  const s = searchTerm.toLowerCase();
+  if (day.summary?.toLowerCase().includes(s)) return true;
+  if (day.lore?.some(e => e.title.toLowerCase().includes(s))) return true;
+  if (day.commits?.some(c => c.subject?.toLowerCase().includes(s))) return true;
+  if (day.humanMessages?.some(m => m.text.toLowerCase().includes(s))) return true;
+  return false;
+}
+
+function renderTimeline() {
+  const container = document.getElementById('timeline');
+  const filtered = DATA.filter(matchesSearch).reverse();
+
+  container.innerHTML = filtered.map(day => {
+    const nLore = day.lore?.length || 0;
+    const nSessions = day.sessions?.length || 0;
+    const nHuman = (day.humanMessages || []).filter(m => m.words >= 10).length;
+    const hasLore = nLore > 0;
+
+    const seenHash = new Set();
+    const uniqueCommits = (day.commits || []).filter(c => {
+      if (seenHash.has(c.hash)) return false;
+      seenHash.add(c.hash); return true;
+    }).filter(c => !c.subject?.startsWith('Notes added') && !c.subject?.startsWith('Merge branch'));
+    const nCommits = uniqueCommits.length;
+
+    return `<div class="day ${hasLore ? 'has-lore' : ''}" data-date="${day.date}">
+      <div class="day-header" onclick="this.parentElement.classList.toggle('open')">
+        <div class="day-left">
+          <span class="arrow">&#9654;</span>
+          <span class="day-date">${day.date}</span>
+          <span class="day-summary">${esc(day.summary || '')}</span>
+        </div>
+        <div class="day-badges">
+          ${nLore ? `<span class="badge badge-lore">${nLore} lore</span>` : ''}
+          ${nCommits ? `<span class="badge badge-commit">${nCommits}</span>` : ''}
+          ${nSessions ? `<span class="badge badge-session">${nSessions} sess</span>` : ''}
+          ${nHuman ? `<span class="badge badge-human">${nHuman} human</span>` : ''}
+        </div>
+      </div>
+      <div class="day-body">
+        ${renderLore(day.lore)}
+        ${renderHumanMessages(day.humanMessages)}
+        ${renderCommits(uniqueCommits)}
+        ${renderSessions(day.sessions)}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderLore(entries) {
+  if (!entries?.length) return '';
+  return `<div class="section-title" style="color:var(--lore)">Lessons Learned</div>` +
+    entries.map(e => `<div class="lore-entry">${esc(e.title)}</div>`).join('');
+}
+
+function renderHumanMessages(msgs) {
+  if (!msgs?.length) return '';
+  const substantive = msgs.filter(m => m.words >= 10);
+  if (!substantive.length) return '';
+  const shown = substantive.slice(0, 15);
+  const rest = substantive.length - shown.length;
+  return `<div class="section-title" style="color:var(--human)">Human Messages (${substantive.length})</div>` +
+    shown.map(m => {
+      const cls = classify(m.text);
+      const clsClass = cls ? ` ${cls}` : '';
+      const tag = cls ? `<span class="human-tag tag-${cls}">${cls}</span>` : '';
+      const time = m.timestamp?.slice(11, 16) || '';
+      return `<div class="human-msg${clsClass}">
+        <span class="human-time">${time}</span>${tag} ${esc(m.text.substring(0, 300))}${m.text.length > 300 ? '&hellip;' : ''}
+      </div>`;
+    }).join('') +
+    (rest > 0 ? `<div class="show-more">+ ${rest} more&hellip;</div>` : '');
+}
+
+function renderCommits(commits) {
+  if (!commits?.length) return '';
+  const shown = commits.slice(0, 20);
+  const rest = commits.length - shown.length;
+  return `<div class="section-title" style="color:var(--commit)">Commits (${commits.length})</div>` +
+    shown.map(c => `<div class="commit-entry">
+      <span class="commit-time">${c.time || ''}</span>
+      <span class="commit-hash">${c.hash?.slice(0,8) || ''}</span>
+      <span class="commit-msg">${esc(c.subject?.substring(0, 80) || '')}</span>
+    </div>`).join('') +
+    (rest > 0 ? `<div class="show-more">+ ${rest} more commits&hellip;</div>` : '');
+}
+
+function renderSessions(sessions) {
+  if (!sessions?.length) return '';
+  const sorted = [...sessions].sort((a, b) => b.durationMin - a.durationMin);
+  const shown = sorted.slice(0, 8);
+  const rest = sorted.length - shown.length;
+  return `<div class="section-title" style="color:var(--session)">Sessions (${sessions.length})</div>` +
+    shown.map(s => {
+      const model = (s.model || '?').replace('claude-', '').replace('-20251001', '').replace('-20250929', '');
+      return `<div class="session-row">
+        <span class="session-dur">${s.durationMin}m</span>
+        <span class="session-model">${model}</span>
+        <span>${s.userCount}u/${s.assistCount}a/${s.toolUses}t</span>
+        <span>${s.project?.replace('quadro-project---mazesofmenace-', 'q:').replace('quadro-project--', 'q:').replace('quadro-claude', 'q:claude') || ''}</span>
+      </div>`;
+    }).join('') +
+    (rest > 0 ? `<div class="show-more">+ ${rest} more sessions&hellip;</div>` : '');
+}
+
+function esc(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+document.getElementById('search').addEventListener('input', e => {
+  searchTerm = e.target.value;
+  renderTimeline();
+});
+
+document.getElementById('sparkline').addEventListener('click', e => {
+  const bar = e.target.closest('.spark-bar');
+  if (!bar) return;
+  const date = bar.dataset.date;
+  const dayEl = document.querySelector(`.day[data-date="${date}"]`);
+  if (dayEl) {
+    dayEl.classList.add('open');
+    dayEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+});
+
+loadData();
+</script>
+</body>
+</html>
