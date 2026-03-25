@@ -456,17 +456,16 @@ function renderSubagentWork(e){
 
 // Keyword index — curated search suggestions organized by theme
 const KW_INDEX = {
-  'Games': ['nethack','hack','rogue','zork','dungeon','logo','basic','shell','spoilers'],
-  'People & History': ['fenlason','wichman','harvey','1982','1980','webhack','playable','mandelbrot','revolution','sudbury'],
-  'Parity & Testing': ['parity','divergence','prng','rng','isaac','coverage','session','replay','harness','regression','revert','figleaf','goodhart'],
-  'C Porting': ['async','await','promise','synchronous','getlin','curs','mklev','mkobj','makemon','muse','armoroff'],
-  'Monster Mechanics': ['cockatrice','hallucination','polymorph','genocide','dog_move','distfleeck','steed','swallow','pet'],
-  'Items & Actions': ['potion','scroll','wand','ring','trap','eating','pickup','combat','movement','travel'],
+  'Games & Origins': ['nethack','hack','rogue','zork','dungeon','logo','basic','shell','spoilers','webhack','playable','mandelbrot'],
+  'People & History': ['fenlason','wichman','harvey','1982','1980','revolution','sudbury','reflections','vibe','steam','shovel','boston'],
+  'Parity & Testing': ['parity','divergence','prng','rng','isaac','coverage','session','replay','harness','regression','revert','goodhart'],
+  'C-to-JS Porting': ['async','await','promise','synchronous','getlin','curs','mklev','mkobj','makemon','muse','armoroff','refactor'],
+  'Gameplay Mechanics': ['cockatrice','hallucination','polymorph','genocide','dog_move','distfleeck','steed','swallow','pet',
+    'potion','scroll','wand','ring','trap','eating','pickup','combat','movement','travel'],
   'Dungeon Features': ['fountain','altar','shop','vault','sokoban','maze','corridor','special','bones','level'],
-  'Infrastructure': ['dbgmapdump','selfplay','campbot','smartbot','speedrun','watchdog','codex','claude','opus','quadro','swarm','server'],
-  'Campaign & Process': ['campaign','iron','milestone','gate','burndown','blocked','stuck','correction','wrong','actually','instead','stop','wait'],
-  'UI & Display': ['cursor','blinking','terminal','display','screen','motd','profile','subshell','refactor','garamond','parchment','dejaVu'],
-  'Essay & Reflection': ['reflections','essay','vibe','metaprogramming','apprenticeship','empowerment','interpretability','steam','shovel','boston','grandfather','shanghai'],
+  'Tools & Infra': ['dbgmapdump','selfplay','campbot','smartbot','speedrun','watchdog','codex','claude','opus','quadro','swarm','server'],
+  'Process & Steering': ['campaign','iron','milestone','gate','burndown','blocked','stuck','correction','wrong','actually','instead','stop','wait'],
+  'UI & Display': ['cursor','blinking','terminal','display','screen','motd','profile','subshell','garamond','parchment'],
 };
 
 function renderKeywordIndex() {
