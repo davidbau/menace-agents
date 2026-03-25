@@ -274,6 +274,104 @@ function parseSessionLight(filePath) {
   };
 }
 
+// Parse a Codex rollout session (different JSONL format from Claude).
+function parseCodexSession(filePath) {
+  const raw = readFileSync(filePath, 'utf8');
+  const lines = raw.trim().split('\n').filter(Boolean);
+  const project = relative(LOGS_DIR, filePath).split('/')[0];
+  const sid = basename(filePath, '.jsonl');
+
+  let model = 'codex', firstTs = null, lastTs = null;
+  let userCount = 0, assistCount = 0, totalToolUses = 0;
+  const turns = [];
+
+  for (const line of lines) {
+    let d;
+    try { d = JSON.parse(line); } catch { continue; }
+    const ts = d.timestamp ? new Date(d.timestamp).getTime() : null;
+    if (ts) {
+      if (!firstTs || ts < firstTs) firstTs = ts;
+      if (!lastTs || ts > lastTs) lastTs = ts;
+    }
+
+    if (d.type === 'session_meta') {
+      if (d.payload?.cwd) model = 'codex';
+    } else if (d.type === 'event_msg' && d.payload?.type === 'user_message') {
+      userCount++;
+      const text = redactSecrets((d.payload.message || d.payload.text || '').trim());
+      const words = text.split(/\s+/).filter(Boolean).length;
+      if (words >= 3 && text.length > 5) {
+        turns.push({ role: 'human', ts, text, words });
+      }
+    } else if (d.type === 'event_msg' && d.payload?.type === 'agent_message') {
+      assistCount++;
+      const text = (d.payload.message || '').trim();
+      turns.push({ role: 'assistant', ts, tools: [], textSnippet: text.length > 20 ? text.substring(0, 300) : null });
+    } else if (d.type === 'response_item' && d.payload?.type === 'function_call') {
+      totalToolUses++;
+      const name = d.payload.name || 'exec_command';
+      turns.push({ role: 'assistant', ts, tools: [name], textSnippet: null });
+    } else if (d.type === 'event_msg' && d.payload?.type === 'agent_reasoning') {
+      const text = (d.payload.text || '').trim();
+      if (text.length > 20) {
+        turns.push({ role: 'assistant', ts, tools: [], textSnippet: text.substring(0, 300) });
+      }
+    }
+  }
+
+  // Group into events (same logic as Claude parser)
+  const events = [];
+  let aiBlock = null;
+  function flushAiBlock() {
+    if (!aiBlock) return;
+    const topTools = Object.entries(aiBlock.toolCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    events.push({
+      type: 'ai-work',
+      timestamp: aiBlock.startTs ? new Date(aiBlock.startTs).toISOString() : null,
+      turns: aiBlock.turns,
+      toolUses: aiBlock.totalTools,
+      topTools: topTools.map(([n, c]) => `${n}(${c})`).join(', '),
+      snippets: aiBlock.snippets.slice(0, 1).concat(
+        aiBlock.snippets.length > 2 ? aiBlock.snippets.slice(-1) : []
+      ).map(s => s.substring(0, 200)),
+    });
+    aiBlock = null;
+  }
+  for (const turn of turns) {
+    if (turn.role === 'human') {
+      flushAiBlock();
+      events.push({ type: 'human', timestamp: turn.ts ? new Date(turn.ts).toISOString() : null, text: turn.text, words: turn.words });
+    } else {
+      if (!aiBlock) aiBlock = { startTs: turn.ts, turns: 0, totalTools: 0, toolCounts: {}, snippets: [] };
+      aiBlock.turns++;
+      for (const t of (turn.tools || [])) { aiBlock.totalTools++; aiBlock.toolCounts[t] = (aiBlock.toolCounts[t] || 0) + 1; }
+      if (turn.textSnippet) aiBlock.snippets.push(turn.textSnippet);
+    }
+  }
+  flushAiBlock();
+
+  return {
+    project, session: sid, model, gitBranch: null,
+    startDate: firstTs ? projectDay(firstTs) : null,
+    startTime: firstTs ? new Date(firstTs).toISOString() : null,
+    durationMin: firstTs && lastTs ? Math.round((lastTs - firstTs) / 60000) : 0,
+    userCount, assistCount, toolUses: totalToolUses,
+    events,
+  };
+}
+
+// Detect and parse either Claude or Codex session format
+function parseAnySession(filePath) {
+  if (filePath.includes('/subagents/')) {
+    // Claude subagent — tag events differently
+    return parseSessionLight(filePath);
+  }
+  if (basename(filePath).startsWith('rollout-')) {
+    return parseCodexSession(filePath);
+  }
+  return parseSessionLight(filePath);
+}
+
 // --- 4. Build cross-reference ---
 console.error('Parsing LORE...');
 const loreEntries = parseLore();
@@ -297,7 +395,7 @@ const sessions = [];
 const seenSessions = new Set(); // deduplicate same session in multiple dirs
 for (const f of allFiles) {
   try {
-    const s = parseSessionLight(f);
+    const s = parseAnySession(f);
     if (!s) continue;
     if (s.events.length < 1) continue;
     // Deduplicate: same session UUID logged to both quadro-claude and quadro-project-*
