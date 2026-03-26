@@ -130,47 +130,6 @@ function formatDayHeader(dateStr) {
   return `${days[d.getDay()]} ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
-// --- 1. Parse LORE entries by date ---
-function parseLore() {
-  const loreFile = join(WAVE_DIR, 'docs', 'LORE.md');
-  let content;
-  try { content = readFileSync(loreFile, 'utf8'); } catch { return []; }
-
-  const entries = [];
-  const lines = content.split('\n');
-  let currentEntry = null;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.startsWith('## ')) {
-      // Save previous
-      if (currentEntry) entries.push(currentEntry);
-      // Parse date from heading
-      const dateMatch = line.match(/(\d{4}-\d{2}-\d{2})/);
-      const title = line.replace(/^## /, '').trim();
-      currentEntry = {
-        date: dateMatch ? dateMatch[1] : null,
-        title,
-        lineNum: i + 1,
-        bodyLines: [],
-      };
-    } else if (currentEntry) {
-      currentEntry.bodyLines.push(line);
-    }
-  }
-  if (currentEntry) entries.push(currentEntry);
-
-  // Compute summary for each entry (first non-empty paragraph)
-  for (const e of entries) {
-    const body = e.bodyLines.join('\n').trim();
-    const firstPara = body.split(/\n\n/)[0]?.trim() || '';
-    e.summary = firstPara.substring(0, 200);
-    e.bodyLength = body.length;
-    delete e.bodyLines;
-  }
-
-  return entries;
-}
 
 // --- 2. Parse git commits by date ---
 function parseGitCommits() {
@@ -552,10 +511,6 @@ function extractCommitOrigins() {
 }
 
 // --- 4. Build cross-reference ---
-console.error('Parsing LORE...');
-const loreEntries = parseLore();
-console.error(`  ${loreEntries.length} entries (${loreEntries.filter(e => e.date).length} dated)`);
-
 console.error('Parsing git commits...');
 const commits = parseGitCommits();
 console.error(`  ${commits.length} commits`);
@@ -613,15 +568,7 @@ console.error(`  ${sessions.length} sessions with human activity\n`);
 const byDate = {};
 
 function ensureDay(date) {
-  if (!byDate[date]) byDate[date] = { lore: [], commits: [], sessions: [], events: [] };
-}
-
-for (const e of loreEntries) {
-  if (!e.date) continue;
-  if (dateFilter && e.date !== dateFilter) continue;
-  if (e.date < cutoffDate && !dateFilter) continue;
-  ensureDay(e.date);
-  byDate[e.date].lore.push(e);
+  if (!byDate[date]) byDate[date] = { commits: [], sessions: [], events: [] };
 }
 
 const seenCommitHash = {};
@@ -691,17 +638,6 @@ for (const [date, day] of Object.entries(byDate)) {
     }
   }
 
-  // LORE as events (use date + 23:59 to sort at end, since LORE summarizes the day's work)
-  for (const e of day.lore) {
-    allEvents.push({
-      type: 'lore',
-      timestamp: date + 'T23:59:00',
-      title: e.title,
-      lineNum: e.lineNum,
-      summary: e.summary,
-    });
-  }
-
   // Sort by timestamp
   allEvents.sort((a, b) => (a.timestamp || '') < (b.timestamp || '') ? -1 : 1);
   day.events = allEvents;
@@ -709,9 +645,8 @@ for (const [date, day] of Object.entries(byDate)) {
 
 // --- 5. Summarize each day ---
 function summarizeDay(day) {
-  // Collect all text signals: commit subjects, LORE titles, human messages
+  // Collect text signals for auto-summary
   const commitSubjects = (day.commits || []).map(c => c.subject || '');
-  const loreTitles = (day.lore || []).map(e => e.title || '');
   const humanTexts = (day.events || []).filter(e => e.type === 'human').map(e => e.text || '');
 
   // Extract commit prefixes (e.g., "parity:", "feat(shell):", "fix:")
@@ -727,7 +662,7 @@ function summarizeDay(day) {
   // Extract key topics from commit messages (skip git-notes noise)
   const topicWords = {};
   const stopwords = new Set(['the','a','an','in','on','at','to','for','of','and','is','it','with','from','as','by','that','this','not','but','or','be','are','was','were','has','have','had','do','does','did','will','would','can','could','should','may','might','shall','into','all','no','up','out','its','use','add','fix','set','get','new','when','after','before','notes','added','git','merge','branch','main','copy','resolve','conflicts','remote']);
-  for (const s of [...realCommits, ...loreTitles]) {
+  for (const s of realCommits) {
     // Strip prefix like "parity:" or "feat(shell):"
     const body = s.replace(/^\w+(?:\([^)]+\))?\s*:\s*/, '').toLowerCase();
     for (const w of body.split(/[\s,;:.()\[\]{}'"!?\/]+/)) {
@@ -781,8 +716,6 @@ function summarizeDay(day) {
 
   // Build summary from patterns
   const nCommits = (day.commits || []).length;
-  const nLore = (day.lore || []).length;
-
   // Detect major themes
   const themes = [];
   if (topPrefix === 'parity' || topWords.includes('parity') || topWords.includes('diverge') || topWords.includes('rng'))
@@ -831,7 +764,6 @@ function summarizeDay(day) {
   else if (nCommits > 0) summary = `${nCommits} commits`;
   else summary = 'quiet day';
 
-  if (nLore > 3) summary += ` (${nLore} lessons)`;
 
   return summary;
 }
@@ -857,15 +789,8 @@ if (outputFile) {
   for (const date of sortedDates) {
     const day = byDate[date];
     console.log(`\n${'═'.repeat(70)}`);
-    console.log(`  ${date}    ${day.sessions.length} sessions  ${day.commits.length} commits  ${day.lore.length} LORE entries`);
+    console.log(`  ${date}    ${day.sessions.length} sessions  ${day.commits.length} commits`);
     console.log(`${'═'.repeat(70)}`);
-
-    if (day.lore.length > 0) {
-      console.log(`\n  LORE (lessons learned):`);
-      for (const e of day.lore) {
-        console.log(`    L${e.lineNum}: ${e.title.substring(0, 90)}`);
-      }
-    }
 
     if (day.commits.length > 0) {
       console.log(`\n  COMMITS:`);
