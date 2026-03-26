@@ -201,7 +201,7 @@ function parseGitCommits() {
               .filter(l => l.startsWith('+') && !l.startsWith('+++') && !l.startsWith('+++ '))
               .map(l => l.slice(1).trim())
               .filter(l => l.length > 0 && !l.startsWith('#') && !l.startsWith('---'));
-            const snippet = added.slice(0, 5).join(' ').substring(0, 200);
+            const snippet = added.slice(0, 10).join('\n').substring(0, 600);
             if (snippet.length > 10) {
               c.docEntries.push({ file, snippet: redactSecrets(snippet) });
             }
