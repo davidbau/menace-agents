@@ -221,6 +221,12 @@ function findJsonlFiles(baseDir, subdir) {
 // Returns { metadata, events[] } where each event is timestamped and typed.
 function parseSessionLight(filePath) {
   const isSubagent = filePath.includes('/subagents/');
+  // For subagents, extract parent session ID so we can inherit its agent label
+  let parentSessionId = null;
+  if (isSubagent) {
+    const m = filePath.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/subagents\//);
+    if (m) parentSessionId = m[1];
+  }
 
   const raw = readFileSync(filePath, 'utf8');
   const lines = raw.trim().split('\n').filter(Boolean);
@@ -328,7 +334,7 @@ function parseSessionLight(filePath) {
   flushAiBlock();
 
   return {
-    project, session: sid, model, gitBranch,
+    project, session: sid, model, gitBranch, parentSessionId,
     startDate: firstTs ? projectDay(firstTs) : null,
     startTime: firstTs ? new Date(firstTs).toISOString() : null,
     durationMin: firstTs && lastTs ? Math.round((lastTs - firstTs) / 60000) : 0,
@@ -590,7 +596,18 @@ for (const s of sessions) {
   byDate[s.startDate].sessions.push(s);
 }
 
-// Build interleaved events per day: merge session events, commits, and LORE by timestamp.
+// Build session → agent label map (for parent inheritance)
+const sessionAgentMap = {};
+for (const date of Object.keys(byDate)) {
+  for (const s of byDate[date].sessions) {
+    const proj = s.project?.replace('quadro-project---mazesofmenace-', 'q:')
+                           .replace('quadro-project--', 'q:')
+                           .replace('quadro-claude', 'q:claude') || '';
+    if (!s.parentSessionId) sessionAgentMap[s.session] = agentLabel(proj);
+  }
+}
+
+// Build interleaved events per day
 for (const [date, day] of Object.entries(byDate)) {
   const allEvents = [];
 
@@ -600,13 +617,15 @@ for (const [date, day] of Object.entries(byDate)) {
                            .replace('quadro-project--', 'q:')
                            .replace('quadro-claude', 'q:claude') || '';
     const model = (s.model || '?').replace('claude-', '').replace('-20251001', '').replace('-20250929', '');
+    // Subagents inherit parent's agent label
+    const agent = s.parentSessionId ? (sessionAgentMap[s.parentSessionId] || agentLabel(proj)) : agentLabel(proj);
     for (const ev of (s.events || [])) {
       allEvents.push({
         ...ev,
         session: s.session,
         project: proj,
         model,
-        agent: agentLabel(proj),
+        agent,
         sessionDur: s.durationMin,
       });
     }
@@ -640,6 +659,14 @@ for (const [date, day] of Object.entries(byDate)) {
 
   // Sort by timestamp
   allEvents.sort((a, b) => (a.timestamp || '') < (b.timestamp || '') ? -1 : 1);
+
+  // Carry agent labels forward to commits and docs from the nearest preceding session event
+  let lastAgent = null;
+  for (const ev of allEvents) {
+    if (ev.agent) lastAgent = ev.agent;
+    else if (lastAgent && (ev.type === 'commit' || ev.type === 'doc')) ev.agent = lastAgent;
+  }
+
   day.events = allEvents;
 }
 
