@@ -80,6 +80,9 @@ function isWatchdog(text) {
   return WATCHDOG_SET.has(text.trim());
 }
 
+// Codex doesn't structurally distinguish agent self-continuation from human input.
+// Both appear as user_message. We don't filter by heuristic — accept the noise.
+
 // Convert a timestamp to a "project day" date string.
 // Day boundary is 3AM Eastern Time — work past midnight stays on the same day.
 // This matches the natural rhythm of the project (late-night sessions).
@@ -173,22 +176,39 @@ function parseGitCommits() {
         body: redactSecrets((body || '').trim()),
       });
     }
-    // Second pass: get doc files changed per commit
-    const docLog = execSync(
-      `git -C "${WAVE_DIR}" log --all --name-only --format="%H" --diff-filter=ACMR --since="${days}days" -- "docs/*.md" "*.md"`,
-      { encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 }
-    );
-    const docsByHash = {};
-    let currentHash = null;
-    for (const line of docLog.split('\n')) {
-      if (/^[0-9a-f]{40}$/.test(line.trim())) { currentHash = line.trim().slice(0, 12); }
-      else if (currentHash && line.trim().endsWith('.md')) {
-        if (!docsByHash[currentHash]) docsByHash[currentHash] = [];
-        docsByHash[currentHash].push(line.trim());
-      }
-    }
+    // Second pass: for each commit, get added lines from docs/*.md and *.md files.
+    // We extract the first few added lines as a snippet for the timeline.
+    console.error('  Extracting doc diffs...');
+    const skipDocs = new Set(['README.md', 'REFLECTIONS.md', 'CHANGELOG.md', 'CLAUDE.md']);
     for (const c of commits) {
-      if (docsByHash[c.hash]) c.docs = docsByHash[c.hash];
+      try {
+        const diffOut = execSync(
+          `git -C "${WAVE_DIR}" diff-tree --no-commit-id -r --diff-filter=ACMR --name-only ${c.hash} -- "docs/*.md" "*.md" "skills/*.md" "skills/**/*.md"`,
+          { encoding: 'utf8', maxBuffer: 5 * 1024 * 1024, timeout: 5000 }
+        ).trim();
+        if (!diffOut) continue;
+        const files = diffOut.split('\n').filter(f => f.endsWith('.md') && !skipDocs.has(f) && !f.startsWith('_'));
+        if (!files.length) continue;
+        c.docEntries = [];
+        for (const file of files.slice(0, 3)) { // max 3 docs per commit
+          try {
+            const diff = execSync(
+              `git -C "${WAVE_DIR}" diff ${c.hash}^..${c.hash} -- "${file}" 2>/dev/null | head -80`,
+              { encoding: 'utf8', maxBuffer: 1024 * 1024, timeout: 5000 }
+            );
+            // Extract added lines (starting with +, skip +++ header)
+            const added = diff.split('\n')
+              .filter(l => l.startsWith('+') && !l.startsWith('+++') && !l.startsWith('+++ '))
+              .map(l => l.slice(1).trim())
+              .filter(l => l.length > 0 && !l.startsWith('#') && !l.startsWith('---'));
+            const snippet = added.slice(0, 5).join(' ').substring(0, 200);
+            if (snippet.length > 10) {
+              c.docEntries.push({ file, snippet: redactSecrets(snippet) });
+            }
+          } catch {}
+        }
+        if (c.docEntries.length === 0) delete c.docEntries;
+      } catch {}
     }
   } catch (e) {
     console.error('Warning: could not read git log:', e.message?.split('\n')[0]);
@@ -524,17 +544,29 @@ for (const [date, day] of Object.entries(byDate)) {
     }
   }
 
-  // Commits as events (timestamp already in UTC from parsing)
+  // Commits as events, followed by doc entries
   for (const c of day.commits) {
+    const ts = c.timestamp || (c.date + 'T' + (c.time || '00:00') + ':00Z');
     allEvents.push({
       type: 'commit',
-      timestamp: c.timestamp || (c.date + 'T' + (c.time || '00:00') + ':00Z'),
+      timestamp: ts,
       hash: c.hash,
       subject: c.subject,
       body: c.body || '',
       author: c.author,
-      docs: c.docs || null,
     });
+    // Doc entries follow immediately after their commit
+    if (c.docEntries) {
+      for (const doc of c.docEntries) {
+        allEvents.push({
+          type: 'doc',
+          timestamp: ts,
+          hash: c.hash,
+          file: doc.file,
+          snippet: doc.snippet,
+        });
+      }
+    }
   }
 
   // LORE as events (use date + 23:59 to sort at end, since LORE summarizes the day's work)
