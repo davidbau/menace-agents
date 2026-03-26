@@ -448,12 +448,17 @@ function parseAnySession(filePath) {
 // to the git history and recover the original timestamp (before rebase).
 function extractCommitOrigins() {
   console.error('  Extracting commit origins from agent sessions...');
-  // commitMsg → earliest timestamp seen in any session log
-  const origins = {}; // normalized subject → { timestamp, session }
+  // commitMsg → { timestamp, project (short), agent label }
+  const origins = {};
 
   function scanFile(filePath) {
     let raw;
     try { raw = readFileSync(filePath, 'utf8'); } catch { return; }
+    const proj = relative(LOGS_DIR, filePath).split('/')[0]
+      .replace('quadro-project---mazesofmenace-', 'q:')
+      .replace('quadro-project--', 'q:')
+      .replace('quadro-claude', 'q:claude');
+    const agent = agentLabel(proj);
     const lines = raw.trim().split('\n');
     for (const line of lines) {
       let d;
@@ -476,7 +481,7 @@ function extractCommitOrigins() {
               if (msg && msg.length > 10) {
                 const key = msg.replace(/\\n/g, ' ').substring(0, 80).trim();
                 if (!origins[key] || ts < origins[key].timestamp) {
-                  origins[key] = { timestamp: ts };
+                  origins[key] = { timestamp: ts, agent };
                 }
               }
             }
@@ -529,14 +534,16 @@ let matched = 0;
 for (const c of commits) {
   const key = (c.subject || '').substring(0, 80).trim();
   if (commitOrigins[key]) {
-    const origTs = commitOrigins[key].timestamp;
+    const origin = commitOrigins[key];
+    c.originAgent = origin.agent; // agent that ran git commit — always set
+    const origTs = origin.timestamp;
     const origIso = new Date(origTs).toISOString();
-    // Only apply if the original is meaningfully earlier than the author date
+    // Only shift timestamp if meaningfully earlier than the author date
     const authorTs = new Date(c.timestamp).getTime();
-    if (authorTs - origTs > 60000) { // more than 1 minute difference
+    if (Math.abs(authorTs - origTs) > 60000) {
       c.originalTimestamp = origIso;
-      c.timestamp = origIso; // use the original time for sorting
-      c.date = projectDay(origTs); // may shift to a different day
+      c.timestamp = origIso;
+      c.date = projectDay(origTs);
     }
     matched++;
   }
@@ -634,6 +641,7 @@ for (const [date, day] of Object.entries(byDate)) {
   // Commits as events, followed by doc entries
   for (const c of day.commits) {
     const ts = c.timestamp || (c.date + 'T' + (c.time || '00:00') + ':00Z');
+    const commitAgent = c.originAgent || null; // from git-commit-in-session matching
     allEvents.push({
       type: 'commit',
       timestamp: ts,
@@ -641,15 +649,17 @@ for (const [date, day] of Object.entries(byDate)) {
       subject: c.subject,
       body: c.body || '',
       author: c.author,
+      agent: commitAgent,
       originalTimestamp: c.originalTimestamp || null,
     });
-    // Doc entries follow immediately after their commit
+    // Doc entries follow immediately after their commit, inherit commit's agent
     if (c.docEntries) {
       for (const doc of c.docEntries) {
         allEvents.push({
           type: 'doc',
           timestamp: ts,
           hash: c.hash,
+          agent: commitAgent,
           file: doc.file,
           snippet: doc.snippet,
         });
@@ -660,7 +670,7 @@ for (const [date, day] of Object.entries(byDate)) {
   // Sort by timestamp
   allEvents.sort((a, b) => (a.timestamp || '') < (b.timestamp || '') ? -1 : 1);
 
-  // Carry agent labels forward to commits and docs from the nearest preceding session event
+  // For commits/docs without a matched agent, carry forward from nearest preceding session event
   let lastAgent = null;
   for (const ev of allEvents) {
     if (ev.agent) lastAgent = ev.agent;
