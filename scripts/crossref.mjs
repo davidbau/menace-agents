@@ -173,6 +173,23 @@ function parseGitCommits() {
         body: redactSecrets((body || '').trim()),
       });
     }
+    // Second pass: get doc files changed per commit
+    const docLog = execSync(
+      `git -C "${WAVE_DIR}" log --all --name-only --format="%H" --diff-filter=ACMR --since="${days}days" -- "docs/*.md" "*.md"`,
+      { encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 }
+    );
+    const docsByHash = {};
+    let currentHash = null;
+    for (const line of docLog.split('\n')) {
+      if (/^[0-9a-f]{40}$/.test(line.trim())) { currentHash = line.trim().slice(0, 12); }
+      else if (currentHash && line.trim().endsWith('.md')) {
+        if (!docsByHash[currentHash]) docsByHash[currentHash] = [];
+        docsByHash[currentHash].push(line.trim());
+      }
+    }
+    for (const c of commits) {
+      if (docsByHash[c.hash]) c.docs = docsByHash[c.hash];
+    }
   } catch (e) {
     console.error('Warning: could not read git log:', e.message?.split('\n')[0]);
   }
@@ -516,6 +533,7 @@ for (const [date, day] of Object.entries(byDate)) {
       subject: c.subject,
       body: c.body || '',
       author: c.author,
+      docs: c.docs || null,
     });
   }
 
