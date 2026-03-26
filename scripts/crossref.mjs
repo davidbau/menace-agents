@@ -83,6 +83,31 @@ function isWatchdog(text) {
 // Codex doesn't structurally distinguish agent self-continuation from human input.
 // Both appear as user_message. We don't filter by heuristic — accept the noise.
 
+// Agent labels — one per working directory checkout.
+// q:claude and q:ux are the same sessions (deduped), so share a label.
+// q:menace and air-menace may be renames of mazesofmenace, share label.
+const AGENT_LABELS = {
+  'q:ux': 'U',  'q:claude': 'U',    // quadro: mazesofmenace/ux
+  'q:menace': 'U',                   // quadro: menace (rename of above)
+  'quadro-codex': 'X',               // quadro: codex
+  'quadro-project': 'Q',             // quadro: bare project
+  'q:interface': 'I',                // quadro: interface
+  'q:selfplay': 'S',                 // quadro: selfplay
+  'q:shops': 'P',                    // quadro: shops
+  'q:watchdog': 'W',                 // quadro: watchdog
+  'q:webhack': 'H', 'q:webhack2': 'K', // quadro: original webhack dirs
+  'project-mac': 'M',                // mac laptop
+  'project-wave': 'V',               // wave (hack/rogue/shell)
+  'project-root': 'R',               // root project
+  'air-mazesofmenace': 'A',          // air: mazesofmenace
+  'air-menace': 'A',                 // air: menace (rename of above)
+  'air-spoilers': 'B',               // air: spoilers
+  'air-playable': 'D',               // air: playable
+};
+function agentLabel(project) {
+  return AGENT_LABELS[project] || '?';
+}
+
 // Convert a timestamp to a "project day" date string.
 // Day boundary is 3AM Eastern Time — work past midnight stays on the same day.
 // This matches the natural rhythm of the project (late-night sessions).
@@ -634,6 +659,7 @@ for (const [date, day] of Object.entries(byDate)) {
         session: s.session,
         project: proj,
         model,
+        agent: agentLabel(proj),
         sessionDur: s.durationMin,
       });
     }
