@@ -268,6 +268,8 @@ function parseSessionLight(filePath) {
 
   function flushAiBlock() {
     if (!aiBlock) return;
+    // Skip empty blocks (no tools, no text — just thinking)
+    if (aiBlock.totalTools === 0 && aiBlock.snippets.length === 0) { aiBlock = null; return; }
     const topTools = Object.entries(aiBlock.toolCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
     events.push({
       type: isSubagent ? 'subagent-work' : 'ai-work',
@@ -364,6 +366,8 @@ function parseCodexSession(filePath) {
   let aiBlock = null;
   function flushAiBlock() {
     if (!aiBlock) return;
+    // Skip empty blocks (no tools, no text — just thinking)
+    if (aiBlock.totalTools === 0 && aiBlock.snippets.length === 0) { aiBlock = null; return; }
     const topTools = Object.entries(aiBlock.toolCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
     events.push({
       type: 'ai-work',
