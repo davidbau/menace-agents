@@ -453,6 +453,79 @@ function parseAnySession(filePath) {
   return parseSessionLight(filePath);
 }
 
+// --- 3b. Extract original commit timestamps from agent sessions ---
+// When agents run `git commit -m "..."`, we can match the commit message
+// to the git history and recover the original timestamp (before rebase).
+function extractCommitOrigins() {
+  console.error('  Extracting commit origins from agent sessions...');
+  // commitMsg → earliest timestamp seen in any session log
+  const origins = {}; // normalized subject → { timestamp, session }
+
+  function scanFile(filePath) {
+    let raw;
+    try { raw = readFileSync(filePath, 'utf8'); } catch { return; }
+    const lines = raw.trim().split('\n');
+    for (const line of lines) {
+      let d;
+      try { d = JSON.parse(line); } catch { continue; }
+      const ts = d.timestamp ? new Date(d.timestamp).getTime() : null;
+      if (!ts) continue;
+
+      // Claude format: tool_use with name Bash, input.command contains git commit
+      if (d.type === 'assistant' && d.message?.content) {
+        for (const b of d.message.content) {
+          if (b.type === 'tool_use' && (b.name === 'Bash' || b.name === 'bash')) {
+            const cmd = b.input?.command || JSON.stringify(b.input || '');
+            if (cmd.includes('git commit')) {
+              // Extract from various patterns:
+              // git commit -m "msg"  |  git commit -m "$(cat <<'EOF'\nmsg\n...)"  |  git commit -F -
+              const mMatch = cmd.match(/git commit[^"]*-m\s*["']([^"']*)/);
+              const heredocMatch = cmd.match(/git commit[^"]*-m\s*"\$\(cat <<['"]?\w+['"]?\n([^\n]+)/);
+              const fMatch = cmd.match(/git commit\s+-F\s+-\s*<<['"]?\w+['"]?\n([^\n]+)/);
+              const msg = (heredocMatch?.[1] || mMatch?.[1] || fMatch?.[1] || '').trim();
+              if (msg && msg.length > 10) {
+                const key = msg.replace(/\\n/g, ' ').substring(0, 80).trim();
+                if (!origins[key] || ts < origins[key].timestamp) {
+                  origins[key] = { timestamp: ts };
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Codex format: function_call with exec_command containing git commit
+      if (d.type === 'response_item' && d.payload?.type === 'function_call') {
+        let args = d.payload.arguments || '';
+        // Arguments is JSON-encoded — parse to get the actual command
+        try { const parsed = JSON.parse(args); args = parsed.cmd || parsed.command || args; } catch {}
+        if (args.includes('git commit')) {
+          const mMatch = args.match(/git commit[^"]*-m\s*["']([^"'\\]*(?:\\.[^"'\\]*)*)/);
+          const msg = (mMatch?.[1] || '').trim();
+          if (msg && msg.length > 10) {
+            const key = msg.replace(/\\n/g, ' ').substring(0, 80).trim();
+            if (!origins[key] || ts < origins[key].timestamp) {
+              origins[key] = { timestamp: ts };
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Scan all session files
+  for (const d of readdirSync(LOGS_DIR).filter(d => {
+    try { return statSync(join(LOGS_DIR, d)).isDirectory(); } catch { return false; }
+  })) {
+    for (const f of findJsonlFiles(LOGS_DIR, d)) {
+      scanFile(f);
+    }
+  }
+
+  console.error(`  Found ${Object.keys(origins).length} commit origins in agent sessions`);
+  return origins;
+}
+
 // --- 4. Build cross-reference ---
 console.error('Parsing LORE...');
 const loreEntries = parseLore();
@@ -461,6 +534,28 @@ console.error(`  ${loreEntries.length} entries (${loreEntries.filter(e => e.date
 console.error('Parsing git commits...');
 const commits = parseGitCommits();
 console.error(`  ${commits.length} commits`);
+
+// Extract original commit timestamps from agent logs
+const commitOrigins = extractCommitOrigins();
+
+// Match origins to commits by subject line
+let matched = 0;
+for (const c of commits) {
+  const key = (c.subject || '').substring(0, 80).trim();
+  if (commitOrigins[key]) {
+    const origTs = commitOrigins[key].timestamp;
+    const origIso = new Date(origTs).toISOString();
+    // Only apply if the original is meaningfully earlier than the author date
+    const authorTs = new Date(c.timestamp).getTime();
+    if (authorTs - origTs > 60000) { // more than 1 minute difference
+      c.originalTimestamp = origIso;
+      c.timestamp = origIso; // use the original time for sorting
+      c.date = projectDay(origTs); // may shift to a different day
+    }
+    matched++;
+  }
+}
+console.error(`  Matched ${matched} commits to agent session origins`);
 
 console.error('Scanning agent sessions...');
 const cutoffDate = projectDay(Date.now() - days * 86400000);
@@ -554,6 +649,7 @@ for (const [date, day] of Object.entries(byDate)) {
       subject: c.subject,
       body: c.body || '',
       author: c.author,
+      originalTimestamp: c.originalTimestamp || null,
     });
     // Doc entries follow immediately after their commit
     if (c.docEntries) {
