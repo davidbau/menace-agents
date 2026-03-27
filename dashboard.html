@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Menace Agents — Study Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f9f7f1; --card-bg: #fff; --border: #e0ddd5;
+    --text: #333; --muted: #888; --light: #aaa;
+    --accent: #6b2c2c; --accent-dk: #4a2020; --accent-lt: #8b4c4c;
+    --serif: 'EB Garamond', Georgia, serif;
+    --mono: 'Consolas', 'DejaVu Sans Mono', monospace;
+    --ch1: #7b4b8c; --ch2: #2a6b8c; --ch3: #2d7a3f;
+    --ch4: #8c6b2a; --ch5: #8c2a2a; --ch6: #2a6b5f;
+    --ch7: #5c5c8c; --ch8: #6b4c2a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--serif); line-height: 1.55; font-size: 17px; }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--accent-dk); color: #f5f0e8;
+    display: flex; align-items: center; gap: 0; flex-wrap: wrap;
+    border-bottom: 2px solid var(--accent);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  nav .nav-brand {
+    font-size: 1em; font-weight: 700; padding: 0.55em 1.2em;
+    color: #f5f0e8; text-decoration: none; flex-shrink: 0;
+    border-right: 1px solid rgba(255,255,255,0.15);
+  }
+  nav a {
+    font-size: 0.78em; color: rgba(245,240,232,0.8); text-decoration: none;
+    padding: 0.6em 0.9em; white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+  }
+  nav a:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  nav .nav-report {
+    margin-left: auto; background: rgba(255,255,255,0.1);
+    border-left: 1px solid rgba(255,255,255,0.15);
+    font-weight: 600; color: #f5f0e8;
+  }
+
+  /* LAYOUT */
+  .container { max-width: 1100px; margin: 0 auto; padding: 2.5em 2em 4em; }
+
+  /* SECTIONS */
+  section {
+    margin-bottom: 4em;
+    scroll-margin-top: 56px;
+  }
+  section h2 {
+    font-size: 1.6em; color: var(--accent); margin-bottom: 0.15em;
+    border-bottom: 2px solid var(--border); padding-bottom: 0.25em;
+  }
+  section .section-intro {
+    font-style: italic; color: var(--muted); margin-bottom: 1.5em;
+    font-size: 0.95em; margin-top: 0.4em;
+  }
+
+  /* METRICS BAR */
+  .metrics-bar {
+    display: flex; gap: 1.5em; flex-wrap: wrap; margin-bottom: 1.5em;
+  }
+  .metric-card {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.1em 1.6em; flex: 1; min-width: 160px;
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .metric-card .num { font-size: 2.2em; font-weight: 700; color: var(--accent); line-height: 1.1; }
+  .metric-card .label { font-size: 0.8em; color: var(--muted); margin-top: 0.2em; font-style: italic; }
+
+  /* CHART CONTAINERS */
+  .chart-block {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.4em 1.6em 1em;
+    margin-bottom: 1.8em;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .chart-block h3 { font-size: 1.1em; color: var(--accent-dk); margin-bottom: 0.15em; }
+  .chart-block .chart-sub {
+    font-size: 0.82em; color: var(--muted); font-style: italic;
+    margin-bottom: 0.9em;
+  }
+  .chart-block canvas { display: block; width: 100%; }
+  .chart-toggle {
+    display: inline-block; margin-top: 0.8em; font-size: 0.78em;
+    color: var(--accent-lt); cursor: pointer; border-bottom: 1px dashed var(--accent-lt);
+    user-select: none;
+  }
+  .chart-toggle:hover { color: var(--accent); }
+  .data-table-wrap { display: none; margin-top: 0.8em; overflow-x: auto; }
+  .data-table-wrap.open { display: block; }
+  .data-table {
+    font-size: 0.75em; font-family: var(--mono); border-collapse: collapse;
+    width: 100%;
+  }
+  .data-table th, .data-table td {
+    border: 1px solid var(--border); padding: 0.2em 0.5em; text-align: right;
+  }
+  .data-table th { background: var(--bg); color: var(--accent-dk); font-weight: 600; text-align: center; }
+  .data-table td:first-child { text-align: left; }
+
+  /* CHAPTER STRIP */
+  .chapter-strip {
+    display: flex; height: 44px; border-radius: 6px; overflow: hidden;
+    border: 1px solid var(--border); margin-bottom: 0.6em;
+  }
+  .chapter-block {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7em; font-weight: 600; color: rgba(255,255,255,0.92);
+    overflow: hidden; cursor: default;
+    transition: opacity 0.15s;
+    text-align: center; padding: 0 4px; line-height: 1.2;
+    position: relative;
+  }
+  .chapter-block:hover { opacity: 0.85; }
+  .chapter-strip-labels {
+    display: flex; margin-bottom: 1.2em;
+  }
+  .chapter-strip-label {
+    font-size: 0.7em; color: var(--muted); font-style: italic;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    padding: 0 2px;
+  }
+
+  /* PHASE TIMELINE */
+  .phase-timeline { margin-top: 1em; }
+  .phase-row {
+    display: flex; align-items: stretch; margin-bottom: 0.7em; gap: 0;
+  }
+  .phase-label-col { width: 170px; flex-shrink: 0; padding-right: 1em; text-align: right; }
+  .phase-name { font-weight: 600; color: var(--accent-dk); font-size: 0.88em; }
+  .phase-dates { font-size: 0.72em; color: var(--muted); display: block; }
+  .phase-bar-col { flex: 1; display: flex; align-items: center; position: relative; }
+  .phase-bar {
+    height: 28px; border-radius: 4px; display: flex; align-items: center;
+    padding: 0 0.8em; font-size: 0.75em; color: rgba(255,255,255,0.9);
+    font-style: italic; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    position: relative;
+  }
+
+  /* HIGHLIGHT EVENTS */
+  .highlight-events {
+    display: flex; flex-wrap: wrap; gap: 1em; margin-top: 1em;
+  }
+  .highlight-event {
+    background: #fff8f0; border: 1px solid #e8c8b0; border-left: 4px solid var(--accent);
+    border-radius: 6px; padding: 0.7em 1em; font-size: 0.82em; flex: 1; min-width: 220px;
+  }
+  .highlight-event .ev-date { font-weight: 700; color: var(--accent); margin-bottom: 0.2em; }
+  .highlight-event .ev-text { color: var(--text); font-style: italic; }
+
+  /* ZERO HUMAN DAYS */
+  .zero-human-grid {
+    display: flex; flex-wrap: wrap; gap: 1em; margin-top: 0.5em;
+  }
+  .zero-human-card {
+    background: #f0f7f0; border: 1px solid #b8d8b8; border-radius: 6px;
+    padding: 0.8em 1.1em; font-size: 0.82em; flex: 1; min-width: 200px;
+  }
+  .zero-human-card .zh-date { font-weight: 700; color: #2d6a2d; margin-bottom: 0.3em; }
+
+  /* LOADING */
+  #loading {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; font-size: 1.1em; color: var(--muted); font-style: italic;
+  }
+  #loading.done { display: none; }
+
+  /* SPARKLINE CONTAINER */
+  .sparkline-wrap { margin: 0.5em 0 1.2em; }
+
+  /* LEGEND */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 0.8em; margin-bottom: 0.6em;
+    font-size: 0.78em;
+  }
+  .legend-item { display: flex; align-items: center; gap: 0.35em; }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+
+  @media (max-width: 700px) {
+    .metrics-bar { gap: 0.8em; }
+    .metric-card { padding: 0.8em 1em; min-width: 120px; }
+    .phase-label-col { width: 120px; }
+    nav a { padding: 0.5em 0.6em; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loading">Loading data…</div>
+
+<nav>
+  <a href="index.html" class="nav-brand">Menace Agents</a>
+  <a href="#overview">Overview</a>
+  <a href="#verifiable">Verifiable</a>
+  <a href="#infrastructure">Infrastructure</a>
+  <a href="#avoidance">Avoidance</a>
+  <a href="#knowledge">Knowledge</a>
+  <a href="#corrections">Corrections</a>
+  <a href="#behavioral">Behavioral</a>
+  <a href="#journey">Human Journey</a>
+  <a href="REPORT.md" class="nav-report">Full Report →</a>
+</nav>
+
+<div class="container">
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section id="overview">
+  <h2>1. Project Overview</h2>
+  <p class="section-intro">48 days of human-AI collaboration on porting NetHack to JavaScript — from a single prompt to a multi-agent ecosystem with six concurrent games.</p>
+
+  <div class="metrics-bar" id="metrics-bar">
+    <div class="metric-card"><div class="num">48</div><div class="label">days</div></div>
+    <div class="metric-card"><div class="num" id="m-commits">—</div><div class="label">commits</div></div>
+    <div class="metric-card"><div class="num" id="m-sessions">—</div><div class="label">sessions</div></div>
+    <div class="metric-card"><div class="num" id="m-human">—</div><div class="label">human messages</div></div>
+  </div>
+
+  <div class="chart-block">
+    <h3>Daily Commit Activity</h3>
+    <p class="chart-sub">Each bar is one day; color indicates project chapter. The x-axis spans Feb 6 – Mar 25, 2026.</p>
+    <div class="sparkline-wrap">
+      <canvas id="sparkline" height="70"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-block">
+    <h3>Chapter Timeline</h3>
+    <p class="chart-sub">Eight phases of the project, proportional to number of days.</p>
+    <div class="chapter-strip" id="chapter-strip"></div>
+    <div id="chapter-legend" class="legend" style="margin-top:0.8em;"></div>
+    <div id="chapter-summaries" style="margin-top:1em;"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section id="verifiable">
+  <h2>2. Make Work Verifiable</h2>
+  <p class="section-intro">The central discipline: every improvement must be measurable. Session pass rates grew from dozens to thousands as the test suite expanded.</p>
+
+  <div class="chart-block">
+    <h3>Session Pass Rate Progression</h3>
+    <p class="chart-sub">The highest denominator (total sessions in test suite) found in commit messages each day, with numerator (passing). Shows the test suite growing and pass rate converging toward 100%.</p>
+    <canvas id="pass-rate-chart" height="200"></canvas>
+    <span class="chart-toggle" onclick="toggleTable('pass-rate-table')">▶ Show raw data</span>
+    <div class="data-table-wrap" id="pass-rate-table"></div>
+  </div>
+
+  <div class="chart-block">
+    <h3>Measurement Language in Commits</h3>
+    <p class="chart-sub">Count of commits per day whose subject or body contains measurement words: <em>match, parity, align, rng, prng, diverge, seed, comparison</em>. High counts signal days focused on parity work.</p>
+    <canvas id="measurement-chart" height="180"></canvas>
+    <span class="chart-toggle" onclick="toggleTable('measurement-table')">▶ Show raw data</span>
+    <div class="data-table-wrap" id="measurement-table"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section id="infrastructure">
+  <h2>3. Infrastructure Compounds</h2>
+  <p class="section-intro">Each tool built — Oracle, Watchdog, LORE, CODEMATCH, PES — multiplied what subsequent agents could accomplish without human oversight.</p>
+
+  <div class="chart-block">
+    <h3>Commits per Day</h3>
+    <p class="chart-sub">Colored by chapter. Vertical markers show key infrastructure introductions.</p>
+    <canvas id="commits-chart" height="220"></canvas>
+    <span class="chart-toggle" onclick="toggleTable('commits-table')">▶ Show raw data</span>
+    <div class="data-table-wrap" id="commits-table"></div>
+  </div>
+
+  <div class="chart-block">
+    <h3>Sessions per Day</h3>
+    <p class="chart-sub">Parallel agent work scales up as orchestration infrastructure matures. Colored by chapter.</p>
+    <canvas id="sessions-chart" height="200"></canvas>
+    <span class="chart-toggle" onclick="toggleTable('sessions-table')">▶ Show raw data</span>
+    <div class="data-table-wrap" id="sessions-table"></div>
+  </div>
+
+  <div class="chart-block">
+    <h3>Agent Compute Hours per Day</h3>
+    <p class="chart-sub">Sum of session durations (in hours) per day. Shows the wall-clock AI work invested each day.</p>
+    <canvas id="compute-chart" height="200"></canvas>
+    <span class="chart-toggle" onclick="toggleTable('compute-table')">▶ Show raw data</span>
+    <div class="data-table-wrap" id="compute-table"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section id="avoidance">
+  <h2>4. Agents Avoid Hard Problems</h2>
+  <p class="section-intro">Agents systematically avoided the three hardest seed divergences (031–033) for weeks, until the human explicitly demanded they persist on them.</p>
+
+  <div class="chart-block">
+    <h3>Hard-Seed Work Timeline</h3>
+    <p class="chart-sub">Count of events mentioning seed031, seed032, or seed033 per day. The red marker on Mar 18 is the human's pushback: "do not avoid the difficult divergences."</p>
+    <canvas id="hardseed-chart" height="200"></canvas>
+    <span class="chart-toggle" onclick="toggleTable('hardseed-table')">▶ Show raw data</span>
+    <div class="data-table-wrap" id="hardseed-table"></div>
+  </div>
+
+  <div class="chart-block">
+    <h3>Human Redirect Events per Day</h3>
+    <p class="chart-sub">Human messages containing redirect language: "focus on", "don't avoid", "the hard", "the difficult", "priority", "instead", "not that", "wrong thing". These spike when agents drift toward easy wins.</p>
+    <canvas id="redirect-chart" height="180"></canvas>
+    <span class="chart-toggle" onclick="toggleTable('redirect-table')">▶ Show raw data</span>
+    <div class="data-table-wrap" id="redirect-table"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section id="knowledge">
+  <h2>5. Knowledge Capture (LORE)</h2>
+  <p class="section-intro">LORE (Lessons Of Remarkable Events) turned one-off discoveries into durable agent knowledge — the project's long-term memory system.</p>
+
+  <div class="chart-block">
+    <h3>LORE Growth Curve</h3>
+    <p class="chart-sub">Doc events per day (daily bars) and cumulative total (line). Annotated: Mar 8–11 autonomous stretch, Mar 22 seed031 cascade.</p>
+    <canvas id="lore-chart" height="220"></canvas>
+    <span class="chart-toggle" onclick="toggleTable('lore-table')">▶ Show raw data</span>
+    <div class="data-table-wrap" id="lore-table"></div>
+  </div>
+
+  <div class="chart-block">
+    <h3>Zero-Human-Message Productive Days</h3>
+    <p class="chart-sub">Days with 0 human messages but significant commit and doc activity — agents operating fully autonomously.</p>
+    <div id="zero-human-grid" class="zero-human-grid"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section id="corrections">
+  <h2>6. Human Corrections</h2>
+  <p class="section-intro">The human spent the first weeks correcting agent missteps in real time. Over time, corrections were built into documentation so they didn't need to be repeated.</p>
+
+  <div class="chart-block">
+    <h3>Correction Rate Over Time</h3>
+    <p class="chart-sub">Human messages per day containing correction language ("don't", "stop", "no,", "wrong", "not what", "I don't like", "I hate", "instead", "rather", "actually the") — raw count and rate per 100 human messages.</p>
+    <canvas id="correction-chart" height="210"></canvas>
+    <span class="chart-toggle" onclick="toggleTable('correction-chart-table')">▶ Show raw data</span>
+    <div class="data-table-wrap" id="correction-chart-table"></div>
+  </div>
+
+  <div class="chart-block">
+    <h3>Human Message Length Over Time</h3>
+    <p class="chart-sub">Average words per human message per day. Long early messages (setup, architecture), short middle messages (quick fixes), then longer again (philosophy, reflection).</p>
+    <canvas id="msglen-chart" height="180"></canvas>
+    <span class="chart-toggle" onclick="toggleTable('msglen-table')">▶ Show raw data</span>
+    <div class="data-table-wrap" id="msglen-table"></div>
+  </div>
+
+  <div class="chart-block">
+    <h3>Notable Frustration Moments</h3>
+    <p class="chart-sub">Three moments when the human's corrections were most pointed.</p>
+    <div class="highlight-events" id="frustration-events"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section id="behavioral">
+  <h2>7. Agent Behavioral Patterns</h2>
+  <p class="section-intro">How agents described their own work changed over the project: from hedged uncertainty to confident declaration — with a parallel rise in reverts.</p>
+
+  <div class="chart-block">
+    <h3>Commit Language: Hedging vs. Confidence</h3>
+    <p class="chart-sub">Commits per day with hedging words (conservative, safe, minimal, careful) vs. confident words (breakthrough, major, solved, complete, 100%). Two overlaid lines.</p>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-swatch" style="background:#8b6914;"></div> Hedging</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#2d6a2d;"></div> Confident</div>
+    </div>
+    <canvas id="language-chart" height="190"></canvas>
+    <span class="chart-toggle" onclick="toggleTable('language-table')">▶ Show raw data</span>
+    <div class="data-table-wrap" id="language-table"></div>
+  </div>
+
+  <div class="chart-block">
+    <h3>Revert Rate per Day</h3>
+    <p class="chart-sub">Commits with "Revert" in the subject — a signal of forward-backward churn. Spikes at chapter transitions and seed031 work.</p>
+    <canvas id="revert-chart" height="160"></canvas>
+    <span class="chart-toggle" onclick="toggleTable('revert-table')">▶ Show raw data</span>
+    <div class="data-table-wrap" id="revert-table"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section id="journey">
+  <h2>8. The Human's Journey</h2>
+  <p class="section-intro">The human's role evolved through seven phases as the project matured and the agents became more capable.</p>
+  <div class="phase-timeline" id="phase-timeline"></div>
+</section>
+
+</div><!-- /container -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════════
+
+function toggleTable(id) {
+  const el = document.getElementById(id);
+  const toggle = el.previousElementSibling;
+  el.classList.toggle('open');
+  toggle.textContent = el.classList.contains('open')
+    ? '▼ Hide raw data' : '▶ Show raw data';
+}
+
+function makeTable(headers, rows) {
+  const t = document.createElement('table');
+  t.className = 'data-table';
+  const thead = t.createTHead();
+  const hr = thead.insertRow();
+  headers.forEach(h => { const th = document.createElement('th'); th.textContent = h; hr.appendChild(th); });
+  const tbody = t.createTBody();
+  rows.forEach(row => {
+    const tr = tbody.insertRow();
+    row.forEach(cell => { const td = tr.insertCell(); td.textContent = cell; });
+  });
+  return t;
+}
+
+function fmtDate(d) {
+  const [, , dd] = d.split('-');
+  const months = ['Jan','Feb','Mar','Apr'];
+  const mo = parseInt(d.split('-')[1]) - 1;
+  return months[mo] + ' ' + parseInt(dd);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CANVAS DRAWING HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+function setupCanvas(canvas) {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const w = rect.width || 900;
+  const h = canvas.height; // CSS pixels
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, w, h, dpr };
+}
+
+function drawBarChart(canvas, values, options = {}) {
+  const { ctx, w, h } = setupCanvas(canvas);
+  const {
+    colors = values.map(() => '#6b2c2c'),
+    maxVal = null,
+    markers = [],   // [{idx, label, color}]
+    paddingTop = 24, paddingBottom = 28, paddingLeft = 48, paddingRight = 12,
+    yLabel = '', tickCount = 5, showXLabels = true, xLabels = [],
+  } = options;
+
+  const chartW = w - paddingLeft - paddingRight;
+  const chartH = h - paddingTop - paddingBottom;
+  const mx = maxVal || Math.max(...values, 1);
+  const n = values.length;
+  const barW = chartW / n;
+  const gap = Math.max(1, barW * 0.12);
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Grid lines
+  ctx.strokeStyle = '#e8e4dc';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  for (let i = 0; i <= tickCount; i++) {
+    const y = paddingTop + chartH - (i / tickCount) * chartH;
+    ctx.beginPath(); ctx.moveTo(paddingLeft, y); ctx.lineTo(paddingLeft + chartW, y); ctx.stroke();
+    const val = Math.round((i / tickCount) * mx);
+    ctx.fillStyle = '#999'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(val, paddingLeft - 4, y + 3);
+  }
+  ctx.setLineDash([]);
+
+  // Bars
+  values.forEach((v, i) => {
+    const barH = (v / mx) * chartH;
+    const x = paddingLeft + i * barW + gap / 2;
+    const y = paddingTop + chartH - barH;
+    ctx.fillStyle = colors[i] || '#6b2c2c';
+    ctx.fillRect(x, y, barW - gap, barH);
+  });
+
+  // X labels (every 6)
+  if (showXLabels && xLabels.length) {
+    ctx.fillStyle = '#888'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+    xLabels.forEach((lbl, i) => {
+      if (i % 6 === 0 || i === xLabels.length - 1) {
+        const x = paddingLeft + i * barW + barW / 2;
+        ctx.fillText(lbl, x, h - 6);
+      }
+    });
+  }
+
+  // Markers
+  markers.forEach(({ idx, label, color = '#c00' }) => {
+    const x = paddingLeft + idx * barW + barW / 2;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(x, paddingTop); ctx.lineTo(x, paddingTop + chartH); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = color; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
+    // Stagger labels
+    const yOff = (idx % 2 === 0) ? paddingTop - 10 : paddingTop - 2;
+    ctx.fillText(label, x, yOff);
+  });
+
+  // Axes
+  ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(paddingLeft, paddingTop); ctx.lineTo(paddingLeft, paddingTop + chartH);
+  ctx.lineTo(paddingLeft + chartW, paddingTop + chartH);
+  ctx.stroke();
+
+  return { barW, paddingLeft, paddingBottom, chartW, chartH, paddingTop, mx, n };
+}
+
+function drawLineChart(canvas, series, options = {}) {
+  const { ctx, w, h } = setupCanvas(canvas);
+  const {
+    paddingTop = 24, paddingBottom = 28, paddingLeft = 52, paddingRight = 16,
+    tickCount = 5, xLabels = [], maxVal = null, showDots = false,
+    fill = false,
+  } = options;
+
+  const chartW = w - paddingLeft - paddingRight;
+  const chartH = h - paddingTop - paddingBottom;
+  const allVals = series.flatMap(s => s.values.filter(v => v != null));
+  const mx = maxVal || Math.max(...allVals, 1);
+  const n = series[0].values.length;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Grid
+  ctx.strokeStyle = '#e8e4dc';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  for (let i = 0; i <= tickCount; i++) {
+    const y = paddingTop + chartH - (i / tickCount) * chartH;
+    ctx.beginPath(); ctx.moveTo(paddingLeft, y); ctx.lineTo(paddingLeft + chartW, y); ctx.stroke();
+    ctx.fillStyle = '#999'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round((i / tickCount) * mx), paddingLeft - 4, y + 3);
+  }
+  ctx.setLineDash([]);
+
+  // Series
+  series.forEach(({ values, color, label, dashed = false }) => {
+    if (dashed) ctx.setLineDash([5, 3]); else ctx.setLineDash([]);
+
+    if (fill) {
+      ctx.beginPath();
+      let started = false;
+      values.forEach((v, i) => {
+        if (v == null) return;
+        const x = paddingLeft + (i / (n - 1)) * chartW;
+        const y = paddingTop + chartH - (v / mx) * chartH;
+        if (!started) { ctx.moveTo(x, paddingTop + chartH); ctx.lineTo(x, y); started = true; }
+        else ctx.lineTo(x, y);
+      });
+      ctx.lineTo(paddingLeft + chartW, paddingTop + chartH);
+      ctx.closePath();
+      ctx.fillStyle = color + '33';
+      ctx.fill();
+    }
+
+    ctx.beginPath();
+    let moved = false;
+    values.forEach((v, i) => {
+      if (v == null) return;
+      const x = paddingLeft + (i / (n - 1)) * chartW;
+      const y = paddingTop + chartH - (v / mx) * chartH;
+      if (!moved) { ctx.moveTo(x, y); moved = true; } else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    if (showDots) {
+      values.forEach((v, i) => {
+        if (v == null) return;
+        const x = paddingLeft + (i / (n - 1)) * chartW;
+        const y = paddingTop + chartH - (v / mx) * chartH;
+        ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = color; ctx.fill();
+      });
+    }
+  });
+
+  // X labels
+  if (xLabels.length) {
+    ctx.fillStyle = '#888'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+    xLabels.forEach((lbl, i) => {
+      if (i % 6 === 0 || i === xLabels.length - 1) {
+        const x = paddingLeft + (i / (n - 1)) * chartW;
+        ctx.fillText(lbl, x, h - 6);
+      }
+    });
+  }
+
+  // Axes
+  ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(paddingLeft, paddingTop); ctx.lineTo(paddingLeft, paddingTop + chartH);
+  ctx.lineTo(paddingLeft + chartW, paddingTop + chartH);
+  ctx.stroke();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATA LOADING & PROCESSING
+// ═══════════════════════════════════════════════════════════════
+
+async function loadData() {
+  const [timelineText, chapters, daySummaries] = await Promise.all([
+    fetch('data/timeline.jsonl').then(r => r.text()),
+    fetch('data/chapters.json').then(r => r.json()),
+    fetch('data/day-summaries.json').then(r => r.json()),
+  ]);
+
+  const timeline = timelineText.trim().split('\n').map(line => JSON.parse(line));
+  return { timeline, chapters, daySummaries };
+}
+
+function processTimeline(timeline) {
+  const passPattern = /(\d+)\s*\/\s*(\d+)\s*(?:sessions?|passing|pass)/i;
+  const measurementWords = ['match', 'parity', 'align', 'rng', 'prng', 'diverge', 'seed', 'comparison'];
+  const hedgingWords = ['conservative', 'safe', 'minimal', 'careful'];
+  const confidentWords = ['breakthrough', 'major', 'solved', 'complete', '100%'];
+  const correctionWords = ["don't", 'stop', 'no,', 'wrong', 'not what', "i don't like", 'i hate', 'instead', 'rather', 'actually the'];
+  const redirectWords = ['focus on', "don't avoid", 'the hard', 'the difficult', 'priority', 'instead', 'not that', 'wrong thing'];
+  const seedPattern = /seed0?3[123]/i;
+
+  return timeline.map(day => {
+    const commits = day.commits || [];
+    const sessions = day.sessions || [];
+    const events = day.events || [];
+
+    const humanEvents = events.filter(e => e.type === 'human');
+    const docEvents = events.filter(e => e.type === 'doc');
+
+    // Session pass rate (highest denominator on the day)
+    let bestDenom = 0, bestNum = 0;
+    for (const c of commits) {
+      const text = (c.subject || '') + ' ' + (c.body || '');
+      const m = text.match(passPattern);
+      if (m) {
+        const num = parseInt(m[1]), denom = parseInt(m[2]);
+        if (denom > bestDenom) { bestDenom = denom; bestNum = num; }
+      }
+    }
+
+    // Measurement language
+    let measurementCount = 0;
+    for (const c of commits) {
+      const text = ((c.subject || '') + ' ' + (c.body || '')).toLowerCase();
+      if (measurementWords.some(w => text.includes(w))) measurementCount++;
+    }
+
+    // Commit language
+    let hedgingCount = 0, confidentCount = 0, revertCount = 0;
+    for (const c of commits) {
+      const text = ((c.subject || '') + ' ' + (c.body || '')).toLowerCase();
+      if (hedgingWords.some(w => text.includes(w))) hedgingCount++;
+      if (confidentWords.some(w => text.includes(w))) confidentCount++;
+      if ((c.subject || '').toLowerCase().includes('revert')) revertCount++;
+    }
+
+    // Human stats
+    const totalWords = humanEvents.reduce((s, e) => s + (e.words || 0), 0);
+    const avgWords = humanEvents.length ? totalWords / humanEvents.length : 0;
+    const corrections = humanEvents.filter(e =>
+      correctionWords.some(w => (e.text || '').toLowerCase().includes(w))).length;
+    const redirects = humanEvents.filter(e =>
+      redirectWords.some(w => (e.text || '').toLowerCase().includes(w))).length;
+
+    // Seed mentions
+    const seedMentions = events.filter(e => {
+      const text = (e.text || '') + (e.subject || '') + (e.body || '');
+      return seedPattern.test(text);
+    }).length;
+
+    // Compute hours
+    const computeHours = sessions.reduce((s, sess) => s + (sess.durationMin || 0), 0) / 60;
+
+    return {
+      date: day.date,
+      dayHeader: day.dayHeader,
+      commitCount: commits.length,
+      sessionCount: sessions.length,
+      humanCount: humanEvents.length,
+      docCount: docEvents.length,
+      passNum: bestNum,
+      passDenom: bestDenom,
+      measurementCount,
+      hedgingCount,
+      confidentCount,
+      revertCount,
+      avgWords,
+      corrections,
+      correctionRate: humanEvents.length ? (corrections / humanEvents.length) * 100 : 0,
+      redirects,
+      seedMentions,
+      computeHours,
+    };
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHAPTER COLORS & MAPPING
+// ═══════════════════════════════════════════════════════════════
+
+const CHAPTER_COLORS = [
+  '#7b4b8c', '#2a6b8c', '#2d7a3f', '#8c6b2a',
+  '#8c2a2a', '#2a6b5f', '#5c5c8c', '#6b4c2a'
+];
+
+function buildChapterIndex(chapters, timeline) {
+  const dateToChapter = {};
+  chapters.forEach((ch, i) => {
+    ch.dates.forEach(d => dateToChapter[d] = i);
+  });
+  return timeline.map(day => dateToChapter[day.date] ?? 0);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+
+function renderMetrics(stats) {
+  const totCommits = stats.reduce((s, d) => s + d.commitCount, 0);
+  const totSessions = stats.reduce((s, d) => s + d.sessionCount, 0);
+  const totHuman = stats.reduce((s, d) => s + d.humanCount, 0);
+  document.getElementById('m-commits').textContent = totCommits.toLocaleString();
+  document.getElementById('m-sessions').textContent = totSessions.toLocaleString();
+  document.getElementById('m-human').textContent = totHuman.toLocaleString();
+}
+
+function renderSparkline(stats, chapterIdx) {
+  const canvas = document.getElementById('sparkline');
+  const values = stats.map(d => d.commitCount);
+  const colors = chapterIdx.map(i => CHAPTER_COLORS[i]);
+  const xLabels = stats.map(d => fmtDate(d.date));
+  drawBarChart(canvas, values, {
+    colors, xLabels, paddingTop: 8, paddingBottom: 22, paddingLeft: 40, paddingRight: 8,
+    tickCount: 4
+  });
+}
+
+function renderChapterStrip(chapters) {
+  const strip = document.getElementById('chapter-strip');
+  const legend = document.getElementById('chapter-legend');
+  const summDiv = document.getElementById('chapter-summaries');
+  const totalDays = chapters.reduce((s, c) => s + c.dates.length, 0);
+
+  chapters.forEach((ch, i) => {
+    const pct = (ch.dates.length / totalDays) * 100;
+    const block = document.createElement('div');
+    block.className = 'chapter-block';
+    block.style.width = pct + '%';
+    block.style.background = CHAPTER_COLORS[i];
+    // Only show name if wide enough
+    if (pct > 8) block.textContent = ch.name;
+    block.title = ch.name + ' (' + ch.dates.length + ' days): ' + ch.summary;
+    strip.appendChild(block);
+
+    // Legend item
+    const li = document.createElement('div');
+    li.className = 'legend-item';
+    li.innerHTML = `<div class="legend-swatch" style="background:${CHAPTER_COLORS[i]}"></div> ${ch.name}`;
+    legend.appendChild(li);
+  });
+
+  // Chapter summaries
+  summDiv.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0.8em;';
+  chapters.forEach((ch, i) => {
+    const card = document.createElement('div');
+    card.style.cssText = `border-left:4px solid ${CHAPTER_COLORS[i]};padding:0.5em 0.8em;background:#fff;border-radius:4px;font-size:0.82em;`;
+    card.innerHTML = `<strong style="color:${CHAPTER_COLORS[i]}">${ch.name}</strong> <span style="color:#888;font-size:0.9em">(${ch.dates[0].slice(5).replace('-','/')}\u2013${ch.dates[ch.dates.length-1].slice(5).replace('-','/')})</span><br><em style="color:#555">${ch.summary}</em>`;
+    summDiv.appendChild(card);
+  });
+}
+
+function renderPassRateChart(stats) {
+  const canvas = document.getElementById('pass-rate-chart');
+  const xLabels = stats.map(d => fmtDate(d.date));
+  const denomVals = stats.map(d => d.passDenom || null);
+  const numVals = stats.map(d => d.passNum || null);
+
+  drawLineChart(canvas, [
+    { values: denomVals, color: '#cca050', label: 'Total (denominator)', dashed: true },
+    { values: numVals, color: '#2d6a2d', label: 'Passing (numerator)' },
+  ], { xLabels, tickCount: 5, showDots: false });
+
+  // Legend
+  const block = canvas.closest('.chart-block');
+  const legDiv = document.createElement('div');
+  legDiv.className = 'legend';
+  legDiv.style.marginBottom = '0.5em';
+  legDiv.innerHTML = `
+    <div class="legend-item"><div class="legend-swatch" style="background:#2d6a2d"></div> Passing sessions</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#cca050"></div> Total sessions (test suite size)</div>
+  `;
+  block.insertBefore(legDiv, canvas);
+
+  const tableWrap = document.getElementById('pass-rate-table');
+  tableWrap.appendChild(makeTable(
+    ['Date', 'Passing', 'Total', 'Rate %'],
+    stats.map(d => [
+      fmtDate(d.date), d.passNum || '—', d.passDenom || '—',
+      d.passDenom ? (d.passNum / d.passDenom * 100).toFixed(1) + '%' : '—'
+    ])
+  ));
+}
+
+function renderMeasurementChart(stats, chapterIdx) {
+  const canvas = document.getElementById('measurement-chart');
+  const colors = chapterIdx.map(i => CHAPTER_COLORS[i]);
+  const xLabels = stats.map(d => fmtDate(d.date));
+  drawBarChart(canvas, stats.map(d => d.measurementCount), {
+    colors, xLabels, tickCount: 4
+  });
+  const tw = document.getElementById('measurement-table');
+  tw.appendChild(makeTable(
+    ['Date', 'Commits w/ measurement words', 'Total commits'],
+    stats.map(d => [fmtDate(d.date), d.measurementCount, d.commitCount])
+  ));
+}
+
+function renderCommitsChart(stats, chapterIdx) {
+  const canvas = document.getElementById('commits-chart');
+  const colors = chapterIdx.map(i => CHAPTER_COLORS[i]);
+  const xLabels = stats.map(d => fmtDate(d.date));
+
+  // Infrastructure markers: find day indices
+  const dateIdx = {};
+  stats.forEach((d, i) => dateIdx[d.date] = i);
+
+  const markers = [
+    { idx: dateIdx['2026-02-06'] ?? 0, label: 'PRNG', color: '#5c5c8c' },
+    { idx: dateIdx['2026-02-18'] ?? 0, label: 'Watchdog', color: '#2a6b5f' },
+    { idx: dateIdx['2026-02-15'] ?? 0, label: 'Oracle', color: '#2a6b8c' },
+    { idx: dateIdx['2026-03-10'] ?? 0, label: 'LORE', color: '#8b6914' },
+    { idx: dateIdx['2026-02-19'] ?? 0, label: 'CODEMATCH', color: '#2d7a3f' },
+    { idx: dateIdx['2026-03-01'] ?? 0, label: 'PES', color: '#8c2a2a' },
+  ];
+
+  drawBarChart(canvas, stats.map(d => d.commitCount), {
+    colors, xLabels, tickCount: 5, markers,
+    paddingTop: 32,
+  });
+
+  const tw = document.getElementById('commits-table');
+  tw.appendChild(makeTable(
+    ['Date', 'Commits', 'Chapter'],
+    stats.map((d, i) => [fmtDate(d.date), d.commitCount, `Ch${chapterIdx[i]+1}`])
+  ));
+}
+
+function renderSessionsChart(stats, chapterIdx) {
+  const canvas = document.getElementById('sessions-chart');
+  const colors = chapterIdx.map(i => CHAPTER_COLORS[i]);
+  const xLabels = stats.map(d => fmtDate(d.date));
+  drawBarChart(canvas, stats.map(d => d.sessionCount), { colors, xLabels, tickCount: 5 });
+
+  const tw = document.getElementById('sessions-table');
+  tw.appendChild(makeTable(
+    ['Date', 'Sessions'],
+    stats.map(d => [fmtDate(d.date), d.sessionCount])
+  ));
+}
+
+function renderComputeChart(stats, chapterIdx) {
+  const canvas = document.getElementById('compute-chart');
+  const colors = chapterIdx.map(i => CHAPTER_COLORS[i]);
+  const xLabels = stats.map(d => fmtDate(d.date));
+  drawBarChart(canvas, stats.map(d => parseFloat(d.computeHours.toFixed(1))), {
+    colors, xLabels, tickCount: 5
+  });
+
+  const tw = document.getElementById('compute-table');
+  tw.appendChild(makeTable(
+    ['Date', 'Compute Hours'],
+    stats.map(d => [fmtDate(d.date), d.computeHours.toFixed(1)])
+  ));
+}
+
+function renderHardSeedChart(stats) {
+  const canvas = document.getElementById('hardseed-chart');
+  const xLabels = stats.map(d => fmtDate(d.date));
+  const dateIdx = {};
+  stats.forEach((d, i) => dateIdx[d.date] = i);
+
+  // Color bars: red when high seed activity
+  const maxSeed = Math.max(...stats.map(d => d.seedMentions), 1);
+  const colors = stats.map(d => {
+    const intensity = d.seedMentions / maxSeed;
+    return `rgba(${Math.round(80 + 120 * intensity)}, ${Math.round(60 - 30 * intensity)}, ${Math.round(60 - 30 * intensity)}, 0.85)`;
+  });
+
+  const markers = [
+    { idx: dateIdx['2026-03-18'] ?? 0, label: '"do not avoid"', color: '#c00' }
+  ];
+
+  drawBarChart(canvas, stats.map(d => d.seedMentions), {
+    colors, xLabels, tickCount: 4, markers, paddingTop: 28
+  });
+
+  const tw = document.getElementById('hardseed-table');
+  tw.appendChild(makeTable(
+    ['Date', 'Seed031/032/033 mentions'],
+    stats.map(d => [fmtDate(d.date), d.seedMentions])
+  ));
+}
+
+function renderRedirectChart(stats) {
+  const canvas = document.getElementById('redirect-chart');
+  const xLabels = stats.map(d => fmtDate(d.date));
+  const colors = stats.map(() => '#5c5c8c');
+  drawBarChart(canvas, stats.map(d => d.redirects), { colors, xLabels, tickCount: 4 });
+
+  const tw = document.getElementById('redirect-table');
+  tw.appendChild(makeTable(
+    ['Date', 'Redirect messages', 'Total human msgs'],
+    stats.map(d => [fmtDate(d.date), d.redirects, d.humanCount])
+  ));
+}
+
+function renderLoreChart(stats) {
+  const canvas = document.getElementById('lore-chart');
+  const xLabels = stats.map(d => fmtDate(d.date));
+
+  // Build cumulative
+  let cum = 0;
+  const cumVals = stats.map(d => { cum += d.docCount; return cum; });
+  const dailyVals = stats.map(d => d.docCount);
+  const maxVal = Math.max(...cumVals);
+
+  // Draw dual: bars for daily, line for cumulative
+  const { ctx, w, h } = setupCanvas(canvas);
+  const pl = 52, pr = 52, pt = 24, pb = 28;
+  const chartW = w - pl - pr;
+  const chartH = h - pt - pb;
+  const n = stats.length;
+  const barW = chartW / n;
+
+  // Grid
+  ctx.strokeStyle = '#e8e4dc'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+  for (let i = 0; i <= 5; i++) {
+    const y = pt + chartH - (i / 5) * chartH;
+    ctx.beginPath(); ctx.moveTo(pl, y); ctx.lineTo(pl + chartW, y); ctx.stroke();
+    ctx.fillStyle = '#999'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round((i / 5) * maxVal), pl - 4, y + 3);
+  }
+  ctx.setLineDash([]);
+
+  // Bars (daily)
+  const dateIdx = {};
+  stats.forEach((d, i) => dateIdx[d.date] = i);
+  const highlightDates = ['2026-03-08','2026-03-09','2026-03-10','2026-03-11','2026-03-22'];
+
+  dailyVals.forEach((v, i) => {
+    const barH = (v / maxVal) * chartH;
+    const x = pl + i * barW;
+    const y = pt + chartH - barH;
+    const isHighlight = highlightDates.includes(stats[i].date);
+    ctx.fillStyle = isHighlight ? '#8b6914' : '#c5b08a';
+    ctx.fillRect(x + 1, y, barW - 2, barH);
+  });
+
+  // Cumulative line
+  ctx.beginPath();
+  cumVals.forEach((v, i) => {
+    const x = pl + i * barW + barW / 2;
+    const y = pt + chartH - (v / maxVal) * chartH;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#6b2c2c'; ctx.lineWidth = 2.5; ctx.stroke();
+
+  // Right axis for cumulative
+  ctx.fillStyle = '#6b2c2c'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+  for (let i = 0; i <= 5; i++) {
+    const y = pt + chartH - (i / 5) * chartH;
+    ctx.fillText(Math.round((i / 5) * maxVal), pl + chartW + 4, y + 3);
+  }
+  ctx.fillText('↑ cumulative', pl + chartW + 4, pt + 12);
+
+  // Annotations
+  const annotate = (date, label, yOff = 0) => {
+    const i = dateIdx[date];
+    if (i == null) return;
+    const x = pl + i * barW + barW / 2;
+    ctx.strokeStyle = '#8b6914'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(x, pt); ctx.lineTo(x, pt + chartH); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#8b6914'; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(label, x, pt - 8 + yOff);
+  };
+  annotate('2026-03-11', 'Mar 8–11 autonomous');
+  annotate('2026-03-22', 'seed031 cascade', 10);
+
+  // X labels
+  ctx.fillStyle = '#888'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+  xLabels.forEach((lbl, i) => {
+    if (i % 6 === 0 || i === n - 1) {
+      ctx.fillText(lbl, pl + i * barW + barW / 2, h - 6);
+    }
+  });
+
+  // Axes
+  ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pl, pt); ctx.lineTo(pl, pt + chartH); ctx.lineTo(pl + chartW, pt + chartH); ctx.stroke();
+
+  // Legend
+  const block = canvas.closest('.chart-block');
+  const legDiv = document.createElement('div');
+  legDiv.className = 'legend';
+  legDiv.style.marginBottom = '0.5em';
+  legDiv.innerHTML = `
+    <div class="legend-item"><div class="legend-swatch" style="background:#c5b08a"></div> Daily doc events</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#8b6914"></div> Highlighted days</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#6b2c2c;height:3px;border-radius:2px;width:20px;"></div> Cumulative total</div>
+  `;
+  block.insertBefore(legDiv, canvas);
+
+  const tw = document.getElementById('lore-table');
+  tw.appendChild(makeTable(
+    ['Date', 'Daily doc events', 'Cumulative'],
+    stats.map((d, i) => [fmtDate(d.date), d.docCount, cumVals[i]])
+  ));
+}
+
+function renderZeroHumanGrid(stats) {
+  const grid = document.getElementById('zero-human-grid');
+  const zeroDays = stats.filter(d => d.humanCount === 0 && d.commitCount > 0);
+
+  if (!zeroDays.length) {
+    grid.textContent = 'None found.';
+    return;
+  }
+
+  zeroDays.forEach(d => {
+    const card = document.createElement('div');
+    card.className = 'zero-human-card';
+    card.innerHTML = `
+      <div class="zh-date">${fmtDate(d.date)}</div>
+      <div>Commits: <strong>${d.commitCount}</strong></div>
+      <div>Doc events: <strong>${d.docCount}</strong></div>
+      <div>Sessions: <strong>${d.sessionCount}</strong></div>
+      <div>Compute hours: <strong>${d.computeHours.toFixed(1)}h</strong></div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function renderCorrectionChart(stats) {
+  const canvas = document.getElementById('correction-chart');
+  const xLabels = stats.map(d => fmtDate(d.date));
+
+  drawLineChart(canvas, [
+    { values: stats.map(d => d.corrections), color: '#8c2a2a', label: 'Raw count' },
+    { values: stats.map(d => parseFloat(d.correctionRate.toFixed(1))), color: '#2a6b8c', label: 'Per 100 msgs', dashed: true },
+  ], { xLabels, tickCount: 5 });
+
+  const block = canvas.closest('.chart-block');
+  const legDiv = document.createElement('div');
+  legDiv.className = 'legend';
+  legDiv.style.marginBottom = '0.5em';
+  legDiv.innerHTML = `
+    <div class="legend-item"><div class="legend-swatch" style="background:#8c2a2a"></div> Raw correction count</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#2a6b8c"></div> Rate per 100 human msgs (dashed)</div>
+  `;
+  block.insertBefore(legDiv, canvas);
+
+  const tw = document.getElementById('correction-chart-table');
+  tw.appendChild(makeTable(
+    ['Date', 'Corrections', 'Human msgs', 'Rate/100'],
+    stats.map(d => [
+      fmtDate(d.date), d.corrections, d.humanCount,
+      d.humanCount ? d.correctionRate.toFixed(1) : '—'
+    ])
+  ));
+}
+
+function renderMsgLenChart(stats) {
+  const canvas = document.getElementById('msglen-chart');
+  const xLabels = stats.map(d => fmtDate(d.date));
+  drawLineChart(canvas, [
+    { values: stats.map(d => d.humanCount > 0 ? parseFloat(d.avgWords.toFixed(1)) : null), color: '#2a6b5f', fill: true },
+  ], { xLabels, tickCount: 5, showDots: true });
+
+  const tw = document.getElementById('msglen-table');
+  tw.appendChild(makeTable(
+    ['Date', 'Avg words/msg', 'Human msgs'],
+    stats.map(d => [fmtDate(d.date), d.humanCount > 0 ? d.avgWords.toFixed(1) : '—', d.humanCount])
+  ));
+}
+
+function renderFrustrationEvents(timeline) {
+  const container = document.getElementById('frustration-events');
+  const frustrations = [
+    {
+      date: '2026-02-20',
+      label: 'Feb 20 — Test-only rule',
+      text: '"I hate this test-only execution rule — agents should be able to run the actual game."'
+    },
+    {
+      date: '2026-03-18',
+      label: 'Mar 18 — Avoiding hard divergences',
+      text: '"Do not avoid the difficult divergences; persist on seed031–033. Stop picking easy wins."'
+    },
+    {
+      date: '2026-03-19',
+      label: 'Mar 19 — Wrong priorities',
+      text: '"Instead of synonyms for look, do inventory, listen, examine items — you are working on the wrong thing."'
+    },
+  ];
+
+  frustrations.forEach(f => {
+    const div = document.createElement('div');
+    div.className = 'highlight-event';
+    div.innerHTML = `<div class="ev-date">${f.label}</div><div class="ev-text">${f.text}</div>`;
+    container.appendChild(div);
+  });
+}
+
+function renderLanguageChart(stats) {
+  const canvas = document.getElementById('language-chart');
+  const xLabels = stats.map(d => fmtDate(d.date));
+  drawLineChart(canvas, [
+    { values: stats.map(d => d.hedgingCount), color: '#8b6914', label: 'Hedging' },
+    { values: stats.map(d => d.confidentCount), color: '#2d6a2d', label: 'Confident' },
+  ], { xLabels, tickCount: 5 });
+
+  const tw = document.getElementById('language-table');
+  tw.appendChild(makeTable(
+    ['Date', 'Hedging commits', 'Confident commits', 'Total commits'],
+    stats.map(d => [fmtDate(d.date), d.hedgingCount, d.confidentCount, d.commitCount])
+  ));
+}
+
+function renderRevertChart(stats, chapterIdx) {
+  const canvas = document.getElementById('revert-chart');
+  const xLabels = stats.map(d => fmtDate(d.date));
+  const colors = chapterIdx.map(i => CHAPTER_COLORS[i]);
+  drawBarChart(canvas, stats.map(d => d.revertCount), {
+    colors, xLabels, tickCount: 3, paddingBottom: 28
+  });
+
+  const tw = document.getElementById('revert-table');
+  tw.appendChild(makeTable(
+    ['Date', 'Reverts', 'Total commits'],
+    stats.map(d => [fmtDate(d.date), d.revertCount, d.commitCount])
+  ));
+}
+
+function renderPhaseTimeline() {
+  const phases = [
+    {
+      name: 'Architect',
+      dates: 'Feb 6–9',
+      color: CHAPTER_COLORS[0],
+      quote: '"I would like to create a faithful JavaScript port of NetHack."'
+    },
+    {
+      name: 'Measurement Designer',
+      dates: 'Feb 10–15',
+      color: CHAPTER_COLORS[1],
+      quote: '"Match every random number. Session recording goes deterministic."'
+    },
+    {
+      name: 'Orchestrator',
+      dates: 'Feb 16–25',
+      color: CHAPTER_COLORS[2],
+      quote: '"Read agents.md and get started."'
+    },
+    {
+      name: 'Systems Critic',
+      dates: 'Feb 26 – Mar 5',
+      color: CHAPTER_COLORS[4],
+      quote: '"The human has no deep game expertise — the agents do the porting."'
+    },
+    {
+      name: 'Hands-off Enabler',
+      dates: 'Mar 6–17',
+      color: CHAPTER_COLORS[5],
+      quote: '"Zero human messages, 257 commits, 44 LORE lessons."'
+    },
+    {
+      name: 'Behavior Debugger',
+      dates: 'Mar 18–19',
+      color: CHAPTER_COLORS[6],
+      quote: '"Do not avoid the difficult divergences; persist on 031–033."'
+    },
+    {
+      name: 'Meaning-maker',
+      dates: 'Mar 20–25',
+      color: CHAPTER_COLORS[7],
+      quote: '"The project becomes self-aware. Reflections essay. Timeline built."'
+    },
+  ];
+
+  const container = document.getElementById('phase-timeline');
+  phases.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'phase-row';
+    row.innerHTML = `
+      <div class="phase-label-col">
+        <div class="phase-name">${p.name}</div>
+        <span class="phase-dates">${p.dates}</span>
+      </div>
+      <div class="phase-bar-col">
+        <div class="phase-bar" style="background:${p.color};width:100%">
+          ${p.quote}
+        </div>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN
+// ═══════════════════════════════════════════════════════════════
+
+async function main() {
+  try {
+    const { timeline, chapters } = await loadData();
+    const stats = processTimeline(timeline);
+    const chapterIdx = buildChapterIndex(chapters, timeline);
+
+    // Render all sections
+    renderMetrics(stats);
+    renderChapterStrip(chapters);
+
+    // Store for resize re-renders
+    _resizeStats = stats;
+    _resizeChapterIdx = chapterIdx;
+
+    // Defer canvas renders until after layout
+    requestAnimationFrame(() => {
+      renderSparkline(stats, chapterIdx);
+      renderPassRateChart(stats);
+      renderMeasurementChart(stats, chapterIdx);
+      renderCommitsChart(stats, chapterIdx);
+      renderSessionsChart(stats, chapterIdx);
+      renderComputeChart(stats, chapterIdx);
+      renderHardSeedChart(stats);
+      renderRedirectChart(stats);
+      renderLoreChart(stats);
+      renderZeroHumanGrid(stats);
+      renderCorrectionChart(stats);
+      renderMsgLenChart(stats);
+      renderFrustrationEvents(timeline);
+      renderLanguageChart(stats);
+      renderRevertChart(stats, chapterIdx);
+      renderPhaseTimeline();
+
+      document.getElementById('loading').classList.add('done');
+    });
+
+  } catch (err) {
+    console.error('Dashboard load error:', err);
+    document.getElementById('loading').textContent = 'Error loading data: ' + err.message;
+  }
+}
+
+// Re-render only the pure canvas charts on resize (debounced)
+// Functions that insert legend DOM nodes are excluded since those are set up once
+let resizeTimer;
+let _resizeStats = null;
+let _resizeChapterIdx = null;
+
+function renderCanvasOnly(stats, chapterIdx) {
+  renderSparkline(stats, chapterIdx);
+  renderMeasurementChart(stats, chapterIdx);
+  renderCommitsChart(stats, chapterIdx);
+  renderSessionsChart(stats, chapterIdx);
+  renderComputeChart(stats, chapterIdx);
+  renderHardSeedChart(stats);
+  renderRedirectChart(stats);
+  renderMsgLenChart(stats);
+  renderLanguageChart(stats);
+  renderRevertChart(stats, chapterIdx);
+  // Pass rate and lore charts insert DOM legends — skip on resize to avoid duplicates
+}
+
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (_resizeStats && _resizeChapterIdx) {
+      renderCanvasOnly(_resizeStats, _resizeChapterIdx);
+    }
+  }, 200);
+});
+
+main();
+</script>
+</body>
+</html>
