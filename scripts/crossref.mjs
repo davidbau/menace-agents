@@ -201,6 +201,18 @@ function parseGitCommits() {
 }
 
 // --- 3. Parse agent sessions (lightweight — just metadata + human messages) ---
+
+// Only scan directories related to menace/mazesofmenace/teleport.
+// Excludes unrelated projects (cloudpickle, neural-mechanics-web, etc.)
+// that ended up in the agent-logs directory via broad rsync.
+function isRelevantDir(name) {
+  const n = name.toLowerCase();
+  return n.includes('menace') || n.includes('mazesofmenace') || n.includes('teleport')
+    || n.startsWith('air-') || n.startsWith('quadro-project') || n.startsWith('quadro-codex')
+    || n.startsWith('quadro-claude') || n.startsWith('project-root')
+    || n === 'quadro-tmp-logs';
+}
+
 function findJsonlFiles(baseDir, subdir) {
   const dir = subdir ? join(baseDir, subdir) : baseDir;
   const files = [];
@@ -208,8 +220,18 @@ function findJsonlFiles(baseDir, subdir) {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       if (entry.isFile() && entry.name.endsWith('.jsonl') && entry.name !== 'history.jsonl') {
         files.push(join(dir, entry.name));
-      } else if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'memory' && entry.name !== 'node_modules') {
-        files.push(...findJsonlFiles(dir, entry.name));
+      } else if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'memory' && entry.name !== 'node_modules' && entry.name !== 'cache' && entry.name !== 'backups') {
+        // Inside quadro-claude/ and project-mac/ top-level subdirs,
+        // skip obviously unrelated projects (cloudpickle, neural-mechanics, etc.)
+        const n = entry.name.toLowerCase();
+        const isUnrelated = (n.includes('cloudpickle') || n.includes('cvpr') || n.includes('geneaolog')
+            || n.includes('grad-app') || n.includes('kyc') || n.includes('logitlens')
+            || n.includes('mandelbrot') || n.includes('ndif') || n.includes('neural-mechanic')
+            || n.includes('poetsandnurse') || n.includes('puns') || n.includes('pictet')
+            || n.includes('-git-mac') || (n === '-users-davidbau-git'));
+        if (!isUnrelated) {
+          files.push(...findJsonlFiles(dir, entry.name));
+        }
       }
     }
   } catch (e) {}
@@ -508,9 +530,9 @@ function extractCommitOrigins() {
     }
   }
 
-  // Scan all session files
+  // Scan all session files (only relevant directories)
   for (const d of readdirSync(LOGS_DIR).filter(d => {
-    try { return statSync(join(LOGS_DIR, d)).isDirectory(); } catch { return false; }
+    try { return statSync(join(LOGS_DIR, d)).isDirectory() && isRelevantDir(d); } catch { return false; }
   })) {
     for (const f of findJsonlFiles(LOGS_DIR, d)) {
       scanFile(f);
@@ -555,7 +577,7 @@ const cutoffDate = projectDay(Date.now() - days * 86400000);
 
 const allFiles = [];
 for (const d of readdirSync(LOGS_DIR).filter(d => {
-  try { return statSync(join(LOGS_DIR, d)).isDirectory(); } catch { return false; }
+  try { return statSync(join(LOGS_DIR, d)).isDirectory() && isRelevantDir(d); } catch { return false; }
 })) {
   allFiles.push(...findJsonlFiles(LOGS_DIR, d));
 }
