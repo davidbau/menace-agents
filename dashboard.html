@@ -1342,12 +1342,20 @@ function drawGroupedBarChart(canvas, groups, options = {}) {
 function drawLineChart(canvas, series, options = {}) {
   const { ctx, w, h } = setupCanvas(canvas);
   const {
-    colors = ['#6b2c2c', '#2a6b8c', '#2d7a3f'],
+    colors: defaultColors = ['#6b2c2c', '#2a6b8c', '#2d7a3f'],
     maxVal = 100, minVal = 0,
     xLabels = [],
     paddingTop = 24, paddingBottom = 28, paddingLeft = 48, paddingRight = 12,
     tickCount = 5,
   } = options;
+
+  // Normalize series: accept plain arrays or {values, color} objects
+  const colors = series.map((s, i) =>
+    (s && typeof s === 'object' && !Array.isArray(s)) ? (s.color || defaultColors[i]) : defaultColors[i]
+  );
+  series = series.map(s =>
+    (s && typeof s === 'object' && !Array.isArray(s)) ? s.values : s
+  );
 
   const n = series[0].length;
   const chartW = w - paddingLeft - paddingRight;
