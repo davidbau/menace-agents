@@ -1380,15 +1380,18 @@ function drawLineChart(canvas, series, options = {}) {
     ctx.strokeStyle = colors[si % colors.length];
     ctx.lineWidth = 2.5;
     ctx.beginPath();
+    let started = false;
     data.forEach((val, i) => {
+      if (val == null) return;
       const x = paddingLeft + (n === 1 ? chartW / 2 : (i / (n - 1)) * chartW);
       const y = paddingTop + chartH - ((val - mn) / (mx - mn)) * chartH;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
     });
     ctx.stroke();
 
     // Dots + labels
     data.forEach((val, i) => {
+      if (val == null) return;
       const x = paddingLeft + (n === 1 ? chartW / 2 : (i / (n - 1)) * chartW);
       const y = paddingTop + chartH - ((val - mn) / (mx - mn)) * chartH;
       ctx.fillStyle = colors[si % colors.length];
