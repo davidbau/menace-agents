@@ -1,0 +1,3 @@
+- [User profile](user_profile.md) — David Bau, researcher analyzing LLM-assisted coding at scale
+- [Project goal](project_goal.md) — Analyze 48-day human-AI coding collaboration to extract generalizable lessons
+- [Fresh port plan](project_fresh_port.md) — Keep Terminal + Shell virtual filesystem, merge side projects back after success

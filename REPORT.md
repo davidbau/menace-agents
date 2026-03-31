@@ -69,6 +69,167 @@ that have measurable productivity costs and require human countermeasures.
 
 ---
 
+## The Teleport Experiment: Fresh Start with Lessons Learned
+
+> *"Fold 10 strategic LORE lessons into plan, LORE, and DECISIONS."*
+> — First commit on the teleport branch, Mar 29, 2026
+
+### What Is Teleport?
+
+On March 29, 2026 — four days after the original menace port concluded — the project
+forked into a new repository called **teleport**. Where menace had been a 64-day
+accumulation of lessons, experiments, and sometimes painful architectural discoveries,
+teleport started with all of that pre-loaded. The existing NetHack-to-JavaScript
+infrastructure was imported wholesale: the PRNG oracle, the PES three-channel test
+harness, the session recorder, and 753 LORE entries distilled into DECISIONS.md and
+PROJECT_PLAN.md. Then the game logic was stripped out and the port restarted from
+zero — this time knowing what to avoid.
+
+The goal was to answer a specific question: how much of the 64-day menace project had
+been solving problems that shouldn't have existed in the first place?
+
+### The Three-Agent Swarm
+
+Teleport launched with three concurrent agents operating on the same repository:
+
+| Agent | Model | Role |
+|-------|-------|------|
+| **maud** | Claude Opus 4 | Primary parity work, infrastructure, orchestration |
+| **cleaver** | Claude Opus 4 | Parallel parity tracks, screen rendering |
+| **xorn** | Codex GPT-5 | Combat system, monster AI, event stream work |
+
+This was the first time the project ran a heterogeneous swarm — two different LLM
+families working in parallel on the same codebase. The coordination mechanism was
+the same as before: Parity-Status commit trailers showing all three agents the live
+state of every test session.
+
+### The Three-Day Arc
+
+**Day 1 — Mar 29: Infrastructure and Foundation (176 commits)**
+
+The day began by stripping 254 old test files and rewriting onboarding docs so any
+fresh agent could understand the project from scratch. By afternoon, the C harness
+was recording sessions and the session test runner was live. By evening, the first
+parity numbers appeared: 9.9% RNG on the initial 4 sessions, climbing to 78.9% by
+end of day as dungeon generation, level init, and the game loop skeleton came online.
+
+```
+16:30  infra: build C harness, record 3 initial sessions -- 0/3 passing
+17:17  infra: add session test runner -- 0/4 passing, ~155 RNG calls match
+17:51  infra: auto-append Parity-Status via commit-msg hook
+19:42  parity: mineralize uses real mksobj+place_object -- 80.2% RNG, 2.1% events
+22:02  parity: port peace_minded() with alignment RNG -- seed42 93%->97%, total 94.1%
+```
+
+The contrast with menace Day 1 is stark. Menace Day 1 was building the PRNG from
+scratch, getting the first 55/63 map cells to match. Teleport Day 1 ended at 80%+
+RNG — because the PRNG was already correct, dungeon generation was already understood,
+and the common architectural mistakes were pre-documented in DECISIONS.md.
+
+**Day 2 — Mar 30: Gameplay and Screen (234 commits, the most productive day)**
+
+Day 2 expanded the test suite from 4 sessions to 7 and pushed into gameplay.
+The parity trajectory is steep: starting at 77.6% RNG (where Day 1 left off) and
+ending at 98.8% RNG / 75.2% Events / 54.3% Screen. Key milestones:
+
+```
+00:45  parity: fix rigidRoleChecks -- seed077 100% RNG!
+04:03  parity: implement wipeout_text rubout substitution -- seed300 88%->RNG-green
+20:24  parity: seed500 100% RNG -- 7/7 sessions passing, all RNG 100%
+```
+
+By end of Day 2, all 7 sessions had 100% RNG. Screen parity was at 54% — functional
+map and status rendering but missing chargen screens and level transitions. The
+infrastructure overhead here was near-zero: no time spent fighting foundational
+architecture because the foundation was already known-correct.
+
+**Day 3 — Mar 31: Level Transitions and Screen Rendering (169 commits)**
+
+Day 3 expanded to 19 sessions — adding multi-level, bow-fire, combat, and chargen
+sessions — and drove the parity numbers to their final state:
+
+```
+Final: RNG 100.0% / Events 98.5% / Screen 57.2%
+```
+
+The screen gap (57.2%) reflects real work remaining: chargen menus, startup sequences,
+and the complex tty rendering paths for screens that aren't pure map output. But
+critically, 9 of the 19 sessions achieved full triple-channel PASS — RNG, Events,
+and Screen all matching — including the level-transition session (seed015) which covers
+the most complex gameplay path in the suite.
+
+Key Day 3 commits:
+```
+12:59  infra: port symset system from C drawing.c/symbols.c -- proper foundation
+13:29  parity: reset fmon linked list during level transition -- seed015 98%->99.7%
+13:59  browser: proper object names in 'You see here...' messages
+15:34  screen: fix chargen name-prompt capture -- seed077 2->16, seed500 1->16
+18:25  infra: port NHW_MENU window system -- tutorial prompt now matches C
+19:17  infra: include per-step fidelity in Parity-Status commit trailers
+```
+
+### Comparison: Menace vs. Teleport
+
+| Metric | Menace (Days 1–3) | Teleport (Days 1–3) |
+|--------|-------------------|---------------------|
+| Commits | ~180 | 579 |
+| Sessions in suite | 4 | 7 → 19 |
+| RNG parity (end of Day 3) | ~35% | 100% |
+| Events parity (end of Day 3) | ~0% | 98.5% |
+| Screen parity (end of Day 3) | ~0% | 57.2% |
+| Full-pass sessions | 0 | 9/19 |
+
+The menace project needed 48 days to reach 100% RNG on its full session suite.
+Teleport reached 100% RNG in 3 days — because the PRNG was already correct,
+dungeon generation was already ported, and architectural decisions that took weeks
+to discover in menace were pre-loaded into DECISIONS.md on Day 0.
+
+What menace took 48 days to build, teleport rebuilt the foundation of in 3.
+
+### The Honest Assessment
+
+The 100% RNG and 98.5% Events numbers are real but require context:
+
+**Scope**: The 19 teleport sessions are all short (4–27 steps). The menace final suite
+covered 563 sessions including multi-hour gameplay. Teleport's sessions are carefully
+curated for tractability — they test the porting infrastructure rather than full game
+coverage.
+
+**Game logic coverage**: The teleport JS codebase covers approximately 8% of NetHack's
+gameplay modules. The menace port reached ~60% of game logic. Teleport has a correct
+foundation but still needs 65+ gameplay modules: combat interactions, magic systems,
+artifact handling, religion, shops, the full dungeon branch system.
+
+**Screen parity**: 57.2% screen parity means about half of render steps match.
+The remaining gap is concentrated in chargen sequences and startup screens — real
+work, not corner cases. The map rendering and gameplay screen match at high rates;
+it's the tty-mode character selection menus that diverge.
+
+**Browser playability**: The game does not yet run interactively in a browser.
+That milestone — the original goal of the whole project — remains ahead. The teleport
+infrastructure is correct; the game is simply not fully ported yet.
+
+### What the Experiment Proves
+
+Three days in teleport compressed what was 48 days of menace work — for the parts
+that were being redone. The infrastructure advantage was real and measurable. The
+architectural mistakes that cost weeks in menace (game loop ordering, PRNG alignment,
+test harness scaffolding, agent onboarding) were absent from teleport because they
+were pre-documented.
+
+This validates one of menace's core lessons: **infrastructure compounds**. The 64-day
+menace project was, in part, building the knowledge base that made a 3-day teleport
+foundation possible. A project that started as teleport started — with correct
+infrastructure and pre-loaded lessons — would have reached playability in weeks, not
+months.
+
+The question teleport answers is not "can agents port NetHack in 3 days?" — they
+cannot; there are 65+ modules still unported. The question it answers is: "how much
+of the original 48 days was solving problems that shouldn't have existed?" The answer
+appears to be: a lot.
+
+---
+
 ## 1. Make Agent Work Verifiable
 
 > *"Port ISAAC64 faithfully using JavaScript BigInt for 64-bit unsigned

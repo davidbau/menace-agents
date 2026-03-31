@@ -206,6 +206,7 @@
   <a href="#corrections">Corrections</a>
   <a href="#behavioral">Behavioral</a>
   <a href="#journey">Human Journey</a>
+  <a href="#teleport">Teleport</a>
   <a href="REPORT.md" class="nav-report">Full Report →</a>
 </nav>
 
@@ -393,6 +394,46 @@
   <h2>8. The Human's Journey</h2>
   <p class="section-intro">The human's role evolved through seven phases as the project matured and the agents became more capable.</p>
   <div class="phase-timeline" id="phase-timeline"></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<section id="teleport">
+  <h2>9. Teleport: Fresh Start</h2>
+  <p class="section-intro">Mar 29–31, 2026: A new NetHack port starting with pre-loaded infrastructure and lessons. Three agents, 579 commits, 3 days — from 0% to 100% RNG parity.</p>
+
+  <div class="metrics-bar">
+    <div class="metric-card"><div class="num">579</div><div class="label">commits in 3 days</div></div>
+    <div class="metric-card"><div class="num">100%</div><div class="label">RNG parity (Day 3)</div></div>
+    <div class="metric-card"><div class="num">9/19</div><div class="label">full-pass sessions</div></div>
+    <div class="metric-card"><div class="num">3</div><div class="label">agents (maud/cleaver/xorn)</div></div>
+  </div>
+
+  <div class="chart-block">
+    <h3>Commits per Day</h3>
+    <p class="chart-sub">Daily commit counts across the 3-day teleport sprint. The highest-volume day (Mar 30) saw 234 commits as all three agents worked in parallel on RNG, events, and screen rendering simultaneously.</p>
+    <canvas id="tp-commits-chart" height="180"></canvas>
+  </div>
+
+  <div class="chart-block">
+    <h3>Agent Contributions</h3>
+    <p class="chart-sub">Commits attributed per agent per day. maud (Claude) led Day 1 infrastructure setup; cleaver (Claude) dominated Day 2 parallel parity tracks; xorn (Codex GPT-5) drove combat and event stream work throughout.</p>
+    <canvas id="tp-agents-chart" height="180"></canvas>
+    <div class="legend" id="tp-agents-legend" style="margin-top:0.8em;"></div>
+  </div>
+
+  <div class="chart-block">
+    <h3>Parity Progression (RNG / Events / Screen)</h3>
+    <p class="chart-sub">End-of-day parity percentages across all three channels. RNG reached 100% by Day 3; Events followed at 98.5%; Screen at 57.2% reflecting remaining chargen and startup rendering work.</p>
+    <canvas id="tp-parity-chart" height="200"></canvas>
+    <div class="legend" id="tp-parity-legend" style="margin-top:0.8em;"></div>
+  </div>
+
+  <div class="chart-block">
+    <h3>Menace vs. Teleport: Days 1–3 Comparison</h3>
+    <p class="chart-sub">Teleport's RNG parity at end of each of the first three days, overlaid against the equivalent menace project days. Infrastructure pre-loading compressed 48 days of menace work into 3.</p>
+    <canvas id="tp-compare-chart" height="200"></canvas>
+    <div class="legend" id="tp-compare-legend" style="margin-top:0.8em;"></div>
+  </div>
 </section>
 
 </div><!-- /container -->
@@ -621,14 +662,16 @@ function drawLineChart(canvas, series, options = {}) {
 // ═══════════════════════════════════════════════════════════════
 
 async function loadData() {
-  const [timelineText, chapters, daySummaries] = await Promise.all([
+  const [timelineText, chapters, daySummaries, teleportText] = await Promise.all([
     fetch('data/timeline.jsonl').then(r => r.text()),
     fetch('data/chapters.json').then(r => r.json()),
     fetch('data/day-summaries.json').then(r => r.json()),
+    fetch('data/teleport-timeline.jsonl').then(r => r.text()),
   ]);
 
   const timeline = timelineText.trim().split('\n').map(line => JSON.parse(line));
-  return { timeline, chapters, daySummaries };
+  const teleport = teleportText.trim().split('\n').map(line => JSON.parse(line));
+  return { timeline, chapters, daySummaries, teleport };
 }
 
 function processTimeline(timeline) {
@@ -1230,12 +1273,229 @@ function renderPhaseTimeline() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// TELEPORT SECTION
+// ═══════════════════════════════════════════════════════════════
+
+function drawGroupedBarChart(canvas, groups, options = {}) {
+  const { ctx, w, h } = setupCanvas(canvas);
+  const {
+    colors = ['#6b2c2c', '#2a6b8c', '#2d7a3f'],
+    maxVal = null,
+    xLabels = [],
+    paddingTop = 24, paddingBottom = 28, paddingLeft = 48, paddingRight = 12,
+    yLabel = '', tickCount = 5,
+  } = options;
+
+  const nGroups = groups[0].length;
+  const nSeries = groups.length;
+  const chartW = w - paddingLeft - paddingRight;
+  const chartH = h - paddingTop - paddingBottom;
+  const allVals = groups.flat();
+  const mx = maxVal || Math.max(...allVals, 1);
+  const groupW = chartW / nGroups;
+  const barW = groupW / (nSeries + 1);
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Grid lines
+  ctx.strokeStyle = '#e8e4dc'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+  for (let i = 0; i <= tickCount; i++) {
+    const y = paddingTop + chartH - (i / tickCount) * chartH;
+    ctx.beginPath(); ctx.moveTo(paddingLeft, y); ctx.lineTo(paddingLeft + chartW, y); ctx.stroke();
+    const val = Math.round((i / tickCount) * mx);
+    ctx.fillStyle = '#999'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(val, paddingLeft - 4, y + 3);
+  }
+  ctx.setLineDash([]);
+
+  // Bars
+  for (let gi = 0; gi < nGroups; gi++) {
+    for (let si = 0; si < nSeries; si++) {
+      const val = groups[si][gi];
+      const barH = (val / mx) * chartH;
+      const x = paddingLeft + gi * groupW + si * barW + barW * 0.5;
+      const y = paddingTop + chartH - barH;
+      ctx.fillStyle = colors[si % colors.length];
+      ctx.fillRect(x, y, barW * 0.85, barH);
+      if (val > 0) {
+        ctx.fillStyle = '#555'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(val, x + barW * 0.4, y - 3);
+      }
+    }
+  }
+
+  // X labels
+  ctx.fillStyle = '#888'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+  for (let gi = 0; gi < nGroups; gi++) {
+    const x = paddingLeft + gi * groupW + (nSeries * barW) / 2;
+    ctx.fillText(xLabels[gi] || '', x, h - 6);
+  }
+
+  // Axes
+  ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(paddingLeft, paddingTop); ctx.lineTo(paddingLeft, paddingTop + chartH);
+  ctx.lineTo(paddingLeft + chartW, paddingTop + chartH);
+  ctx.stroke();
+}
+
+function drawLineChart(canvas, series, options = {}) {
+  const { ctx, w, h } = setupCanvas(canvas);
+  const {
+    colors = ['#6b2c2c', '#2a6b8c', '#2d7a3f'],
+    maxVal = 100, minVal = 0,
+    xLabels = [],
+    paddingTop = 24, paddingBottom = 28, paddingLeft = 48, paddingRight = 12,
+    tickCount = 5,
+  } = options;
+
+  const n = series[0].length;
+  const chartW = w - paddingLeft - paddingRight;
+  const chartH = h - paddingTop - paddingBottom;
+  const mx = maxVal, mn = minVal;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Grid lines
+  ctx.strokeStyle = '#e8e4dc'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+  for (let i = 0; i <= tickCount; i++) {
+    const y = paddingTop + chartH - (i / tickCount) * chartH;
+    ctx.beginPath(); ctx.moveTo(paddingLeft, y); ctx.lineTo(paddingLeft + chartW, y); ctx.stroke();
+    const val = Math.round(mn + (i / tickCount) * (mx - mn));
+    ctx.fillStyle = '#999'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(val + '%', paddingLeft - 4, y + 3);
+  }
+  ctx.setLineDash([]);
+
+  // Lines
+  series.forEach((data, si) => {
+    ctx.strokeStyle = colors[si % colors.length];
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    data.forEach((val, i) => {
+      const x = paddingLeft + (n === 1 ? chartW / 2 : (i / (n - 1)) * chartW);
+      const y = paddingTop + chartH - ((val - mn) / (mx - mn)) * chartH;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Dots + labels
+    data.forEach((val, i) => {
+      const x = paddingLeft + (n === 1 ? chartW / 2 : (i / (n - 1)) * chartW);
+      const y = paddingTop + chartH - ((val - mn) / (mx - mn)) * chartH;
+      ctx.fillStyle = colors[si % colors.length];
+      ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#444'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(val.toFixed(1) + '%', x, y - 8);
+    });
+  });
+
+  // X labels
+  if (xLabels.length) {
+    ctx.fillStyle = '#888'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+    xLabels.forEach((lbl, i) => {
+      const x = paddingLeft + (n === 1 ? chartW / 2 : (i / (n - 1)) * chartW);
+      ctx.fillText(lbl, x, h - 6);
+    });
+  }
+
+  // Axes
+  ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(paddingLeft, paddingTop); ctx.lineTo(paddingLeft, paddingTop + chartH);
+  ctx.lineTo(paddingLeft + chartW, paddingTop + chartH);
+  ctx.stroke();
+}
+
+function renderTeleportSection(teleportData) {
+  const days = teleportData;
+  const xLabels = days.map(d => {
+    const parts = d.date.split('-');
+    return 'Mar ' + parseInt(parts[2]);
+  });
+
+  // --- Commits per day ---
+  drawBarChart(document.getElementById('tp-commits-chart'),
+    days.map(d => d.commits),
+    {
+      colors: days.map(() => '#6b2c2c'),
+      xLabels,
+      yLabel: 'commits',
+      maxVal: 280,
+    }
+  );
+
+  // --- Agent contributions grouped bar ---
+  const agentKeys = ['agent:maud', 'agent:cleaver', 'agent:xorn'];
+  const agentColors = ['#7b4b8c', '#2a6b8c', '#2d7a3f'];
+  const agentLabels = ['maud (Claude)', 'cleaver (Claude)', 'xorn (Codex GPT-5)'];
+  const agentSeries = agentKeys.map(k => days.map(d => d.agents[k] || 0));
+
+  drawGroupedBarChart(document.getElementById('tp-agents-chart'),
+    agentSeries,
+    { colors: agentColors, xLabels, maxVal: 130 }
+  );
+
+  const agendLegend = document.getElementById('tp-agents-legend');
+  agentLabels.forEach((lbl, i) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div class="legend-swatch" style="background:${agentColors[i]}"></div><span>${lbl}</span>`;
+    agendLegend.appendChild(item);
+  });
+
+  // --- Parity progression line chart ---
+  const parityColors = ['#6b2c2c', '#2a6b8c', '#2d7a3f'];
+  const parityLabels = ['RNG%', 'Events%', 'Screen%'];
+  const paritySeries = [
+    days.map(d => d.parity ? d.parity.latest.rng_pct : 0),
+    days.map(d => d.parity ? d.parity.latest.events_pct : 0),
+    days.map(d => d.parity ? d.parity.latest.screen_pct : 0),
+  ];
+
+  drawLineChart(document.getElementById('tp-parity-chart'),
+    paritySeries,
+    { colors: parityColors, xLabels, maxVal: 100, minVal: 0 }
+  );
+
+  const parityLegend = document.getElementById('tp-parity-legend');
+  parityLabels.forEach((lbl, i) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div class="legend-swatch" style="background:${parityColors[i]}"></div><span>${lbl}</span>`;
+    parityLegend.appendChild(item);
+  });
+
+  // --- Comparison chart: menace vs teleport Days 1-3 ---
+  // Menace Days 1-3 RNG parity estimates (from REPORT: Day 3 was ~35%, Day 1 was ~8%, Day 2 ~20%)
+  const menaceRNG = [8.0, 20.0, 35.0];
+  const teleportRNG = days.map(d => d.parity ? d.parity.latest.rng_pct : 0);
+
+  const compareColors = ['#8c6b2a', '#6b2c2c'];
+  const compareLabels = ['Menace (Days 1–3)', 'Teleport (Days 1–3)'];
+  const dayXLabels = ['Day 1', 'Day 2', 'Day 3'];
+
+  drawLineChart(document.getElementById('tp-compare-chart'),
+    [menaceRNG, teleportRNG],
+    { colors: compareColors, xLabels: dayXLabels, maxVal: 100, minVal: 0 }
+  );
+
+  const compareLegend = document.getElementById('tp-compare-legend');
+  compareLabels.forEach((lbl, i) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div class="legend-swatch" style="background:${compareColors[i]}"></div><span>${lbl}</span>`;
+    compareLegend.appendChild(item);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MAIN
 // ═══════════════════════════════════════════════════════════════
 
 async function main() {
   try {
-    const { timeline, chapters } = await loadData();
+    const { timeline, chapters, teleport } = await loadData();
     const stats = processTimeline(timeline);
     const chapterIdx = buildChapterIndex(chapters, timeline);
 
@@ -1265,6 +1525,7 @@ async function main() {
       renderLanguageChart(stats);
       renderRevertChart(stats, chapterIdx);
       renderPhaseTimeline();
+      renderTeleportSection(teleport);
 
       document.getElementById('loading').classList.add('done');
     });
