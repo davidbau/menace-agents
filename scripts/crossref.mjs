@@ -19,6 +19,7 @@ import { execSync } from 'child_process';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const LOGS_DIR = join(__dirname, '..', '..', 'agent-logs');
 const WAVE_DIR = join(__dirname, '..', '..', 'wave');
+const TELEPORT_DIR = join(__dirname, '..', '..', 'teleport', 'maud');
 
 // --- CLI ---
 const args = process.argv.slice(2);
@@ -134,11 +135,18 @@ function formatDayHeader(dateStr) {
 // --- 2. Parse git commits by date ---
 function parseGitCommits() {
   const commits = [];
+  const seenHashes = new Set();
+
+  // Scan multiple repos — wave (original menace) and teleport (fresh port)
+  const repos = [WAVE_DIR];
+  try { if (statSync(TELEPORT_DIR).isDirectory()) repos.push(TELEPORT_DIR); } catch {}
+
+  for (const repoDir of repos) {
   try {
     // Get commits — use NUL separator for safe parsing of full commit messages.
     // %aI gives ISO date with timezone; we convert to UTC for consistent sorting.
     const log = execSync(
-      `git -C "${WAVE_DIR}" log --all --format="%H%x00%aI%x00%an%x00%s%x00%B%x00END" --since="${days}days"`,
+      `git -C "${repoDir}" log --all --format="%H%x00%aI%x00%an%x00%s%x00%B%x00END" --since="${days}days"`,
       { encoding: 'utf8', maxBuffer: 100 * 1024 * 1024 }
     );
     for (const block of log.split('\x00END\n')) {
@@ -150,24 +158,28 @@ function parseGitCommits() {
       const utc = new Date(isoDate);
       if (isNaN(utc)) continue;
       const utcIso = utc.toISOString();
+      const h12 = hash?.slice(0, 12);
+      if (seenHashes.has(h12)) continue; // deduplicate across repos
+      seenHashes.add(h12);
       commits.push({
-        hash: hash?.slice(0, 12),
+        hash: h12,
         date: projectDay(utc),
         time: utcIso.slice(11, 16),
         timestamp: utcIso,
         author,
         subject,
         body: redactSecrets((body || '').trim()),
+        _repo: repoDir,
       });
     }
-    // Second pass: for each commit, get added lines from docs/*.md and *.md files.
+    // Second pass: for each commit FROM THIS REPO, get added lines from docs/*.md.
     // We extract the first few added lines as a snippet for the timeline.
     console.error('  Extracting doc diffs...');
     const skipDocs = new Set(['README.md', 'REFLECTIONS.md', 'CHANGELOG.md', 'CLAUDE.md']);
-    for (const c of commits) {
+    for (const c of commits.filter(c => c._repo === repoDir)) {
       try {
         const diffOut = execSync(
-          `git -C "${WAVE_DIR}" diff-tree --no-commit-id -r --diff-filter=ACMR --name-only ${c.hash} -- "docs/*.md" "*.md" "skills/*.md" "skills/**/*.md"`,
+          `git -C "${repoDir}" diff-tree --no-commit-id -r --diff-filter=ACMR --name-only ${c.hash} -- "docs/*.md" "*.md" "skills/*.md" "skills/**/*.md"`,
           { encoding: 'utf8', maxBuffer: 5 * 1024 * 1024, timeout: 5000 }
         ).trim();
         if (!diffOut) continue;
@@ -177,7 +189,7 @@ function parseGitCommits() {
         for (const file of files.slice(0, 3)) { // max 3 docs per commit
           try {
             const diff = execSync(
-              `git -C "${WAVE_DIR}" diff ${c.hash}^..${c.hash} -- "${file}" 2>/dev/null | head -80`,
+              `git -C "${repoDir}" diff ${c.hash}^..${c.hash} -- "${file}" 2>/dev/null | head -80`,
               { encoding: 'utf8', maxBuffer: 1024 * 1024, timeout: 5000 }
             );
             // Extract added lines (starting with +, skip +++ header)
@@ -195,8 +207,9 @@ function parseGitCommits() {
       } catch {}
     }
   } catch (e) {
-    console.error('Warning: could not read git log:', e.message?.split('\n')[0]);
+    console.error('Warning: could not read git log for', repoDir + ':', e.message?.split('\n')[0]);
   }
+  } // end for (const repoDir of repos)
   return commits;
 }
 
