@@ -88,22 +88,23 @@ zero — this time knowing what to avoid.
 The goal was to answer a specific question: how much of the 64-day menace project had
 been solving problems that shouldn't have existed in the first place?
 
-### The Three-Agent Swarm
+### The Four-Agent Swarm
 
-Teleport launched with three concurrent agents operating on the same repository:
+Teleport launched with three concurrent agents and gained a fourth on Day 3:
 
-| Agent | Model | Role |
-|-------|-------|------|
-| **maud** | Claude Opus 4 | Primary parity work, infrastructure, orchestration |
-| **cleaver** | Claude Opus 4 | Parallel parity tracks, screen rendering |
-| **xorn** | Codex GPT-5 | Combat system, monster AI, event stream work |
+| Agent | Model | Role | Commits |
+|-------|-------|------|---------|
+| **cleaver** | Claude Opus 4 | Parallel parity tracks, screen rendering, batch translation | 365 |
+| **maud** | Claude Opus 4 | Primary parity work, infrastructure, orchestration | 208 |
+| **xorn** | Codex GPT-5 | Combat system, monster AI, event stream work | 181 |
+| **mac** | Claude Opus 4 | Gameplay modules, batch-translation coordination | 107 |
 
 This was the first time the project ran a heterogeneous swarm — two different LLM
 families working in parallel on the same codebase. The coordination mechanism was
-the same as before: Parity-Status commit trailers showing all three agents the live
+the same as before: Parity-Status commit trailers showing all four agents the live
 state of every test session.
 
-### The Three-Day Arc
+### The Five-Day Arc
 
 **Day 1 — Mar 29: Infrastructure and Foundation (176 commits)**
 
@@ -130,7 +131,7 @@ and the common architectural mistakes were pre-documented in DECISIONS.md.
 
 Day 2 expanded the test suite from 4 sessions to 7 and pushed into gameplay.
 The parity trajectory is steep: starting at 77.6% RNG (where Day 1 left off) and
-ending at 98.8% RNG / 75.2% Events / 54.3% Screen. Key milestones:
+ending at 77.6% RNG / 21.5% Events. Key milestones:
 
 ```
 00:45  parity: fix rigidRoleChecks -- seed077 100% RNG!
@@ -138,27 +139,17 @@ ending at 98.8% RNG / 75.2% Events / 54.3% Screen. Key milestones:
 20:24  parity: seed500 100% RNG -- 7/7 sessions passing, all RNG 100%
 ```
 
-By end of Day 2, all 7 sessions had 100% RNG. Screen parity was at 54% — functional
-map and status rendering but missing chargen screens and level transitions. The
-infrastructure overhead here was near-zero: no time spent fighting foundational
-architecture because the foundation was already known-correct.
+By end of Day 2, the session suite had 5/7 achieving full RNG pass. Events parity
+came online as the event-stream infrastructure was wired in. The infrastructure
+overhead here was near-zero: no time spent fighting foundational architecture
+because the foundation was already known-correct.
 
-**Day 3 — Mar 31: Level Transitions and Screen Rendering (169 commits)**
+**Day 3 — Mar 31: Level Transitions and Screen Rendering (215 commits)**
 
 Day 3 expanded to 19 sessions — adding multi-level, bow-fire, combat, and chargen
-sessions — and drove the parity numbers to their final state:
+sessions — and drove RNG parity to 93.5% with Events at 73.6% and Screen at 53.2%.
+11 of 19 sessions achieved full triple-channel PASS.
 
-```
-Final: RNG 100.0% / Events 98.5% / Screen 57.2%
-```
-
-The screen gap (57.2%) reflects real work remaining: chargen menus, startup sequences,
-and the complex tty rendering paths for screens that aren't pure map output. But
-critically, 9 of the 19 sessions achieved full triple-channel PASS — RNG, Events,
-and Screen all matching — including the level-transition session (seed015) which covers
-the most complex gameplay path in the suite.
-
-Key Day 3 commits:
 ```
 12:59  infra: port symset system from C drawing.c/symbols.c -- proper foundation
 13:29  parity: reset fmon linked list during level transition -- seed015 98%->99.7%
@@ -168,65 +159,108 @@ Key Day 3 commits:
 19:17  infra: include per-step fidelity in Parity-Status commit trailers
 ```
 
-### Comparison: Menace vs. Teleport
+**Day 4 — Apr 1: Batch Translation Breakthrough (239 commits)**
 
-| Metric | Menace (Days 1–3) | Teleport (Days 1–3) |
-|--------|-------------------|---------------------|
-| Commits | ~180 | 579 |
-| Sessions in suite | 4 | 7 → 19 |
-| RNG parity (end of Day 3) | ~35% | 100% |
-| Events parity (end of Day 3) | ~0% | 98.5% |
-| Screen parity (end of Day 3) | ~0% | 57.2% |
-| Full-pass sessions | 0 | 9/19 |
+Day 4 was the most architecturally significant day of the sprint. The suite stayed
+at 19 sessions and parity reached its first 100% RNG / 100% Events milestone, with
+15/19 sessions at full triple-channel PASS. Screen parity climbed to 65.2%.
+
+The key development was the start of **batch translation** — using LLM prompts to
+port large blocks of NetHack C gameplay modules in one pass, rather than
+function-by-function. This produced stubs for many functions that would take days
+to implement manually. A new fourth agent, **mac**, joined to coordinate the
+batch-translation work.
+
+**Day 5 — Apr 2: Scale-Up and the 94-Module Milestone (115 commits)**
+
+Day 5 expanded the session suite to 24 sessions, with 24/24 achieving full
+triple-channel PASS. RNG parity held at 99.7%, Events at 94.5%, Screen at 78.7%.
+The batch-translation work yielded 94 JavaScript gameplay modules — 17 ported in a
+single day via LLM batch prompts.
+
+The total sprint: **975 commits across 5 days** from 4 agents.
+
+### Comparison: Menace vs. Teleport at Day 5
+
+**The encouraging numbers:**
+
+| Metric | Menace Day 5 | Teleport Day 5 |
+|--------|--------------|----------------|
+| Commits | 257 | 975 |
+| First RNG match | Day 5 (~94%) | Day 1 (9.9%) |
+| Session parity | 0/4 full pass | 24/24 full pass |
+| JS gameplay modules | ~10 | 94 |
+| Agents | 2 | 4 |
+
+**The honest comparison:**
+
+| Metric | Menace Day 54 | Teleport Day 5 |
+|--------|---------------|----------------|
+| JS gameplay modules | 153 | 94 |
+| Sessions passing | 556/563 | 24/24 (but short) |
+| Deep session (seed800) | ~100% | ~3% |
+| Browser playable | Yes | No |
 
 The menace project needed 48 days to reach 100% RNG on its full session suite.
 Teleport reached 100% RNG in 3 days — because the PRNG was already correct,
 dungeon generation was already ported, and architectural decisions that took weeks
 to discover in menace were pre-loaded into DECISIONS.md on Day 0.
 
-What menace took 48 days to build, teleport rebuilt the foundation of in 3.
-
 ### The Honest Assessment
 
-The 100% RNG and 98.5% Events numbers are real but require context:
+The 100% session pass rates and 94-module count are real but require context:
 
-**Scope**: The 19 teleport sessions are all short (4–27 steps). The menace final suite
-covered 563 sessions including multi-hour gameplay. Teleport's sessions are carefully
+**The stub debt**: The 17 gameplay modules ported via batch translation in Day 5 come
+with approximately 1,088 function stubs — placeholders that pass the short test
+sessions but will diverge on real gameplay. Teleport has traded deep correctness
+for broad coverage.
+
+**The seed800 problem**: seed800 is the "grand tour" session — a 262-step sequence
+that exercises deep gameplay, multi-level navigation, and complex interactions.
+At Day 5, seed800 sits at approximately 3% RNG parity. The 24/24 pass rate is real,
+but all 24 sessions are short (under 30 steps). Teleport's sessions are carefully
 curated for tractability — they test the porting infrastructure rather than full game
 coverage.
 
-**Game logic coverage**: The teleport JS codebase covers approximately 8% of NetHack's
-gameplay modules. The menace port reached ~60% of game logic. Teleport has a correct
-foundation but still needs 65+ gameplay modules: combat interactions, magic systems,
-artifact handling, religion, shops, the full dungeon branch system.
+**Scope**: The menace final suite covered 563 sessions including multi-hour gameplay.
+Teleport's 24 sessions are a foundation, not a ceiling.
 
-**Screen parity**: 57.2% screen parity means about half of render steps match.
-The remaining gap is concentrated in chargen sequences and startup screens — real
-work, not corner cases. The map rendering and gameplay screen match at high rates;
-it's the tty-mode character selection menus that diverge.
+**Game logic coverage**: 94 modules is impressive for 5 days, but many are
+stub-heavy. The menace port at Day 54 had 153 modules with deep correctness.
+Teleport has a head start but needs to convert stubs to real implementations.
+
+**Screen parity**: 78.7% screen parity by Day 5 is strong progress. The remaining
+gap is concentrated in chargen sequences and complex tty rendering paths.
 
 **Browser playability**: The game does not yet run interactively in a browser.
 That milestone — the original goal of the whole project — remains ahead. The teleport
-infrastructure is correct; the game is simply not fully ported yet.
+infrastructure is correct; the game logic is partially ported.
 
 ### What the Experiment Proves
 
-Three days in teleport compressed what was 48 days of menace work — for the parts
-that were being redone. The infrastructure advantage was real and measurable. The
-architectural mistakes that cost weeks in menace (game loop ordering, PRNG alignment,
-test harness scaffolding, agent onboarding) were absent from teleport because they
-were pre-documented.
+Five days in teleport produced 975 commits from 4 agents — roughly the same 5-day
+output that menace achieved, but with far more to show for it. The infrastructure
+advantage was real and measurable. The architectural mistakes that cost weeks in
+menace (game loop ordering, PRNG alignment, test harness scaffolding, agent
+onboarding) were absent from teleport because they were pre-documented.
 
 This validates one of menace's core lessons: **infrastructure compounds**. The 64-day
-menace project was, in part, building the knowledge base that made a 3-day teleport
-foundation possible. A project that started as teleport started — with correct
-infrastructure and pre-loaded lessons — would have reached playability in weeks, not
-months.
+menace project was, in part, building the knowledge base that made a 5-day teleport
+sprint possible. A project that started as teleport started — with correct
+infrastructure and pre-loaded lessons — is on pace to reach playability in weeks
+rather than months.
 
-The question teleport answers is not "can agents port NetHack in 3 days?" — they
-cannot; there are 65+ modules still unported. The question it answers is: "how much
+The batch-translation breakthrough (17 modules in one day) is a new development with
+no precedent in menace. It may compress the remaining porting work dramatically —
+or it may produce a stub debt that takes as long to pay down as the original porting
+would have taken. That question will be answered in Days 6–10.
+
+The question teleport answers so far is not "can agents port NetHack in 5 days?" —
+they cannot; seed800 at 3% makes that clear. The question it answers is: "how much
 of the original 48 days was solving problems that shouldn't have existed?" The answer
-appears to be: a lot.
+appears to be: a lot. And the batch-translation approach may answer a second question:
+"can LLMs write large amounts of correct game logic in bulk?" That answer is still
+pending.
 
 ---
 
