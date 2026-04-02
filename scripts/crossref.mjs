@@ -631,11 +631,34 @@ for (const c of commits) {
   byDate[c.date].commits.push(c);
 }
 
+// For multi-day sessions, distribute across all days that have events.
+// The session metadata goes on the start date; events go on their actual date.
 for (const s of sessions) {
   if (!s.startDate) continue;
-  if (dateFilter && s.startDate !== dateFilter) continue;
-  ensureDay(s.startDate);
-  byDate[s.startDate].sessions.push(s);
+  // Collect the set of dates this session spans
+  const eventDates = new Set();
+  eventDates.add(s.startDate);
+  for (const ev of (s.events || [])) {
+    if (ev.timestamp) {
+      const evDate = projectDay(new Date(ev.timestamp));
+      if (evDate) eventDates.add(evDate);
+    }
+  }
+  // Filter by dateFilter if specified
+  for (const date of eventDates) {
+    if (dateFilter && date !== dateFilter) continue;
+    ensureDay(date);
+    // Put session metadata on each day it spans (with events filtered to that day)
+    const dayEvents = date === s.startDate && eventDates.size === 1
+      ? s.events // single-day session: keep all events
+      : (s.events || []).filter(ev => {
+          if (!ev.timestamp) return date === s.startDate; // no timestamp → start date
+          return projectDay(new Date(ev.timestamp)) === date;
+        });
+    if (dayEvents.length > 0 || date === s.startDate) {
+      byDate[date].sessions.push({ ...s, events: dayEvents });
+    }
+  }
 }
 
 // Build session → agent label map (for parent inheritance)
