@@ -47,8 +47,12 @@
   "2026-03-23": "Temperature shift, wake_msg, disclosure prompts. Hack campbot with BFS. Rogue 95.7%. seed031 endgame parity",
   "2026-03-24": "Terminal refactoring: shared base class for all 6 games. Rogue coverage push. Human: \"make sure we don't cause damage\"",
   "2026-03-25": "Hack cursor parity. Shell login/subshell profiles. Reflections essay. Menace Agents timeline built: 48-day chronicle of human-AI collaboration with 4000 sessions, 9000 commits, agent attribution, doc diffs, search",
-  "2026-03-26": "seed032 root cause investigation: JS consumes 284 extra RNG in levelgen, staircase placement offset. Travel/run boundary parity. learnring/makeknown alignment",
-  "2026-03-27": "Vision system parity: seenv angle tracking, docrt vision shutdown, hallucination display RNG. Shopkeeper identification. 86 commits, mostly display deep-dive",
-  "2026-03-28": "Combat parity: hitum knockback, priest AI, shade damage, barehand damage bonus, mhurtle. Monk martial arts promoted to coverage. 85 commits",
-  "2026-03-29": "Adventure (350-point Colossal Cave) JS port with deterministic PRNG. 3 parity sessions at 100% match. Moveloop phase markers for cross-game session tracking"
+  "2026-03-26": "seed032 investigation. Vision system parity. 98 commits. Combat parity: hitum knockback, priest AI, shade damage",
+  "2026-03-27": "menace-agents project created. 64-day collaboration analysis begun. Timeline builder, dashboard, 7 deep-dive studies launched. Report: infrastructure compounds, agents avoid hard problems, knowledge capture emerges",
+  "2026-03-28": "Analysis complete: strategy effectiveness ranked, porting lessons extracted, reusable code inventoried. Teleport repo created — fresh start with all lessons, infrastructure carried forward, game logic deleted",
+  "2026-03-29": "Teleport Day 1: 4-agent swarm begins. Game loop with correct phase ordering from hour 1. Level generation ported. 92% RNG on 7 sessions by end of day. 176 commits",
+  "2026-03-30": "Teleport Day 2: 5/7 sessions at full triple-channel PASS. Display system ported with C-exact 3-state toplin machine. Cardinal Rule 4 added: 'do not revert C-faithful fixes.' 234 commits",
+  "2026-03-31": "Teleport Day 3: 19 sessions, 9 full pass. Vision Algorithm C ported. Level transitions working (seed015). Browser playability started. CONVENTIONS.md created. 215 commits",
+  "2026-04-01": "Teleport Day 4: 15/19 full pass. Batch-translation strategy adopted — 17 gameplay modules ported via LLM prompts in one day (eat, potion, read, pray, wield, lock, steal, do, worn, explode, music, sit, fountain, stairs, rip, were, exper). 239 commits",
+  "2026-04-02": "Teleport Day 5: 24 sessions, 21 full pass, 94 JS modules. seed800 grand-tour at 3% reveals the gap. sp_lev selection API growing. Browser display pipeline being fixed. 111 commits"
 }

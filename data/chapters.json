@@ -46,5 +46,17 @@
     "name": "Convergence",
     "dates": ["2026-03-20", "2026-03-21", "2026-03-22", "2026-03-23", "2026-03-24", "2026-03-25"],
     "summary": "Logo from scratch. Reflections essay. seed031 cascade: 25 LORE lessons. Terminal unification. The project becomes self-aware."
+  },
+  {
+    "id": "analysis",
+    "name": "Analysis",
+    "dates": ["2026-03-26", "2026-03-27", "2026-03-28"],
+    "summary": "The menace-agents project is born. 64 days of agent logs analyzed. 7 deep-dive studies. Dashboard and report built. The project becomes self-aware of its own patterns: agent avoidance, correction rates, infrastructure compounding."
+  },
+  {
+    "id": "teleport",
+    "name": "Teleport",
+    "dates": ["2026-03-29", "2026-03-30", "2026-03-31", "2026-04-01", "2026-04-02"],
+    "summary": "Fresh start with all lessons learned. 4-agent swarm achieves in 5 days what took 48: 21/24 sessions at full triple-channel parity. Batch-translation strategy ports 17 gameplay modules in one day. But seed800 at 3% reveals the gap between short-session parity and real gameplay."
   }
 ]
