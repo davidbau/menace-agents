@@ -2,4 +2,6 @@
 {"date": "2026-03-30", "commits": 234, "agents": {"agent:xorn": 65, "agent:cleaver": 101, "agent:maud": 59}, "rng_pct": 77.6, "events_pct": 21.5, "screen_pct": 0.0, "sessions_pass": null, "sessions_total": null}
 {"date": "2026-03-31", "commits": 215, "agents": {"agent:cleaver": 60, "agent:mac": 5, "agent:xorn": 82, "agent:maud": 65}, "rng_pct": 93.5, "events_pct": 73.6, "screen_pct": 53.2, "sessions_pass": 11, "sessions_total": 19}
 {"date": "2026-04-01", "commits": 239, "agents": {"agent:cleaver": 90, "agent:xorn": 58, "agent:mac": 84}, "rng_pct": 100.0, "events_pct": 100.0, "screen_pct": 65.2, "sessions_pass": 15, "sessions_total": 19}
-{"date": "2026-04-02", "commits": 115, "agents": {"agent:mac": 19, "agent:cleaver": 57, "agent:xorn": 33}, "rng_pct": 99.7, "events_pct": 94.5, "screen_pct": 78.7, "sessions_pass": 24, "sessions_total": 24}
+{"date": "2026-04-02", "commits": 237, "agents": {"agent:mac": 38, "agent:xorn": 45, "agent:cleaver": 144}, "rng_pct": 99.7, "events_pct": 94.5, "screen_pct": 78.7, "sessions_pass": 24, "sessions_total": 26}
+{"date": "2026-04-03", "commits": 163, "agents": {"agent:cleaver": 61, "agent:mac": 64, "agent:xorn": 28, "agent:quadro": 1}, "rng_pct": 54.1, "events_pct": 53.5, "screen_pct": 58.4, "sessions_pass": 44, "sessions_total": 44}
+{"date": "2026-04-04", "commits": 48, "agents": {"agent:xorn": 21, "agent:mac": 11, "agent:cleaver": 16}, "rng_pct": 69.0, "events_pct": 66.3, "screen_pct": 69.7, "sessions_pass": 25, "sessions_total": 28}

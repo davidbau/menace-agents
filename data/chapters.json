@@ -2,61 +2,129 @@
   {
     "id": "founding",
     "name": "Founding",
-    "dates": ["2026-02-06", "2026-02-07", "2026-02-08", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12"],
+    "dates": [
+      "2026-02-06",
+      "2026-02-07",
+      "2026-02-08",
+      "2026-02-09",
+      "2026-02-10",
+      "2026-02-11",
+      "2026-02-12"
+    ],
     "summary": "One prompt launches the project. PRNG ported, comparison framework built, 126 special levels converted. Codex joins day 4. The insight: match every random number."
   },
   {
     "id": "measurement",
     "name": "Measurement",
-    "dates": ["2026-02-13", "2026-02-14", "2026-02-15"],
+    "dates": [
+      "2026-02-13",
+      "2026-02-14",
+      "2026-02-15"
+    ],
     "summary": "Session recording goes deterministic. Oracle test framework, git notes, 1000th commit. The shift from coding to measuring."
   },
   {
     "id": "porting-grind",
     "name": "Porting Grind",
-    "dates": ["2026-02-16", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20"],
+    "dates": [
+      "2026-02-16",
+      "2026-02-17",
+      "2026-02-18",
+      "2026-02-19",
+      "2026-02-20"
+    ],
     "summary": "73 CODEMATCH functions in one day. Watchdog agent learns to nudge. Human pushes back on test-only rules. Model switched to Sonnet for throughput."
   },
   {
     "id": "codex-sprint",
     "name": "Codex Sprint",
-    "dates": ["2026-02-21", "2026-02-22", "2026-02-23", "2026-02-24", "2026-02-25"],
+    "dates": [
+      "2026-02-21",
+      "2026-02-22",
+      "2026-02-23",
+      "2026-02-24",
+      "2026-02-25"
+    ],
     "summary": "Codex agents drive CODEMATCH: animation, HP/PW/regen, mkmaze, throw/beam paths. 782 human messages on Feb 24. The porting gets broad but shallow."
   },
   {
     "id": "iron-parity",
     "name": "Iron Parity",
-    "dates": ["2026-02-26", "2026-02-27", "2026-02-28", "2026-03-01", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05"],
+    "dates": [
+      "2026-02-26",
+      "2026-02-27",
+      "2026-02-28",
+      "2026-03-01",
+      "2026-03-02",
+      "2026-03-03",
+      "2026-03-04",
+      "2026-03-05"
+    ],
     "summary": "Automated C-to-JS translator campaign. Batch-promotes hundreds of functions. Async revolution: 28 unawaited calls. Then declared unsuccessful. Pivot to direct parity fixes."
   },
   {
     "id": "expansion",
     "name": "Expansion",
-    "dates": ["2026-03-06", "2026-03-07", "2026-03-08", "2026-03-09", "2026-03-10", "2026-03-11"],
+    "dates": [
+      "2026-03-06",
+      "2026-03-07",
+      "2026-03-08",
+      "2026-03-09",
+      "2026-03-10",
+      "2026-03-11"
+    ],
     "summary": "Rogue ported in a day. Hack matures. Cockatrice, steed, input overhaul. 44 LORE lessons on March 11. Six games running simultaneously."
   },
   {
     "id": "ecosystem",
     "name": "Ecosystem",
-    "dates": ["2026-03-12", "2026-03-13", "2026-03-14", "2026-03-15", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19"],
+    "dates": [
+      "2026-03-12",
+      "2026-03-13",
+      "2026-03-14",
+      "2026-03-15",
+      "2026-03-16",
+      "2026-03-17",
+      "2026-03-18",
+      "2026-03-19"
+    ],
     "summary": "Shell easter egg born. Rogue 84\u219999%. Dungeon speedruns. Human: \"do not avoid the difficult divergences.\" Switch to Opus. The project becomes a universe."
   },
   {
     "id": "convergence",
     "name": "Convergence",
-    "dates": ["2026-03-20", "2026-03-21", "2026-03-22", "2026-03-23", "2026-03-24", "2026-03-25"],
+    "dates": [
+      "2026-03-20",
+      "2026-03-21",
+      "2026-03-22",
+      "2026-03-23",
+      "2026-03-24",
+      "2026-03-25"
+    ],
     "summary": "Logo from scratch. Reflections essay. seed031 cascade: 25 LORE lessons. Terminal unification. The project becomes self-aware."
   },
   {
     "id": "analysis",
     "name": "Analysis",
-    "dates": ["2026-03-26", "2026-03-27", "2026-03-28"],
+    "dates": [
+      "2026-03-26",
+      "2026-03-27",
+      "2026-03-28"
+    ],
     "summary": "The menace-agents project is born. 64 days of agent logs analyzed. 7 deep-dive studies. Dashboard and report built. The project becomes self-aware of its own patterns: agent avoidance, correction rates, infrastructure compounding."
   },
   {
     "id": "teleport",
     "name": "Teleport",
-    "dates": ["2026-03-29", "2026-03-30", "2026-03-31", "2026-04-01", "2026-04-02"],
-    "summary": "Fresh start with all lessons learned. 4-agent swarm achieves in 5 days what took 48: 21/24 sessions at full triple-channel parity. Batch-translation strategy ports 17 gameplay modules in one day. But seed800 at 3% reveals the gap between short-session parity and real gameplay."
+    "dates": [
+      "2026-03-29",
+      "2026-03-30",
+      "2026-03-31",
+      "2026-04-01",
+      "2026-04-02",
+      "2026-04-03",
+      "2026-04-04"
+    ],
+    "summary": "Fresh start with all lessons learned. 4-agent swarm achieves 141 JS modules in 7 days (original took 54 days for 153). Batch-translation ports 17 modules in one day. seed800 grand-tour at 55%. 25/28 sessions full triple-channel parity."
   }
 ]
