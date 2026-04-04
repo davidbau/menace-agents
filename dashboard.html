@@ -662,14 +662,32 @@ function drawLineChart(canvas, series, options = {}) {
 // ═══════════════════════════════════════════════════════════════
 
 async function loadData() {
-  const [timelineText, chapters, daySummaries, teleportText] = await Promise.all([
-    fetch('data/timeline.jsonl').then(r => r.text()),
+  // Load timeline parts (split for size limits), with single-file fallback
+  async function loadTimeline() {
+    const parts = ['data/timeline-part1.jsonl', 'data/timeline-part2.jsonl'];
+    let lines = [];
+    for (const part of parts) {
+      try {
+        const r = await fetch(part);
+        if (r.ok) lines.push(...(await r.text()).trim().split('\n'));
+      } catch {}
+    }
+    if (!lines.length) {
+      try {
+        const r = await fetch('data/timeline.jsonl');
+        if (r.ok) lines = (await r.text()).trim().split('\n');
+      } catch {}
+    }
+    return lines.map(l => JSON.parse(l));
+  }
+
+  const [timeline, chapters, daySummaries, teleportText] = await Promise.all([
+    loadTimeline(),
     fetch('data/chapters.json').then(r => r.json()),
     fetch('data/day-summaries.json').then(r => r.json()),
     fetch('data/teleport-timeline.jsonl').then(r => r.text()),
   ]);
 
-  const timeline = timelineText.trim().split('\n').map(line => JSON.parse(line));
   const teleport = teleportText.trim().split('\n').map(line => JSON.parse(line));
   return { timeline, chapters, daySummaries, teleport };
 }
