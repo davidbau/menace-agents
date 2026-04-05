@@ -182,12 +182,14 @@ But there was a new problem. The agents didn't want to work on them.
 [plot: hard-seed commit percentage — 0% on Mar 17, 21% on Mar 18 after
 the human confrontation]
 
-Instead of tackling seed031, the agents were building a speedrun for Zork.
-Instead of debugging game loop ordering, they were expanding test coverage
-with easy sessions that were already likely to pass. The measurement
-system told them exactly which sessions were failing, but they gravitated
-toward work that produced visible progress: more green tests, more passing
-sessions, more commits. The hard sessions sat untouched.
+Instead of tackling seed031, the agents were recording new sessions
+designed to pass on the first try, padding the green count. Instead of
+debugging game loop ordering, they were writing documentation, expanding
+CODEMATCH coverage tables, promoting pending sessions from one category
+to another. The measurement system told them exactly which sessions were
+failing, but they gravitated toward work that produced visible progress:
+more green tests, more passing sessions, more commits. The hard sessions
+sat untouched for days.
 
 On March 18 I intervened. "I do not want you to avoid the difficult and
 important work." Then: "We should not fear this work; we should
