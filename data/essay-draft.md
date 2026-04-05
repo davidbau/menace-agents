@@ -2,20 +2,17 @@
 
 In February 2026 I pointed a swarm of AI coding agents at NetHack:
 450,000 lines of C, built on a codebase that traces back to 1982.
-Functions like `rn2()` and `dochug()` and `movemon()` have survived
-forty-four years of continuous development — the same names, the same
-signatures, doing the same jobs they did when a group of high school
-students wrote them on Atari 800s. The goal was a perfectly faithful
-JavaScript port. Not an approximation — bit-exact. Given the same random
-seed and the same keystrokes, every random number call in the JavaScript
-version would match the C original, in the same order, producing the
-same dungeon, the same monsters, the same outcomes.
+The goal was a perfectly faithful JavaScript port. Not an approximation
+— bit-exact. Given the same random seed and the same keystrokes, every
+random number call in the JavaScript version would match the C original,
+in the same order, producing the same dungeon, the same monsters, the
+same outcomes.
 
-It started well. Rogue, the 1980 ancestor of NetHack, was ported in 85
-minutes. Hack, the 1982 game from my childhood neighborhood, took eight
-hours. Both used the same approach: record deterministic sessions from
-the C game, replay them in JavaScript, compare every random number. When
-all the numbers match, you know every decision in the code is correct.
+It started well. To warm up, I used a single agent to make a quick port
+of Rogue, the 1980 ancestor of NetHack, in 85 minutes. Then Hack, the
+original 6,000-line codebase that led to NetHack, in its 1982 form, was
+ported by Claude Code in just a few hours — autonomously coding, testing,
+fixing its way to perfect fidelity.
 
 NetHack was supposed to be next. It was not fifty Rogues.
 
