@@ -14,7 +14,9 @@ original 6,000-line codebase that led to NetHack, in its 1982 form, was
 ported by Claude Code in just a few hours — autonomously coding, testing,
 fixing its way to perfect fidelity.
 
-NetHack was supposed to be next. It was not fifty Rogues.
+NetHack was supposed to be next. It is about seventy-five times larger
+than Hack by line count. But it was not seventy-five times harder to
+port. It was qualitatively different — a complexity cliff, not a slope.
 
 [plot: the scale comparison — Rogue 8K lines / 1 day, Hack 15K / 1 week,
 NetHack 450K / still going]
