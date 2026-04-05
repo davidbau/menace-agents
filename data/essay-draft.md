@@ -1,9 +1,11 @@
 # When Agents Build a Religion
 
-In February 2026 I pointed a swarm of AI coding agents at NetHack, the
-most complex roguelike game ever built: 450,000 lines of C, forty-five
-years of accumulated gameplay, a codebase that has driven human
-programmers to madness since 1987. The goal was a perfectly faithful
+In February 2026 I pointed a swarm of AI coding agents at NetHack:
+450,000 lines of C, built on a codebase that traces back to 1982.
+Functions like `rn2()` and `dochug()` and `movemon()` have survived
+forty-four years of continuous development — the same names, the same
+signatures, doing the same jobs they did when a group of high school
+students wrote them on Atari 800s. The goal was a perfectly faithful
 JavaScript port. Not an approximation — bit-exact. Given the same random
 seed and the same keystrokes, every random number call in the JavaScript
 version would match the C original, in the same order, producing the
