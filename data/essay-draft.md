@@ -20,6 +20,53 @@ NetHack was supposed to be next. It was not fifty Rogues.
 [plot: the scale comparison — Rogue 8K lines / 1 day, Hack 15K / 1 week,
 NetHack 450K / still going]
 
+## Why Not Transpile?
+
+NetHack has been compiled to run in a browser before. BrowserHack uses
+Emscripten to compile the C source to WebAssembly, producing a binary
+that runs in the browser's virtual machine. It works. You can play
+NetHack in a browser window.
+
+But the result is not JavaScript. It is C semantics running inside a
+JavaScript sandbox. The "source code" is an opaque blob of compiled
+instructions. If the original C code would crash by dereferencing a
+freed pointer, the transpilation crashes too — even though JavaScript
+has garbage collection and pointer errors are not supposed to exist.
+The data structures are C structs laid out in a linear memory buffer,
+not JavaScript objects with named fields. No human programmer could
+read the output and understand what it does, let alone modify it.
+
+What I wanted was a clean port. The same gameplay logic, expressed in
+native JavaScript idiom: dictionaries instead of pointer-chasing,
+arrays instead of linked lists, `async`/`await` instead of blocking
+`getch()`. A codebase that a human programmer could open, read, and
+extend. Code that would be good enough to serve as a seed for a new
+generation of NetHack, carrying on the forty-five-year lineage in a
+language that runs everywhere — but one that a developer community
+could actually maintain.
+
+This is harder than it sounds, because "the same gameplay logic" means
+matching the C down to its quirks. When C NetHack creates monsters during
+level generation, it inserts them into a linked list in a particular
+order. That insertion order determines which monster moves first, which
+determines which random numbers are consumed in which sequence. A clean
+JavaScript port must reproduce this ordering — not by using linked lists,
+but by ensuring that whatever data structure it uses produces the same
+iteration order. The port must be simultaneously idiomatic and exact.
+
+There is also the async problem. C NetHack is a single-threaded program
+that calls `getch()` and blocks. Nothing happens until a key is pressed.
+In a browser, blocking the main thread freezes the page. Emscripten
+handles this with Asyncify, a compiler transform that rewrites blocking
+calls into state machines — but the result feels sluggish, and it is
+why most browser ports of NetHack avoid the classic character-mode
+terminal interface in favor of tiles. A native JavaScript port can use
+`async`/`await` to yield to the browser naturally at every input point,
+producing a responsive character-mode experience where the `@` moves
+through corridors with the fluid, immediate feel of the original terminal
+game. This turned out to be one of the hardest architectural decisions in
+the project, and also one of the most consequential.
+
 ## The Testing Infrastructure
 
 The first thing the agents built was a measurement system. A patched C
