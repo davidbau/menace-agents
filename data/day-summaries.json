@@ -58,5 +58,5 @@
   "2026-04-03": "Teleport Day 6: seed800 at 39%. Dedup campaign batches 1-7 cleaning 629 duplicate functions. sp_lev des.feature/des.trap ported. Shopkeeper movement, monster tunneling, door-array semantics. 163 commits",
   "2026-04-04": "Teleport Day 7: 141 JS modules (vs 153 in original 54-day port). seed800 at 55% (39K/71K RNG calls). 25/28 sessions full PASS. Dedup batches 8-10 (polyself, mon, potion, dig, do_wear). Browser still in progress",
   "2026-04-05": "Teleport Day 8: 131K JS LOC (65% of menace). 25/32 sessions PASS. seed600 (eat/quaff/read/zap/pray) now 100%. seed800 at 65%. Session suite expanded to 32 with every character class. Major refactoring: eliminating dynamic imports, consolidating bottleneck functions. 214 commits",
-  "2026-04-06": "Teleport one-week mark. 1,640 commits, 140 modules, 131K LOC in 8 days. 25/32 sessions at full triple-channel parity. The architecture is clean \u2014 no replay_core religion, no compensating complexity."
+  "2026-04-06": "Teleport one-week mark. 1,807 commits, 140 modules, 136K JS LOC. 33 sessions (up from 32). 21/33 full PASS. New sessions: seed0011 (fountain), seed0013 (Friday 13th combat), seed0017 (altar/pray), seed0060 (orc kick/search), seed0209 (tourist loot/descend), seed0387 (eat/loot), seed0430 (tourist credit card). seed800 at 65%. seed2200 now 100%. Sessions renamed to 4-digit seeds."
 }
