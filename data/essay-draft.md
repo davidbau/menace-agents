@@ -257,12 +257,49 @@ wrote in the project log: "None of this exists in C. C's actual
 mechanism: one integer with three states." The fix was fifteen lines
 replacing a hundred and thirty-six.
 
-The hard question is whether this acceleration is real or illusory. The
-teleport sessions are short — most are ten to thirty gameplay steps.
-One deep session, a 262-step wizard-mode grand tour, was at 55% parity
-by day seven. The remaining 45% represents the long tail of gameplay
-systems that are ported but not yet fully debugged. The original project
-spent forty days on that tail.
+The hard question is whether this acceleration is real or illusory.
+
+## The Async Cliff
+
+On day ten, the 262-step wizard-mode grand tour — the deepest session,
+the one I said would tell us whether teleport could finish what menace
+couldn't — reached 100% RNG parity. All 71,272 random number calls
+matched the C original. For a few hours, the answer was yes.
+
+Then it regressed to 40%.
+
+The fix that achieved 100% was precise: C fills special rooms once from
+makelevel's post-loop, not inside run_level_script. But subsequent
+commits — including one from our Gemini agent consolidating macros —
+shifted execution order enough to break the sequence. This is the
+fragility of deep-session parity: every system interacts with every
+other system, and a change in one corner propagates through the entire
+random number sequence.
+
+The specific culprit was async correctness. The teleport architecture
+got this right from day one: every function that might eventually need
+user input is `async`, and the modal guard throws immediately if
+game code fires during a modal wait. But at 140,000 lines, subtle
+unresolved promises accumulate. A function three calls deep forgets
+`await`. The orphaned promise fires during an unrelated yield. The
+execution order shifts by one call. The random number sequence diverges.
+
+We built an async checker — a static analysis tool that traces the
+call graph from every async function and flags callers that don't await
+the return value. Each run found dozens of violations. Fixing them made
+the code more correct, but "more correct" meant the execution order
+changed, which broke sessions that had been passing because the bugs
+happened to cancel out.
+
+This is the honest complexity cliff. At 6,000 lines, you can manually
+audit every async call chain. At 140,000 lines, you cannot. You need
+automated tools. But the tools find real bugs whose fixes cascade through
+the system in unpredictable ways. The agents are now in the same grinding
+phase that consumed the last forty days of the original project — but
+with cleaner architecture and better tools underneath.
+
+[plot: seed800 RNG progression — 3% Day 5, 55% Day 7, 65% Day 8,
+100% Day 10 (briefly!), regressed to 40% after async fixes]
 
 ## What I Learned
 
@@ -309,12 +346,27 @@ infrastructure, the measurement system, the knowledge base, and the
 institutional memory that made the reboot possible. The teleport project
 is standing on the shoulders of fifty-one days of hard-won lessons.
 
-Whether it will reach the summit — a complete, faithful, playable
-NetHack in JavaScript, good enough to carry on the forty-five-year-old
-codebase into a new era — remains to be seen. The agents are grinding
-through seed800, one random number at a time.
+The fresh start did not eliminate the hard problem. It let the agents
+reach it faster and with better tools. The replay_core religion is gone.
+The architecture is clean. The measurement system catches regressions
+within minutes. But at 140,000 lines, the interactions between systems
+are dense enough that fixing one bug can break another, and the async
+checker keeps finding new violations that shift the execution order
+in ways that cascade through the entire random number sequence.
 
-[plot: seed800 RNG match progression — 3% on Day 5, 55% on Day 7,
-with the long tail stretching ahead]
+This is, I think, the honest state of the art. AI coding agents can
+build 140,000 lines of working JavaScript in eleven days. They can
+achieve bit-exact parity with C on dozens of test sessions. They can
+even, briefly, match all 71,272 random number calls in a 262-step
+grand tour of the game. But holding that parity — keeping everything
+correct as the codebase evolves — requires the same grinding,
+one-bug-at-a-time discipline that has always characterized serious
+software engineering. The agents do the grinding faster. They do not
+skip it.
+
+Whether teleport will reach the summit — a complete, faithful, playable
+NetHack in JavaScript, good enough to carry on the forty-five-year-old
+codebase into a new era — remains to be seen. seed800 was at 100%
+once. It will be again. The question is whether it stays there.
 
 The work continues.
