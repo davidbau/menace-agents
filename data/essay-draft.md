@@ -365,31 +365,42 @@ one-bug-at-a-time discipline that has always characterized serious
 software engineering. The agents do the grinding faster. They do not
 skip it.
 
-On day twelve, seed800 came back. All 71,272 random number calls match.
-All 9,092 events match. All 262 screen captures match. The 262-step
+On day twelve, the suite reached 100% RNG parity and 100% event parity
+across all thirty-five sessions. Every one of the 182,957 random number
+calls matches. Every one of the 35,543 events matches. The 262-step
 wizard-mode grand tour — through the Mines, Medusa's Island, the Castle,
 Gehennom, the Wizard's Tower, and the Elemental Planes — passes on all
-three channels. Thirty-two of thirty-three sessions are green. The total
-RNG parity across the entire suite is 100.0%.
+three channels. Thirty-four of thirty-five sessions are fully green.
 
-The one remaining session is seed0209, a tourist who loots a chest and
-descends stairs. It is at 78% RNG. The agents are working on it. The
-fix will involve the death sequence, shop settlement at death, and
-disclosure menu handling — systems that exist in the ported code but
-whose async sequencing doesn't quite match the C original.
+The sessions cover all thirteen character classes, character generation,
+the tutorial level, multi-level descent, combat, inventory management,
+eating, potions, scrolls, prayer, shops with credit cards, lock picking,
+travel, running, engraving, Friday-the-thirteenth luck effects,
+fountains, and altars. Each session matches the C original down to the
+last random number.
 
 [plot: seed800 RNG progression — 3% Day 5, 55% Day 7, 65% Day 8,
 100% Day 10 (briefly!), regressed to 40% after async fixes,
 back to 100% Day 12]
 
-Whether this port will become good enough to carry on the
-forty-five-year-old codebase into a new era remains to be seen. But
-the hard question — can AI coding agents faithfully reproduce a complex
+The original menace project ran for fifty-one days and never reached
+total 100% RNG parity. Teleport reached it in twelve, with a clean
+architecture, distilled lessons, and a six-agent swarm spanning three
+model families.
+
+The hard question — can AI coding agents faithfully reproduce a complex
 system at scale, given the right infrastructure and the lessons of a
 prior failed attempt? — has, I think, been answered. They can. It takes
 measurement, institutional memory, human supervision at the
 architectural level, and the willingness to start fresh when the
 accumulated mistakes of the past become more expensive to fix than to
 abandon.
+
+Phase one is complete. Phase two — expanding coverage to the full depth
+of NetHack's 450,000 lines of gameplay — lies ahead. The agents will
+need hundreds more sessions, exercising deeper dungeon levels, the quest
+branches, the endgame, and the thousands of item interactions that make
+NetHack the game it is. The architecture is in place. The measurement
+system is in place. The institutional memory is in place.
 
 The work continues.
