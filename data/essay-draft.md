@@ -299,7 +299,8 @@ phase that consumed the last forty days of the original project — but
 with cleaner architecture and better tools underneath.
 
 [plot: seed800 RNG progression — 3% Day 5, 55% Day 7, 65% Day 8,
-100% Day 10 (briefly!), regressed to 40% after async fixes]
+100% Day 10 (briefly!), regressed to 40% after async fixes,
+back to 100% Day 12]
 
 ## What I Learned
 
@@ -364,9 +365,31 @@ one-bug-at-a-time discipline that has always characterized serious
 software engineering. The agents do the grinding faster. They do not
 skip it.
 
-Whether teleport will reach the summit — a complete, faithful, playable
-NetHack in JavaScript, good enough to carry on the forty-five-year-old
-codebase into a new era — remains to be seen. seed800 was at 100%
-once. It will be again. The question is whether it stays there.
+On day twelve, seed800 came back. All 71,272 random number calls match.
+All 9,092 events match. All 262 screen captures match. The 262-step
+wizard-mode grand tour — through the Mines, Medusa's Island, the Castle,
+Gehennom, the Wizard's Tower, and the Elemental Planes — passes on all
+three channels. Thirty-two of thirty-three sessions are green. The total
+RNG parity across the entire suite is 100.0%.
+
+The one remaining session is seed0209, a tourist who loots a chest and
+descends stairs. It is at 78% RNG. The agents are working on it. The
+fix will involve the death sequence, shop settlement at death, and
+disclosure menu handling — systems that exist in the ported code but
+whose async sequencing doesn't quite match the C original.
+
+[plot: seed800 RNG progression — 3% Day 5, 55% Day 7, 65% Day 8,
+100% Day 10 (briefly!), regressed to 40% after async fixes,
+back to 100% Day 12]
+
+Whether this port will become good enough to carry on the
+forty-five-year-old codebase into a new era remains to be seen. But
+the hard question — can AI coding agents faithfully reproduce a complex
+system at scale, given the right infrastructure and the lessons of a
+prior failed attempt? — has, I think, been answered. They can. It takes
+measurement, institutional memory, human supervision at the
+architectural level, and the willingness to start fresh when the
+accumulated mistakes of the past become more expensive to fix than to
+abandon.
 
 The work continues.
