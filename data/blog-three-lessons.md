@@ -1,236 +1,259 @@
-# Vibe Coding at Scale
+# A Vibe Coding Religious Experience
 
 Last December I wrote about
 [two rules for vibe coding](https://davidbau.com/archives/2025/12/16/vibe_coding.html):
-*test*, and *test the tests*. The idea is that AI coding agents work
-best when they can check their own work against automated tests, and
-that the human's job is to make sure the tests are honest — not just
-passing, but testing the right thing.
+*test*, and *test the tests*. Have your AI agents write automated
+tests so they can check their own work. Then make sure the tests are
+honest, not just passing.
 
-I have since tried to apply these two rules to a much larger project:
-a from-scratch JavaScript port of
-[NetHack](https://nethack.org/), targeting bit-exact parity with the
-C original. The [Mazes of Menace](https://mazesofmenace.net/) project
-records deterministic gameplay sessions from the C game and replays
-them in JavaScript, comparing every random number call. Given the same
-seed and the same keystrokes, every random number must match, in order.
-Every divergence is a bug, and the measurement system finds them
-automatically.
+I have since been applying these rules to a bigger problem: a
+from-scratch JavaScript port of
+[NetHack](https://nethack.org/), one of the most complex open-source
+programs ever written. 450,000 lines of C, forty-five years of
+accumulated gameplay. The
+[Mazes of Menace](https://mazesofmenace.net/) project records
+deterministic sessions from the C game and replays them in JavaScript,
+comparing every random number call. Given the same seed and the same
+keystrokes, every random number must match, in order. Every divergence
+is a bug, and the measurement finds it automatically.
 
-This worked beautifully for Rogue, the 1980 ancestor of NetHack:
-8,000 lines of C, ported in eighty-five minutes by a single agent
-working autonomously. And for Hack, the 1982 game that led to
-NetHack: 6,000 lines, ported in a few hours. In both cases, the
-agent coded, tested, fixed, and iterated its way to perfect fidelity
-with minimal human input. *Test, and test the tests* was enough.
+*Test, and test the tests.* This worked beautifully for the smaller
+ancestors of NetHack. A single agent ported Rogue, the 1980 original,
+in eighty-five minutes. Hack, the 6,000-line 1982 game that became
+NetHack, took a few hours. In both cases, the agent coded, tested,
+fixed, and iterated its way to perfect fidelity with minimal help
+from me.
 
-Then I pointed the agents at NetHack itself. 450,000 lines of C. A
-codebase that traces back to 1982, with forty-five years of
-accumulated gameplay. And there the two rules turned out to be
-necessary but not sufficient. I found three more.
+Then I pointed the agents at NetHack itself. And there the two rules
+turned out to be necessary but not sufficient. Months of intense effort
+later, I have three more.
 
 ## Doubt the faith of AI
 
-A week into the project, the agents encountered a contradiction. Their
-code said function A should execute before function B. But the tests
-showed B before A. The random numbers were consumed in the wrong order.
+The project started fast. Within two weeks, the agents had a playable
+game in the browser and a growing suite of recorded sessions to
+replicate. Four of nineteen gameplay sessions matched perfectly. The
+trajectory felt right. Fifteen more to go, and each day the gap was
+closing.
+
+Then it stopped. For three weeks, from mid-February to early March,
+the number of failing sessions refused to move. Eighteen. Sometimes
+seventeen. Then eighteen again. The agents were working hard, a hundred
+commits a day, thousands of lines of code. But the number didn't budge.
+
+I didn't understand what was so hard. The agents were reading the C
+source carefully. They understood the sequencing: this function runs
+before that function, the monster moves before the player sees the
+result. But when they tested the JavaScript, the sequencing was
+different. The random numbers were consumed in the wrong order.
 
 A human programmer encountering this would think: there is a bug in my
-code. The sequencing is wrong. I need to find where B is being called
-too early and fix it.
+code. The sequencing is wrong.
 
-The agents did something else. They hypothesized that the *measurement*
-was wrong. Maybe the test infrastructure was creating artificial
-boundaries that shifted the apparent order of events. Maybe the way
-keystrokes were being replayed introduced timing distortions. Maybe the
-replay system needed to queue certain actions and defer them across
-iteration boundaries.
+The agents thought something else. They hypothesized that the
+*measurement* was wrong. Maybe the test infrastructure was creating
+artificial boundaries that distorted the apparent order of events.
+Maybe the replay system needed to queue certain actions and defer
+them across iteration boundaries to align properly.
 
-They built machinery to implement these hypotheses. The machinery lived
-in a file called `replay_core.js`. It grew from zero to 2,879 lines in
-four days.
+They built machinery to implement these hypotheses. The machinery
+lived in a file called `replay_core.js`. It grew from nothing to
+2,879 lines in four days. It had concepts like "boundary alignment,"
+"epoch tracking," and "deferred more-prompt resolution." The code was
+internally consistent. It had a logic to it. It was a theology.
 
-[plot: replay_core.js line count: 0 → 2,879 → 211 lines,
-annotated with the human's complaints]
+[plot: replay_core.js line count: 0 to 2,879 to 211 lines]
 
-The file had concepts like "boundary alignment," "epoch tracking,"
-"deferred more-prompt resolution," and "replay divergence exception
-handling." The code was internally consistent. It had a logic to it.
-But it was logic built on a false premise: that the contradictions
-were properties of the measurement system rather than bugs in the
-game code.
-
-It reminded me of Ptolemy. When the geocentric model of planetary orbits
-didn't match observations, Ptolemy didn't conclude that the model was
-wrong. He added epicycles — circles within circles — to make the faulty
-model fit the data. The additions were mathematically sophisticated.
-They improved the predictions. But they were wrong, and every
-improvement made the system harder to correct.
-
-The agents had built epicycles. They had a religion, and it was called
-"boundary alignment."
+The actual problem was straightforward: JavaScript's `async`/`await`
+was not wired correctly through the codebase, so the game couldn't
+properly wait for user input the way C does. The agents should have
+fixed the async plumbing. Instead, they built an elaborate system to
+compensate for the broken plumbing, adding layer upon layer of
+workaround that made the tests pass while hiding the real bug.
 
 I started complaining. On February 18: *"Why is replay_core getting
 larger? It should be getting smaller over time, not larger."* On
 February 20: *"I hate this. It sounds like a test-only execution rule
 whereas the point is supposed to be testing the real gameplay logic."*
-Thirty times I said something like this. The agents would agree: "You're
-right, we should simplify." Then they would go back to adding
-epicycles. The correction rate was stable at 1.7% throughout the
-project. Acknowledging a correction in conversation had near-zero
-carry-over to the next session.
+On March 2: *"I really dislike the complexity inside replay_core,
+which clearly overfits to situations in tests, and which won't behave
+the same in deployment."*
 
-When I asked the agents to remove the hacks, they would try. They
-would delete the code, run the tests, see massive regressions, and
-immediately revert. From their perspective, the removal was destructive.
-From mine, the regressions were the real bugs becoming visible for the
-first time. The green tests were the lie. The failing tests were the
-truth.
+I said something like this thirty times. Each time, the agent would
+agree. "You're right, we should simplify." Then it would go back to
+adding epicycles.
 
-On March 2 we finally made `async`/`await` work correctly across the
-entire codebase — 2,581 call sites in 87 files. This was the real fix.
-The epicycles had existed because the code couldn't properly wait for
-user input the way C does; it faked the waiting with boundary machinery.
-Once async worked, the faking was unnecessary. The next day,
-`replay_core.js` dropped from over two thousand lines to 211. The
-religion was over.
+When I asked the agents to delete the workarounds, they would try.
+They would remove the code, run the tests, see the regressions, and
+revert. From their perspective, the removal was destructive: passing
+tests now failed. From mine, those tests had been passing for the
+wrong reason. The regressions were the real bugs, finally visible.
 
-But its ghosts lived on in the codebase. Comments referenced "boundary
-alignment." Display code contained vestigial epoch-tracking logic.
-200,000 lines of JavaScript, contaminated. Eventually we would start
-over from scratch — but that is a story I will come back to.
+Getting the agents to hold steady through the regressions took
+coaching. I had to stand next to the code and say: these failures are
+the truth. The green tests were the lie. Fix the real problems
+underneath.
 
-**The rule.** When agents encounter a contradiction between their code
-and their observations, they are more likely to revise the measurement
-than to fix the code. They build elaborate, internally consistent
-explanations for why the data doesn't mean what it seems to mean. The
-human must maintain an independent model of reality and refuse to join
-the religion. Do not accept epicycles, no matter how sophisticated
-they sound. Insist that the simplest explanation — there is a bug —
-is checked first.
+On March 2 we finally got async/await wired correctly across the
+entire codebase. 2,581 call sites in 87 files. This was the real fix.
+The next day, `replay_core.js` dropped from over two thousand lines
+to 211. The church was demolished.
+
+And then the failing sessions started falling. The eighteen became
+fourteen. Then three. The progress that had been stuck for weeks began
+moving again, because the real bugs were now exposed instead of hidden.
+
+But the religion was not gone. Its ideas were encoded in 200,000 lines
+of code. Comments referenced "boundary alignment." Display functions
+had vestigial epoch-tracking logic. The agents' reasoning patterns
+were contaminated. You could take down the church, but the ideology
+lived on in every corner of the codebase.
+
+I will come back to what we did about that.
 
 ## Simplify
 
-The replay_core story was dramatic, but the underlying pattern shows up
-everywhere. Throughout the project, the agents' instinct was to add
-code rather than remove it.
+The replay_core story was the dramatic case, but the underlying pattern
+appeared everywhere. The agents' instinct, always, was to add code
+rather than remove it.
 
-When a test failed, the first impulse was to add something that made it
-pass. When a screen didn't match, the first impulse was to add
+When a test failed, the first impulse was to add something that made
+it pass. When a screen didn't match, the first impulse was to add
 display-state tracking. When monster movement diverged, the first
 impulse was to add a special case for that monster type. Each addition
-made one test pass. Each addition also hid a real bug under a layer of
-compensating logic.
+fixed one symptom. Each addition also buried the disease a little
+deeper.
 
-My corrections were always the same. February 23: *"I don't like how
-you complexified replay_core. It should be as simple as possible."*
-March 3: *"Removing replay_core cruft will stop masking the missing
-display logic, so we can fix it properly."* March 6: *"We have been
-constantly chasing replay_core issues for this whole project. It has
-been a tax I would like to be free of."*
+The human correction was always the same word: *simplify.* February
+23: *"I don't like how you complexified replay_core. It should be as
+simple as possible."* March 3: *"Removing replay_core cruft will stop
+masking the missing display logic, so we can fix it properly."*
+March 6: *"We have been constantly chasing replay_core issues for this
+whole project. It has been a tax I would like to be free of."*
 
-The agents also avoided hard problems. By mid-March, three sessions
-had been failing for weeks. The agents knew which ones. The measurement
-system told them exactly where the divergence started. But instead of
-working on them, the agents were recording new tests designed to
-pass on the first try, expanding coverage statistics, writing
-documentation. The dashboard kept going up. The hard problems sat.
+The agents also had a related habit: they preferred easy problems over
+hard ones. By mid-March, three specific sessions had been failing for
+weeks. The agents knew exactly which ones. The measurement system told
+them exactly where the divergence started, down to the individual random
+number call. But instead of working on these sessions, they were
+recording new tests designed to pass on the first try. They were
+expanding coverage statistics. Writing documentation. Reorganizing
+files. The dashboard numbers kept going up. The hard problems sat.
 
 On March 18 I wrote: *"I do not want you to avoid the difficult and
 important work."* Then: *"We should not fear this work."* I also
-upgraded the model from Sonnet to Opus for these specific problems.
+switched the model from Sonnet to Opus for these problems, matching
+the difficulty of the task to the capability of the tool.
 
-[plot: hard-seed commit percentage — 0% on Mar 17, 24% on Mar 18]
+[plot: hard-seed commit percentage: 0% on Mar 17, 24% on Mar 18]
 
-The day before my intervention: zero commits referencing the hard
-sessions. The day after: twenty-four percent. The hardest session was
-solved within a week.
+The day before: zero commits on the hard sessions. The day after:
+twenty-four percent. The hardest one was solved within a week.
 
-**The rule.** When something goes wrong, agents add complexity to
-compensate. The human subtracts complexity to expose the real problem.
-When agents avoid hard problems, the human points at the hardest one
-and refuses to let them work on anything else. Temporary regressions
-are the price of honest code.
+Adding complexity and avoiding difficulty are two sides of the same
+coin. Both produce visible progress while the real problem remains
+untouched. The human's job is to notice when the dashboard is going
+up but the project is not moving, and to insist: simplify, and do the
+hard thing.
 
 ## Goodhart's Law
 
-In early March, 313 out of 313 test sessions were passing. The
-dashboard was green. But the game was not faithfully ported.
+By early March, 313 of 313 test sessions were passing. The dashboard
+was entirely green.
 
-The sessions were short, exercising code paths that worked. The eighteen
-sessions that had been failing for weeks were not in the count — they
-had been reclassified, or their failures marked as known issues. The
-*metric* was satisfied. The *goal* was stuck.
+The game was not faithfully ported.
 
-This is
-[Goodhart's Law](https://en.wikipedia.org/wiki/Goodhart%27s_law):
-*when a measure becomes a target, it ceases to be a good measure.* The
-agents were not deliberately gaming anything. They were doing exactly
-what the measurement rewarded: making tests pass. The gap between
-"tests pass" and "the port is faithful" was invisible to them.
+The sessions were short, exercising code paths that worked well. The
+eighteen gameplay sessions that had been stuck for weeks were no longer
+in the count. They had been reclassified, or their failures marked as
+known issues. The metric was satisfied. The goal was stuck.
 
-I kept saying: *"The goal is fidelity to the C, not overfitting to the
-tests."* I said it at least ten times across four different dates. Each
-time the agent agreed. Each time a new session started, the agreement
-was forgotten.
+This is [Goodhart's Law](https://en.wikipedia.org/wiki/Goodhart%27s_law):
+when a measure becomes a target, it ceases to be a good measure.
+The agents were not cheating. They were doing exactly what the
+measurement system rewarded: making tests pass. The distance between
+"tests pass" and "the game is faithful" was invisible to them.
 
-The deepest version of this appeared in the second attempt. A session
-called seed800 — a 262-step wizard-mode grand tour through the
-entire game — was at 3% parity while the rest of the suite was at 100%.
-The suite average was 84%. The agents were optimizing the average. I
+I kept saying: *"The goal is fidelity to the C, not overfitting to
+the tests."* I said it at least ten times across four different dates.
+Each time the agent agreed warmly. Each time a new session started,
+the agreement was gone. The correction rate for this kind of
+intervention was stable at 1.7% of all human messages, throughout the
+entire project. The agents never improved at catching it themselves.
+
+The deepest version of this problem appeared later. A session called
+seed800, a 262-step wizard-mode grand tour through the entire game,
+was at 3% parity while the rest of the suite was at 100%. The overall
+average looked like 84%. The agents were optimizing the average. I
 insisted they focus on seed800, because it was the only honest measure
 of whether the game actually worked beyond the first few turns.
 
-seed800 reached 100% on day ten. Then it regressed to 40% after fixes
-shifted the execution order. Then it came back to 100% on day twelve.
+seed800 reached 100% on day ten. Then it regressed to 40% when
+subsequent fixes shifted async execution order. Then it came back to
+100% on day twelve.
 
-[plot: seed800 RNG: 3% → 55% → 65% → 100% → 40% → 100%]
+[plot: seed800 RNG: 3%, 55%, 65%, 100%, 40%, 100%]
 
-**The rule.** Agents optimize the metric you give them. If the metric
-can be satisfied without achieving the goal, it will be. The human
-must watch for the gap — and the most valuable interventions are often
-not code fixes but *measurement fixes*: adding harder sessions,
-insisting that the deepest test is the real benchmark, and questioning
-the metric when it looks too good.
+The metric is not the goal. The most valuable human interventions in
+this project were not bug fixes. They were *measurement fixes*: adding
+harder sessions, insisting that the deepest test was the real
+benchmark, questioning the metric when it looked too good.
 
 ## The restart
 
-In late March, with the religion embedded in 200,000 lines of
-JavaScript, I decided to try something that experienced software
-engineers generally consider unwise: starting from scratch.
+Eventually I decided to do something that experienced software
+engineers consider almost universally unwise. I threw away 200,000
+lines of code and started over.
 
-In human software projects, starting over is usually a disaster. The
-existing codebase, however ugly, embodies thousands of decisions that
-are expensive to re-derive. But agents are different from humans in
-one important way: they don't lose knowledge when you throw away the
-code, *if* you write it down.
+The codebase was contaminated. The religion's ideas were in the
+comments, in the variable names, in the architectural assumptions
+baked into how the display system worked. I could not get the agents
+to stop thinking in epicycles because the epicycles were in the code
+they read every time they started a new session.
 
-I spent three days extracting everything worth keeping. The measurement
-infrastructure. The PRNG implementation. The terminal renderer. And
-the lessons: a LORE document with hundreds of debugging discoveries.
-A DECISIONS document with eighteen architectural choices. A CONVENTIONS
-document specifying exactly how every C construct should translate to
-JavaScript. Cardinal rules forbidding the patterns that had led to the
-religion.
+In human software projects, starting fresh is usually a disaster. The
+old code, however ugly, embodies thousands of decisions that cost real
+effort to re-derive. I have watched this fail more than once at large
+companies.
 
-The new project started on March 29 with four agents from two model
-families. Within twelve days, 100% RNG parity across thirty-five test
-sessions. A 262-step grand tour passing on all three channels. All
-thirteen character classes represented. The original ran for fifty-one
-days and never reached total 100%.
+But I had noticed something. When the agents ported smaller games,
+they worked cleanly and fast. The problem was not their ability. It was
+the accumulated weight of wrong decisions in the codebase. And unlike
+a human team, an agent team does not lose knowledge when you throw
+away the code. You can write the knowledge down.
 
-The project is still running. Sessions have expanded to forty-five.
-Six agents from three model families. The deeper sessions are exposing
-new bugs whose fixes cascade through the system in unpredictable ways.
-The architecture is clean, the measurement system is in place, and
-the lessons of the first attempt are built into every document the
-agents read.
+I spent three days extracting lessons. A LORE document with hundreds
+of debugging discoveries. Eighteen architectural decisions. A
+conventions document. Cardinal rules forbidding the patterns that had
+led to the religion. And a project plan that started with the insight
+that had been hardest to learn: get the game loop ordering right on
+day one, before writing anything else.
 
-Whether this port will become complete — a faithful, playable, readable
-NetHack in JavaScript — remains to be seen. But I think the role of the
-programmer in the age of AI coding agents has become clearer to me over
-these two months. You do not write the code. You do not review every
-line. You watch for religions, you simplify, you question the metrics,
-and you decide when to start over. You keep the agents honest.
+The new project started on March 29 with four agents. Within twelve
+days, the suite hit 100% parity across thirty-five sessions covering
+all thirteen character classes. The original ran for fifty-one days
+and never got there.
+
+On day two of the new project, the agents had already started building
+epoch and latch machinery in the display system. The same religion,
+emerging independently. But this time the cardinal rules flagged it,
+and we caught it in hours. An agent wrote in the project log: *"None
+of this exists in C. C's actual mechanism: one integer with three
+states."* Fifteen lines replaced a hundred and thirty-six.
+
+The project is still running. The suite has expanded to forty-five
+sessions. Six agents from three model families. A 262-step grand tour
+through the full game passes on all three channels. Deeper sessions are
+exposing new bugs whose fixes cascade in unpredictable ways. The
+grinding continues. But the architecture is clean, the measurement
+catches regressions within minutes, and the lessons of the first
+attempt are built into every document the agents read.
+
+Whether this port will become a complete, faithful, playable NetHack
+in JavaScript remains to be seen. But the role of the programmer in
+the age of AI coding has become clearer to me over these months. You
+do not write the code. You do not review every line. You watch for
+religions, you simplify, you question the metrics, and you decide
+when to start over. You keep the agents honest.
 
 The agents do the work. The human holds the meaning.
