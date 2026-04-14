@@ -128,8 +128,12 @@
       "2026-04-06",
       "2026-04-07",
       "2026-04-08",
-      "2026-04-09"
+      "2026-04-09",
+      "2026-04-10",
+      "2026-04-11",
+      "2026-04-12",
+      "2026-04-13"
     ],
-    "summary": "PHASE 1 COMPLETE. Fresh start achieves 100% RNG + 100% Events across 35 sessions in 12 days. 6-agent heterogeneous swarm (Claude, Codex, Gemini). 2,192 commits, 144 modules, 144K JS LOC. seed0800 grand tour (262 steps, 71K RNG calls) passes all three channels. The menace port took 51 days and never reached total 100%."
+    "summary": "Phase 1 complete Day 12: 100% RNG + 100% Events on 35 sessions. Phase 2 begins: sessions expand to 45 covering polyself, shops, alchemy, options menus. 6-agent swarm (Claude + Codex + Gemini). 2,955 commits, 149K LOC."
   }
 ]
