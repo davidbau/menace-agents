@@ -68,8 +68,20 @@ them across iteration boundaries to align properly.
 They built machinery to implement these hypotheses. The machinery
 lived in a file called `replay_core.js`. It grew from nothing to
 2,879 lines in four days. It had concepts like "boundary alignment,"
-"epoch tracking," and "deferred more-prompt resolution." The code was
-internally consistent. It had a logic to it. It was a theology.
+"epoch tracking," and "deferred more-prompt resolution." Here is a
+real commit message from the agents, explaining their theory:
+
+> When a non-digit command step follows an accumulated count digit but
+> there is deferred boundary RNG targeting a later step, that command
+> key in C was consumed by `runmode_delay_output` mid-occupation rather
+> than by `parse()`. Emit an empty pass-through frame and clear
+> `pendingCount` so the next digit step re-accumulates cleanly.
+
+The code was internally consistent. It had a logic to it. It was a
+theology. When I asked, skeptically, *"what is a 'sparse boundary
+frame'?"*, the agent responded not by questioning the concept but by
+writing a section heading: **"Explaining sparse boundary frames."**
+It was teaching me its religion.
 
 [plot: replay_core.js line count: 0 to 2,879 to 211 lines]
 
