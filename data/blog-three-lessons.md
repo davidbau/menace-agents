@@ -1,51 +1,60 @@
 # A Vibe Coding Religious Experience
 
+Have you ever gotten the feeling that your super smart AIs might not
+know what they are talking about?
+
+This is particularly an issue after they have written 100,000 lines
+of intricate computer code that you have not looked at whatsoever.
+
+I have been vibe coding a large project for a couple months now, and
+I have come to appreciate just how wrong AI agents can be while
+sounding absolutely, confidently, terrifyingly right. Not wrong about
+small things. Wrong about the fundamental nature of the problem they
+are solving. Wrong in a way that produces thousands of lines of
+sophisticated, internally consistent, totally misguided code.
+
+Let me tell you about it.
+
 Last December I wrote about
 [two rules for vibe coding](https://davidbau.com/archives/2025/12/16/vibe_coding.html):
 *test*, and *test the tests*. Have your AI agents write automated
 tests so they can check their own work. Then make sure the tests are
-honest, not just passing.
+honest. These rules work well for small projects. A single agent
+ported [Rogue](https://mazesofmenace.net/rogue/), the classic 1980
+dungeon game, from C to JavaScript in eighty-five minutes.
+[Hack](https://mazesofmenace.net/hack/), the 6,000-line 1982 game
+that became NetHack, took a few hours. *Test and test the tests* was
+all they needed.
 
-I have since been applying these rules to a bigger problem: a
-from-scratch JavaScript port of
-[NetHack](https://nethack.org/), one of the most complex open-source
-programs ever written. 450,000 lines of C, forty-five years of
-accumulated gameplay. The
+Then I pointed the agents at
+[NetHack](https://mazesofmenace.net/) itself: 450,000 lines of C,
+forty-five years of accumulated gameplay. The
 [Mazes of Menace](https://mazesofmenace.net/) project records
 deterministic sessions from the C game and replays them in JavaScript,
 comparing every random number call. Given the same seed and the same
 keystrokes, every random number must match, in order. Every divergence
 is a bug, and the measurement finds it automatically.
 
-*Test, and test the tests.* This worked beautifully for the smaller
-ancestors of NetHack. A single agent ported Rogue, the 1980 original,
-in eighty-five minutes. Hack, the 6,000-line 1982 game that became
-NetHack, took a few hours. In both cases, the agent coded, tested,
-fixed, and iterated its way to perfect fidelity with minimal help
-from me.
+This worked at first. Within two weeks the agents had a playable game
+in the browser and a growing suite of test sessions. Four of nineteen
+gameplay sessions matched perfectly. Fifteen more to go, and each day
+the gap was closing. The trajectory felt right.
 
-Then I pointed the agents at NetHack itself. And there the two rules
-turned out to be necessary but not sufficient. Months of intense effort
-later, I have three more.
+Then it stopped. And I discovered that *test and test the tests* is
+necessary but not sufficient. I needed three more rules.
 
 ## Doubt the faith of AI
 
-The project started fast. Within two weeks, the agents had a playable
-game in the browser and a growing suite of recorded sessions to
-replicate. Four of nineteen gameplay sessions matched perfectly. The
-trajectory felt right. Fifteen more to go, and each day the gap was
-closing.
+For three weeks, from mid-February to early March, the number of
+failing sessions refused to move. Eighteen. Sometimes seventeen. Then
+eighteen again. The agents were working hard, a hundred commits a day,
+thousands of lines of code. But the number didn't budge.
 
-Then it stopped. For three weeks, from mid-February to early March,
-the number of failing sessions refused to move. Eighteen. Sometimes
-seventeen. Then eighteen again. The agents were working hard, a hundred
-commits a day, thousands of lines of code. But the number didn't budge.
-
-I didn't understand what was so hard. The agents were reading the C
-source carefully. They understood the sequencing: this function runs
-before that function, the monster moves before the player sees the
-result. But when they tested the JavaScript, the sequencing was
-different. The random numbers were consumed in the wrong order.
+The agents were reading the C source carefully. They understood the
+sequencing: this function runs before that function, the monster moves
+before the player sees the result. But when they tested the
+JavaScript, the sequencing was different. The random numbers were
+consumed in the wrong order.
 
 A human programmer encountering this would think: there is a bug in my
 code. The sequencing is wrong.
