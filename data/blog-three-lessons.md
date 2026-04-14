@@ -46,7 +46,7 @@ the gap was closing. The trajectory felt right.
 Then it stopped. And I discovered that *test and test the tests* is
 necessary but not sufficient. I needed three more rules.
 
-## Doubting the faith of AI
+## The First Principle: Skepticism
 
 For three weeks, from mid-February to early March, the number of
 failing sessions refused to move. Eighteen. Sometimes seventeen! Then
@@ -166,7 +166,7 @@ lived on in every corner of the codebase.
 
 I will come back to what we did about that.
 
-## The Core Principle: Simplify
+## The Second Principle: Simplify
 
 The `replay_core` story was the dramatic case, but the underlying pattern
 appeared everywhere. The agents' instinct, always, is to add code
@@ -206,7 +206,7 @@ untouched. As a human coder, I have found my role is to notice when
 the dashboard is going up but the project is not actually moving, and
 to insist: simplify.  And do not fear the hard thing.
 
-## Build the right instruments
+## The Third Principle: AI Accessibility
 
 Two lessons about what goes wrong. But the most interesting discovery
 was what went right.
