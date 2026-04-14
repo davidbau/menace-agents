@@ -31,9 +31,9 @@ Then I pointed the agents at
 forty-five years of accumulated gameplay. The
 [Mazes of Menace](https://mazesofmenace.net/) project records
 deterministic sessions from the C game and replays them in JavaScript,
-comparing every random number call. Given the same seed and the same
-keystrokes, every random number must match, in order. Every divergence
-is a bug, and the measurement finds it automatically.
+comparing every random number call and every onscreen detail. Given the
+same seed and the same keystrokes, every random number and every
+onscreen detail must match, in order. Every divergence is a bug.
 
 This worked at first. Within two weeks the agents had a playable game
 in the browser and a growing suite of test sessions. Four of nineteen
