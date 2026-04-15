@@ -348,7 +348,7 @@ and slow agents cut corners.  We have to keep in mind that agents
 are often committing new changes every ten minutes, so overhead
 needs to be low.
 
-## The restart
+## The Restart
 
 The deepest problem after months of work was that the codebase was
 contaminated. No matter how quickly I got the AI agents to iterate,
@@ -427,4 +427,4 @@ do not write the code. You do not review every line. You watch for
 false religions, you simplify, you question the metrics, and you decide
 when to start over.
 
-As a human, you own the meaning of the project.
+As a human, you defend the meaning of the project.
