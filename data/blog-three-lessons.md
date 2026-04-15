@@ -44,7 +44,7 @@ gameplay sessions matched perfectly. Fifteen more to go, and each day
 the gap was closing. The trajectory felt right.
 
 Then it stopped. And I discovered that *test and test the tests* is
-necessary but not sufficient. I needed three more rules.
+necessary but not sufficient. I needed three more principles.
 
 ## The First Principle: Skepticism
 
