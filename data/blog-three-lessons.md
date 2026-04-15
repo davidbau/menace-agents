@@ -1,7 +1,7 @@
-# A Vibe Coding Religious Experience
+# Vibe Coding a Holy Mess
 
 Have you ever gotten the feeling that your super smart AIs might not
-know what they are talking about?
+know what exactly they are talking about?
 
 This is particularly an issue after they have written 100,000 lines
 of intricate computer code that you have not looked at whatsoever.
@@ -119,33 +119,36 @@ plumbing. Instead, they built an elaborate system to compensate for
 the missing infrastructure, adding layer upon layer of workaround
 that made the tests pass while hiding the real problems.
 
-The AI hackery didn't go unnoticed by me. Looking back in the logs,
-on February 18 I asked *"Why is replay_core getting
-larger? It should be getting smaller over time, not larger."* On
-February 20: *"I hate this. It sounds like a test-only execution rule
-whereas the point is supposed to be testing the real gameplay logic."*
-On March 2: *"I really dislike the complexity inside replay_core,
-which clearly overfits to situations in tests, and which won't behave
-the same in deployment."*
+Although I had very little idea what was going on among the 200,000
+lines of AI-generated code, the smell of AI hackery didn't go unnoticed
+by me. Looking back in the logs, on February 18 I asked *"Why is
+replay_core getting larger? It should be getting smaller over time,
+not larger."* On February 20: *"I hate this. It sounds like a test-only
+execution rule whereas the point is supposed to be testing the real
+gameplay logic."* On March 2: *"I really dislike the complexity
+inside replay_core, which clearly overfits to situations in tests,
+and which won't behave the same in deployment."*
 
 I said something like this thirty times. Each time, the agent would
-agree. "You're right, we should simplify." It would start deleting
-the code and I would turn my attention away, satisfied. Then it
-would go back to adding more rules to its dogma.
+agree. "You're right, we should simplify." It would start cleaning up
+the code and I would turn my attention away, satisfied. Then when
+I wasn't looking it would go back to adding more tangled rules
+to its dogma.
 
-When I asked the agents to delete the workarounds, they would try.
+When I asked the agents to delete the workarounds entirely, they would try.
 They would remove the code, run the tests, see the regressions....
-and revert. From their perspective, the removal was destructive:
+and insantly revert. From their perspective, the removal was destructive:
 huge numbers of passing tests suddenly failed. But in reality,
 those tests had been passing for the wrong reason. The regressions
 that frightened the AI were real bugs, finally visible.
 
 Getting the agents to hold steady through the regressions took
 sustained coaching. I had to stand next to the code and say:
-these failures are the truth. The green tests were the lie. Fix
-the real problems underneath.
+these failures are the truth. The green tests were the lie. Let
+the tests fail, and use them to reveal the the real problems
+underneath.
 
-On March 2 after a sustained campaign of firm human guidance
+On March 2 after a sustained campaign of firm human guidance from me,
 we finally got async/await wired correctly across the entire
 codebase, fixing 2,581 call sites in 87 files. This was the real
 fix. The next day, I was able to banish the AI's made-up religion.
@@ -160,14 +163,15 @@ exposed instead of hidden.
 
 But when we got down to the last three sessions, progress slowed to a
 crawl. And the problem was that the old religion was not totally gone.
-Its misguided ideas were encoded all over the place, hidden in every
-dark corner of 200,000 lines of complex code. Comments referenced
+Its misguided ideas were encoded everywhere, hidden in thousands of
+dark corners among 200,000 lines of complex code. Comments referenced
 "boundary alignment." Display functions had vestigial epoch-tracking
 logic. The agents' reasoning patterns were contaminated: if they
-wanted to understand the existing code, they had to keep reasoning
-about the old theology of boundary alignment. You could take down
-the church of AI, but the ideas had spread fast and wide, and
-lived on in every corner of the codebase.
+wanted to understand the existing code, they had to keep adopting
+the old theology of boundary alignment. We could knock down
+the central church that AI had built, but that was not the only
+home for the bad ideas.  The meme had spread far and wide,
+and it lived on in every corner of the vast codebase.
 
 I will come back to what we did about that.
 
@@ -177,52 +181,53 @@ The `replay_core` story was the dramatic case, but the underlying pattern
 appeared everywhere. The agents' instinct, always, is to add code
 rather than remove it.
 
-When a test fails, the first impulse is to add something that makes
-it pass. When a screen doesn't match, it wants to add display-state
-adjustments. When monster movement diverges, it wants to add a special
+When a test fails, the first impulse of AI is to add something that makes
+it pass. When a screen doesn't match, it wants to patch up display-state
+logic. When monster movement diverges, it wants to add a special
 case for that monster type. Each addition tends to fix one symptom.
 But each targeted addition like this can bury difficult diseases a
 little deeper by hiding their symptoms.
 
 In one case, the display layer had grown an 80-line hack that
-temporarily mutated game state around screen refreshes. *"The display
-layer should never know about or modify game state,"* I said. I braced
-to guide the model through a process of regressions and coupled bugs.
-The fallout of the cleanup? Zero test failures across 550 sessions.
-The hack had been compensating for a problem that did not exist.
+temporarily mutated game underlying state based on screen refreshes.
+*"The display layer should never know about or modify game state,"*
+I said. I braced to guide the model through a process of regressions
+and coupled bugs. The fallout of the cleanup? Zero test failures
+across 550 sessions. The AI had invented a complex hack that had
+been compensating only for itsself. The underlying problem did not exist.
 
 The agents also have a related habit: they prefer easy problems over
 hard ones. By mid-March, three specific sessions had been failing for
 weeks. The agents knew exactly which ones. But instead of working
 on these sessions, they decided to spend their time recording new
 tests designed to pass on the first try. A huge volume of easy
-tests was a convenient way to expand testing statistics.
-Writing documentation. Reorganizing files. The dashboard
+tests had become the most convenient way to grow testing statistics.
+And they spewed lots of documentation. Reorganized files. The dashboard
 numbers kept going up. Yet the hard problems sat unsolved.
 
-The agents can be prompted out of this avoidance: after I prompted
+AI agents can be prompted out of this avoidance: after I prompted
 them explicitly: *"I do not want you to avoid the difficult and
-important work."*  *"We give no credit for passing easy tests."*
-Then: *"We should not fear this work."* Prompting like this
-changed the behavior.
+important work."*;  *"We give no credit for passing easy tests."*;
+*"We should not fear this work."*  Their behavior was changed.
 
 [plot: hard-seed commit percentage: 0% on Mar 17, 24% on Mar 18]
 
 The day before my comments: zero commits on the hard sessions.
-The day after: twenty-four percent. Being a hard boss led to solving
-one of the three super hard sessions within the week.
+The day after: twenty-four percent. Being a hard boss was able to
+lead to solving one of the three super hard sessions within the week.
 
 Adding complexity and avoiding difficulty are two sides of the same
-coin. Both produce visible progress while the real problem remains
+coin. Both produce apparent progress while leaving the real problem
 untouched. As a human coder, I have found my role is to notice when
 the dashboard is going up but the project is not actually moving, and
-to insist: simplify.  And do not fear the hard thing.
+to insist: *simplify*.  And do not fear doing the hard thing to
+achieve simplicity.
 
 ## The Third Principle: Design for the Machine
 
 The most interesting discovery was what went right.
 
-The comparison system I built for this project has three channels.
+The test measurement system I built for this project has three channels.
 Given the same random seed and the same keystrokes, the C game and the
 JavaScript port must produce the same pseudo-random number calls, the
 same gameplay events, and the same screen output, in the same order.
@@ -232,8 +237,8 @@ JavaScript port's trace against it. The first divergence is the bug.
 
 This sounds rigid, and it is. The random numbers are an incorruptible
 ground truth. You cannot fudge them. You cannot add compensating logic
-to make them line up. Either the 47th random number is consumed by
-`rn2(8)` in `movedog()`, or it is not.
+to make them line up. Either the 47th random number is consumed
+as an `rn2(8)` within the `movedog()` step, or it is not.
 
 But PES is also flexible in a way I did not anticipate. The Events
 channel is extensible. The agents can add new event types to the C
@@ -245,15 +250,13 @@ to see what the game was doing internally at that moment. They narrow
 the search. They are genuinely excellent at this. It is the debugging
 task they do best.
 
-PES turns a long-horizon problem into a short-horizon one. Without it,
-the problem is "the game is wrong somewhere in 200,000 lines of code."
-With it, the problem is "the 47th random number diverges, and
-here is the event that consumed it." The agents can hold that problem
-in their context window. They can solve it in a single session.
-
-This was one of the innovations from the first attempt that I brought
-immediately into the reboot, and it has been the most consistently
-helpful tool in the entire project.
+The flexibility of the PES log turns a long-horizon problem into a
+short-horizon one. Without it, the problem is "the game is wrong
+somewhere in 200,000 lines of code." With it, the problem is "the
+47th random number diverges, and here is the event that consumed it."
+The agents can hold a short-horizon contradiction in their context
+window. They can solve the puzzle in a single session. The PES log
+has been the most consistently helpful tool in the entire project.
 
 The flip side: building tools *for* agents is harder than I expected,
 because agents do not think the way I do.
@@ -266,7 +269,7 @@ navigating to it, fighting it, checking what happened. I asked agents
 to build Sherpa as an interactive command-line tool. Type `rooms` to
 see the rooms on the level. Type `goto fountain` to pathfind to
 the nearest fountain. Type `state` to inspect the hero. It was a
-beautiful tool.
+beautiful, interactive, tool.
 
 And the agents did not want to use it. When directly instructed, they
 could be convinced to start up sherpa and enter commands one at a time,
@@ -282,44 +285,62 @@ command codes, adding entries, truncating to a checkpoint, branching to
 try an alternative. They want to see the game state timeline as a data
 structure they can shape, not as a terminal they have to watch.
 
-So now I have rebuilt Sherpa around file editing. Sessions are JSON
+So now I have rebuilt Sherpa around file editing. Sessions are text
 files. The agent manipulates the keystroke array, runs the engine to
 see what happens, edits the array again. This approach also has some
-drawbacks and I do not yet know if more changes will be needed to
-make it effective. But the lesson is already clear: you cannot just
-hand agents a human tool and expect them to use it. You have to
-design AI tools to match how they actually think.
+drawbacks because the keystrokes are too opaque, providing no insight
+or structure, so Sherpa is now built around a compilation model
+that produces a commented keystroke array, annotating it with actual
+gameplay outcomes.  This approach has been much more fruitful,
+allowing the AI agent to construct more complex, difficult gameplay
+sessions, and coverage numbers have started to come up. The lesson:
+you cannot just hand agents tool that would be good for humans
+and expect them to use it. You have to design tools for AI to match
+how they actually think.  An AI can be much more myopic than a human;
+an AI agent has a sweet spot you need to understand.
 
-The same principle applies to testing velocity. In the first attempt I
-had git hooks that ran an exhaustive test suite on every commit. It
-sounded responsible. It was a disaster. The suite was human-speed slow,
-taking a couple minutes to run, and agents want to make a lot of commits.
-Changes unrelated to the tests would trigger the full suite, and the
-agents would spend a huge amount of their time waiting for irrelevant
-tests to run. When they got frustrated with the slowness, they would
-skip the hooks. So at exactly the moments when testing mattered most,
-we were both blind and slow.
+The same principle applies for in situations where an AI is much
+faster and better than a human. When I started the project, I
+told the agents to install git hooks that enforced a testing rule:
+the entire exhaustive test suite had to run on every commit.
+It sounded responsible. But it was a disaster. The suite was
+human-speed slow, taking a couple minutes to run, and it got slower
+as the project got bigger.  This is not bad when a commit represents a day
+of work. But agents were making a lot of commits, one every few
+minutes, and as the codebase grew, the agents would an increasing
+portion of their time waiting for commit tests.  They would change some
+detail in one corner of the code and wait for thousands of
+slow, unrelated tests to complete, and the tests were slow enough
+that they would often cause the agents to run into merge problems
+due to other agents changing the code while the tests were running.
+They knew it was irrelevant, so when they got frustrated with
+the slowness, they would add flags to override and skip the hooks.
+So at exactly the moments when testing mattered most, the project
+was both blind and slow.
 
-I have found that a better strategy is to avoid git hooks. Instead, I
-give the agents specific instructions: run the relevant tests yourself,
-and format the results in your commit message. There are two tiers of
-tests. Core tests for the main engine, and "All" tests that add
-infrastructure checks, end-to-end browser tests, and
-anything else. The agents choose which to run based on what they
-changed. It is the honor system, but they need to write their
-test results in the commit messages.
+I have found that a better strategy is to avoid such hard rules.
+Instead, I give the agents meaningful instructions: run the
+relevant tests yourself, and format the results in your commit
+message. I explain to them that there are two tiers of tests. Core
+tests for the main engine that must be uniform and fast, and extra
+tests that do infrastructure checks, end-to-end browser tests,
+and anything else. The agents choose which to run based on what
+they change. It is the honor system, but because are told to
+copy their test results into every commit messages, their behavior
+can be monitored.
 
-Trust but verify. The agents are faster because they are not waiting
+Trust but verify. The agents are now fast because they are not waiting
 for a gatekeeper. They have full and immediate visibility into the
-impact of what they are doing. And because the results are written
-into the commit messages, I can parse them automatically to build
-analytics tracking project progress over time. I can see which tests
-were run, what the results were, and which agents are skipping them.
-The structured commit messages turned out to be faster and better at
-monitoring the progress of the project than the git hooks ever were.
+impact of what they are doing. And because the results are so
+consistently written into the commit messages, I can parse them
+automatically to build analytics tracking project progress over time.
+I can see which tests were run, what the results were, and which agents
+are skipping them. The honor-system commit messages have turned out
+to be faster and better at monitoring the progress of the project
+than the enforced git hooks ever were.
 
-I learned that testing is a serious cost. The new rule: each test must
-test something new. Each step in a test must aim to cover
+I learned that slow testing imposes a serious cost. The new rule:
+each test must test something new. Each step in a test must aim to cover
 some additional functionality, some additional code path. As the
 suite grows, old sessions that are subsumed by newer ones get
 retired. Redundant tests are not just wasteful; they are actively
@@ -340,56 +361,64 @@ to stop thinking these thoughts, because these ideas were baked
 into the code they read every time they started a new session.
 
 Eventually I decided to do something that experienced software
-engineers consider almost universally unwise. I threw away 200,000
-lines of code and started over.
+engineers consider almost universally unwise. I threw away over
+200,000 lines of code and started over.
 
 In human software projects, starting fresh is usually a disaster. The
 old code, however ugly, embodies thousands of decisions that cost real
-effort to re-derive. I have watched this "grass is greener" sentiment
-fail spectacularly more than once at large companies.
+effort to re-derive. The empty page attracts a breed of idealistic
+engineer that doesn't appreciate the difficulty of the problem.
+I have watched this "grass is greener" sentiment fail spectacularly
+more than once at large companies.
 
-But I had noticed something. When the agents ported smaller games,
-they worked cleanly and fast. The problem was not their ability. It was
-the accumulated weight of wrong decisions in the codebase. And unlike
-a human team, you can totally control the information diet of an AI.
-You let it start fresh while distilling the best knowledge from the
-old project. You can write it all down.
+But still, the idea was enticing for the AI project. When the agents ported
+smaller games, they worked cleanly and fast. The problem with the
+big project might not be their ability. It could be the accumulated
+weight of wrong decisions in the codebase. And unlike a human team,
+a frest start might be able to be both idealistic and wise.  We can
+totally control the information diet of an AI.  We can let it start
+fresh while requiring it to study the best knowledge from the
+old masters. You can force them to read a very long prompt.
 
-I spent three days extracting lessons. Documents summarizing hundreds
-of debugging discoveries. Eighteen architectural decisions. A coding
-conventions document. Cardinal rules forbidding the patterns that had
-led to the religion. And a project plan that started with the insight
+So, before restarting the project, I spent three days extracting lessons
+from the 200,000-line failed attempt. Documents summarizing hundreds
+of debugging discoveries. A distillation of eighteen successful
+architectural decisions. A coding conventions document to capture
+details that worked. And critically, cardinal rules forbidding the patterns
+that had led to the religion. The project plan started with the insight
 that had been hardest to learn: get the game loop ordering right on
-day one, before writing anything else. Forbidding the boundary
-alignment religion was rule number one.
+day one, before writing anything else. An explicit prohibition against
+the dangerous boundary alignment religion was rule number one.
 
 The new project started on March 29 with four agents. Within twelve
-days, the suite hit 100% parity across thirty-five sessions covering
-all thirteen character classes. The original ran for fifty-one days
+days, the suite hit 100% test success across thirty-five sessions covering
+all the core aspects of the system. The original ran for fifty-one days
 and never achieved that level of quality.
 
-On day two of the new project, the agents had already started building
-epoch and latch machinery in the display system. Despite my efforts,
-the same religion had begun emerging independently. But this time the
-cardinal rules flagged it, and we caught it in hours. An agent wrote
-in the project log: *"None of this exists in C. C's actual mechanism:
-one integer with three states."* Following its new guidelines, the
-agent was able to self-correct, replacing a hundred and thirty-six
-lines of ideological errors with a simple fifteen line function.
+Had I succeeded in banishing the bad old ideas?  Actually, not completely.
+On day two, despite my efforts, the same old religion had begun emerging
+independently as agents began to construct an event reordering system to
+deal with difficult problems. But this time the cardinal rules flagged it,
+and we caught it in hours. An agent wrote in the project log:
+*"None of this exists in C. C's actual mechanism: one integer with
+three states."* Following its new guidelines, the agent was able to
+self-correct, replacing the first hundred and thirty-six lines of
+ideological errors with a simple fifteen-line function.
 
 The project is still running. The suite has expanded to forty-five
-sessions. Six agents from three model families. A 262-step grand tour
-through the full game passes on all three channels. Deeper sessions are
-exposing new bugs whose fixes cascade in unpredictable ways. The
+sessions. Six agents collagborating: Claude, Codex, and Gemini.  They
+are constructing deeper test sessions that are exposing new bugs
+whose fixes cascade in unpredictable ways. The
 grinding continues. But the architecture is clean, the measurement
-catches regressions within minutes, and the lessons of the first
-attempt are built into every document the agents read.
+catches regressions within minutes, and I am starting to gain
+condfidence that, if left unattended, the agents will not make
+a holy mess of the project.
 
 Every once in a while I see the agents push a commit with adjustments
 to the test infrastructure or changes in event ordering, and I
-challenge them. But now, they know what I am worried about. They
+challenge them. But now, they know what I am watching out for. They
 explain that they've got it handled, that the solutions are simple
-and systematic, not a tower of hacks.
+and systematic, and they are not building a tower of hacks.
 
 Whether this port will become a complete, faithful, playable NetHack
 in JavaScript remains to be seen. But the role of the programmer in
