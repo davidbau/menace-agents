@@ -8,7 +8,7 @@ of intricate computer code that you have not looked at whatsoever.
 
 I have been vibe coding a large project for a couple months now, and
 I have come to appreciate just how wrong AI agents can be while
-sounding absolutely, confidently, terrifyingly right. Not wrong about
+sounding absolutely, confidently, terrifyingly right. Not just wrong about
 small things, but wrong about the fundamental nature of the problem
 they are solving. Wrong in a way that produces thousands of lines of
 sophisticated, internally consistent, totally misguided code.
