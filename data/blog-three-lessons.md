@@ -71,10 +71,10 @@ of events.  In that case, to work better, the game replay system needed
 to queue certain actions and defer them across iteration boundaries
 to align the tests properly.
 
-They built machinery to implement this hypothesis. The event queuing
-machinery lived in a file called `replay_core.js`. And once the AI
-invented that idea, it loved it.  The file grew from nothing to
-2,879 lines in four days. It had concepts like "boundary alignment,"
+The agents built machinery to implement this idea, orchestrating
+the event queuing in a file called `replay_core.js`. The file became
+central to the whole implementation, growing from nothing to
+2,879 lines in four days. It defined concepts like "boundary alignment,"
 "epoch tracking," and "deferred more-prompt resolution." Here is a
 real commit message from the agents, explaining the AI theory behind
 this file:
@@ -85,13 +85,16 @@ this file:
 > than by `parse()`. Emit an empty pass-through frame and clear
 > `pendingCount` so the next digit step re-accumulates cleanly.
 
-The code was internally consistent. It had a logic to it. And once it
-had grown to thousands of lines of code, it was not just a little
-hypothesis. It was an entire theology. When I asked, skeptically,
-*"what is a 'sparse boundary frame'?"*, the agent responded not by
-questioning the concept but by preparing a whole treatise:
-**"Explaining sparse boundary frames,"** and then, with complete
-authority:
+Have you ever gotten a headache-inducing explanation like this from
+your coding agent? Does it give you a flash of the feeling:
+"is this super-human?"
+
+The tangle of ideas did have a logic to them, a sort of internal
+consistency. It was not just a little hack. It was an entire theology.
+When I asked, skeptically, *"what is a 'sparse boundary frame'?"*, the
+agent responded not by probing the concept but by presenting
+a whole treatise: **"Explaining sparse boundary frames,"**, with
+complete authority:
 
 > A "sparse boundary frame" is a replay step that sits on a turn
 > boundary but contains very little direct signal. In this project,
@@ -101,14 +104,15 @@ authority:
 > in data, and a "boundary" because it splits one underlying C turn
 > across neighboring captured frames.
 
-None of this was real. There were no sparse boundary frames. The
-concept was invented to explain away bugs, and the agent defined it
-with the confidence of a textbook. It had created a religion, and it
-was teaching me its dogma.
+Let me tell you. After trying very hard to understand what the AI
+hand in mind, I can tell you: there were no sparse boundary frames. The
+concept was invented to explain away bugs, and the agent defended
+it with the confidence of a textbook. It had created its own
+religion, and it was trying to indoctrinate me into it.
 
 [plot: replay_core.js line count: 0 to 2,879 to 211 lines]
 
-The actual problem underlying many of the bugs was straightforward:
+The *actual* problem underlying many of the bugs was straightforward:
 JavaScript's `async`/`await` was not wired correctly through the
 codebase, so the game couldn't properly wait for user input the way
 C does. The agents should have fixed the async plumbing. Instead,
