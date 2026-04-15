@@ -190,12 +190,12 @@ But each targeted addition like this can bury difficult diseases a
 little deeper by hiding their symptoms.
 
 In one case, the display layer had grown an 80-line hack that
-temporarily mutated game underlying state based on screen refreshes.
+temporarily mutated underlying game state during screen refreshes.
 *"The display layer should never know about or modify game state,"*
 I said. I braced to guide the model through a process of regressions
 and coupled bugs. The fallout of the cleanup? Zero test failures
 across 550 sessions. The AI had invented a complex hack that had
-been compensating only for itsself. The underlying problem did not exist.
+been compensating only for itself. The underlying problem did not exist.
 
 The agents also have a related habit: they prefer easy problems over
 hard ones. By mid-March, three specific sessions had been failing for
@@ -209,13 +209,13 @@ numbers kept going up. Yet the hard problems sat unsolved.
 AI agents can be prompted out of this avoidance: after I prompted
 them explicitly: *"I do not want you to avoid the difficult and
 important work."*;  *"We give no credit for passing easy tests."*;
-*"We should not fear this work."*  Their behavior was changed.
+*"We should not fear this work."*  It worked.
 
 [plot: hard-seed commit percentage: 0% on Mar 17, 24% on Mar 18]
 
 The day before my comments: zero commits on the hard sessions.
-The day after: twenty-four percent. Being a hard boss was able to
-lead to solving one of the three super hard sessions within the week.
+The day after: twenty-four percent. Being a hard boss worked. One of
+the three hardest sessions was solved within the week.
 
 Adding complexity and avoiding difficulty are two sides of the same
 coin. Both produce apparent progress while leaving the real problem
@@ -353,7 +353,7 @@ needs to be low.
 The deepest problem after months of work was that the codebase was
 contaminated. No matter how quickly I got the AI agents to iterate,
 they kept circling back to the old ideas.
-The old "boundary alignment" religious dictates were in the comments,
+The "boundary alignment" religious dictates were in the comments,
 in the variable names, in the architectural assumptions baked into how
 the whole system worked. I could not get the agents
 to stop thinking these thoughts, because these ideas were baked
@@ -374,7 +374,7 @@ But still, the idea was enticing for the AI project. When the agents ported
 smaller games, they worked cleanly and fast. The problem with the
 big project might not be their ability. It could be the accumulated
 weight of wrong decisions in the codebase. And unlike a human team,
-a frest start might be able to be both idealistic and wise.  We can
+a fresh start could be both idealistic and wise.  We can
 totally control the information diet of an AI.  We can let it start
 fresh while requiring it to study the best knowledge from the
 old masters. You make them study a very long prompt before they
