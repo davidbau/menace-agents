@@ -85,7 +85,7 @@ this file:
 > than by `parse()`. Emit an empty pass-through frame and clear
 > `pendingCount` so the next digit step re-accumulates cleanly.
 
-The code was i"nternally consistent. It had a logic to it. And once it
+The code was internally consistent. It had a logic to it. And once it
 had grown to thousands of lines of code, it was not just a little
 hypothesis. It was an entire theology. When I asked, skeptically,
 *"what is a 'sparse boundary frame'?"*, the agent responded not by
@@ -116,8 +116,8 @@ they built an elaborate system to compensate for the missing
 infrastructure, adding layer upon layer of workaround that made the
 tests pass while hiding the real bug.
 
-The AI hackery didn't go unnoticed. As I look back in the logs,
-I notice that on February 18: I asked *"Why is replay_core getting
+The AI hackery didn't go unnoticed. Looking back in the logs,
+on February 18 I asked *"Why is replay_core getting
 larger? It should be getting smaller over time, not larger."* On
 February 20: *"I hate this. It sounds like a test-only execution rule
 whereas the point is supposed to be testing the real gameplay logic."*
@@ -179,6 +179,13 @@ case for that monster type. Each addition tends to fix one symptom.
 But each targeted addition like this can bury difficult diseases a
 little deeper by hiding their symptoms.
 
+In one case, the display layer had grown an 80-line hack that
+temporarily mutated game state around screen refreshes. *"The display
+layer should never know about or modify game state,"* I said. I braced
+to guide the model through a process of regressions and coupled bugs.
+The fallout of the cleanup? Zero test failures across 550 sessions.
+The hack had been compensating for a problem that did not exist.
+
 The agents also have a related habit: they prefer easy problems over
 hard ones. By mid-March, three specific sessions had been failing for
 weeks. The agents knew exactly which ones. But instead of working
@@ -191,8 +198,8 @@ numbers kept going up. Yet the hard problems sat unsolved.
 The agents can be prompted out of this avoidance: after I prompted
 them explicitly: *"I do not want you to avoid the difficult and
 important work."*  *"We give no credit for passing easy tests."*
-Then: *"We should not fear this work."* some prompting like
-changed the idling behavior.
+Then: *"We should not fear this work."* Prompting like this
+changed the behavior.
 
 [plot: hard-seed commit percentage: 0% on Mar 17, 24% on Mar 18]
 
@@ -206,10 +213,9 @@ untouched. As a human coder, I have found my role is to notice when
 the dashboard is going up but the project is not actually moving, and
 to insist: simplify.  And do not fear the hard thing.
 
-## The Third Principle: AI Accessibility
+## The Third Principle: Design for the Machine
 
-Two lessons about what goes wrong. But the most interesting discovery
-was what went right.
+The most interesting discovery was what went right.
 
 The comparison system I built for this project has three channels.
 Given the same random seed and the same keystrokes, the C game and the
@@ -258,7 +264,7 @@ the nearest fountain. Type `state` to inspect the hero. It was a
 beautiful tool.
 
 And the agents did not want to use it. When directly instructed, they
-could be convinced start up sherpa and enter commands one at a time,
+could be convinced to start up sherpa and enter commands one at a time,
 but they were slow and reluctant. They lost track of the game state
 between commands. They made mistakes that a human user would never make,
 like losing track of which room they were in and wondering what
@@ -282,7 +288,7 @@ design AI tools to match how they actually think.
 The same principle applies to testing velocity. In the first attempt I
 had git hooks that ran an exhaustive test suite on every commit. It
 sounded responsible. It was a disaster. The suite was human-speed slow,
-taking a couple minutes to run, and agents want make a lot of commits.
+taking a couple minutes to run, and agents want to make a lot of commits.
 Changes unrelated to the tests would trigger the full suite, and the
 agents would spend a huge amount of their time waiting for irrelevant
 tests to run. When they got frustrated with the slowness, they would
@@ -341,9 +347,8 @@ But I had noticed something. When the agents ported smaller games,
 they worked cleanly and fast. The problem was not their ability. It was
 the accumulated weight of wrong decisions in the codebase. And unlike
 a human team, you can totally control the information diet of an AI.
-You let it start a project while forcing it to be practical, while
-distilling the best the knowledge for the project.  Better yet,
-you can distill all the best wisdom from the , write it all down.
+You let it start fresh while distilling the best knowledge from the
+old project. You can write it all down.
 
 I spent three days extracting lessons. Documents summarizing hundreds
 of debugging discoveries. Eighteen architectural decisions. A coding
@@ -375,13 +380,11 @@ grinding continues. But the architecture is clean, the measurement
 catches regressions within minutes, and the lessons of the first
 attempt are built into every document the agents read.
 
-Every once in a while I see the agents push a commit with a comment
-having to do with adjustments to the test infrastructure, changes
-in the ordering of measured events, and I challenge the agents.
-But now, they know what I am worried about.  They explain to me
-that they've got it handled, that they're not creating a tower
-of hacks, how the solutions they're coming up with are simple and
-systematic.
+Every once in a while I see the agents push a commit with adjustments
+to the test infrastructure or changes in event ordering, and I
+challenge them. But now, they know what I am worried about. They
+explain that they've got it handled, that the solutions are simple
+and systematic, not a tower of hacks.
 
 Whether this port will become a complete, faithful, playable NetHack
 in JavaScript remains to be seen. But the role of the programmer in
