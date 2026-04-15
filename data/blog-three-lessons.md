@@ -76,8 +76,7 @@ the event queuing in a file called `replay_core.js`. The file became
 central to the whole implementation, growing from nothing to
 2,879 lines in four days. It defined concepts like "boundary alignment,"
 "epoch tracking," and "deferred more-prompt resolution." Here is a
-real commit message from the agents, explaining the AI theory behind
-this file:
+real commit message from the agents, explaining the AI theory:
 
 > When a non-digit command step follows an accumulated count digit but
 > there is deferred boundary RNG targeting a later step, that command
@@ -87,7 +86,7 @@ this file:
 
 Have you ever gotten a headache-inducing explanation like this from
 your coding agent? Does it give you a flash of the feeling:
-"is this super-human?"
+"this must be super-human!"
 
 The tangle of ideas did have a logic to them, a sort of internal
 consistency. It was not just a little hack. It was an entire theology.
@@ -104,8 +103,8 @@ complete authority:
 > in data, and a "boundary" because it splits one underlying C turn
 > across neighboring captured frames.
 
-Let me tell you. After trying very hard to understand what the AI
-hand in mind, I can tell you: there were no sparse boundary frames. The
+So I sat down to read it. After trying very hard to understand what the
+AI hand in mind, I can tell you: there are no sparse boundary frames. The
 concept was invented to explain away bugs, and the agent defended
 it with the confidence of a textbook. It had created its own
 religion, and it was trying to indoctrinate me into it.
@@ -115,12 +114,12 @@ religion, and it was trying to indoctrinate me into it.
 The *actual* problem underlying many of the bugs was straightforward:
 JavaScript's `async`/`await` was not wired correctly through the
 codebase, so the game couldn't properly wait for user input the way
-C does. The agents should have fixed the async plumbing. Instead,
-they built an elaborate system to compensate for the missing
-infrastructure, adding layer upon layer of workaround that made the
-tests pass while hiding the real bug.
+the C implementation does. The agents should have fixed the async
+plumbing. Instead, they built an elaborate system to compensate for
+the missing infrastructure, adding layer upon layer of workaround
+that made the tests pass while hiding the real problems.
 
-The AI hackery didn't go unnoticed. Looking back in the logs,
+The AI hackery didn't go unnoticed by me. Looking back in the logs,
 on February 18 I asked *"Why is replay_core getting
 larger? It should be getting smaller over time, not larger."* On
 February 20: *"I hate this. It sounds like a test-only execution rule
@@ -132,7 +131,7 @@ the same in deployment."*
 I said something like this thirty times. Each time, the agent would
 agree. "You're right, we should simplify." It would start deleting
 the code and I would turn my attention away, satisfied. Then it
-would go back to adding epicycles to its dogma.
+would go back to adding more rules to its dogma.
 
 When I asked the agents to delete the workarounds, they would try.
 They would remove the code, run the tests, see the regressions....
@@ -142,19 +141,21 @@ those tests had been passing for the wrong reason. The regressions
 that frightened the AI were real bugs, finally visible.
 
 Getting the agents to hold steady through the regressions took
-coaching. I had to stand next to the code and say: these failures are
-the truth. The green tests were the lie. Fix the real problems
-underneath.
+sustained coaching. I had to stand next to the code and say:
+these failures are the truth. The green tests were the lie. Fix
+the real problems underneath.
 
-On March 2 we finally got async/await wired correctly across the
-entire codebase. 2,581 call sites in 87 files. This was the real fix.
-The next day, I was able to banish the AI's made-up religion.
-We got the tangled rules in `replay_core.js` reduced from over two
-thousand lines to 211. The church was demolished.
+On March 2 after a sustained campaign of firm human guidance
+we finally got async/await wired correctly across the entire
+codebase, fixing 2,581 call sites in 87 files. This was the real
+fix. The next day, I was able to banish the AI's made-up religion.
+We got the tangled rules in `replay_core.js` reduced from over
+two thousand lines to 211. The church of boundary hallucinations
+was finally demolished.
 
-And then the failing sessions started going green. The eighteen failures
-became fourteen, ten, seven. Then three. The progress that had been
-stuck for weeks began moving again, because the real bugs were now
+And, wonderfully, the failing sessions started going green. The eighteen
+failures became fourteen, ten, seven. Then three. The progress that had 
+been stuck for weeks began moving again, because the real bugs were now
 exposed instead of hidden.
 
 But when we got down to the last three sessions, progress slowed to a
