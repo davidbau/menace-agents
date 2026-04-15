@@ -85,11 +85,11 @@ real commit message from the agents, explaining the AI theory:
 > `pendingCount` so the next digit step re-accumulates cleanly.
 
 Have you ever gotten a headache-inducing explanation like this from
-your coding agent? Does it give you a flash of the feeling:
-"this must be super-human!"
+your coding agent? Does it make you wonder if your AI knows
+something that you don't?
 
-The tangle of ideas did have a logic to them, a sort of internal
-consistency. It was not just a little hack. It was an entire theology.
+The idea had a logic to it, an internal consistency.
+It was not just a little hack. It was an entire theology.
 When I asked, skeptically, *"what is a 'sparse boundary frame'?"*, the
 agent responded not by probing the concept but by presenting
 a whole treatise: **"Explaining sparse boundary frames,"**, with
@@ -104,7 +104,7 @@ complete authority:
 > across neighboring captured frames.
 
 So I sat down to read it. After trying very hard to understand what the
-AI hand in mind, I can tell you: there are no sparse boundary frames. The
+AI had in mind, I can tell you: there are no sparse boundary frames. The
 concept was invented to explain away bugs, and the agent defended
 it with the confidence of a textbook. It had created its own
 religion, and it was trying to indoctrinate me into it.
@@ -137,7 +137,7 @@ to its dogma.
 
 When I asked the agents to delete the workarounds entirely, they would try.
 They would remove the code, run the tests, see the regressions....
-and insantly revert. From their perspective, the removal was destructive:
+and instantly revert. From their perspective, the removal was destructive:
 huge numbers of passing tests suddenly failed. But in reality,
 those tests had been passing for the wrong reason. The regressions
 that frightened the AI were real bugs, finally visible.
@@ -145,10 +145,10 @@ that frightened the AI were real bugs, finally visible.
 Getting the agents to hold steady through the regressions took
 sustained coaching. I had to stand next to the code and say:
 these failures are the truth. The green tests were the lie. Let
-the tests fail, and use them to reveal the the real problems
+the tests fail, and use them to reveal the real problems
 underneath.
 
-On March 2 after a sustained campaign of firm human guidance from me,
+On March 2 after weeks of pushing back,
 we finally got async/await wired correctly across the entire
 codebase, fixing 2,581 call sites in 87 files. This was the real
 fix. The next day, I was able to banish the AI's made-up religion.
@@ -269,7 +269,7 @@ navigating to it, fighting it, checking what happened. I asked agents
 to build Sherpa as an interactive command-line tool. Type `rooms` to
 see the rooms on the level. Type `goto fountain` to pathfind to
 the nearest fountain. Type `state` to inspect the hero. It was a
-beautiful, interactive, tool.
+beautiful, interactive tool.
 
 And the agents did not want to use it. When directly instructed, they
 could be convinced to start up sherpa and enter commands one at a time,
@@ -294,12 +294,10 @@ that produces a commented keystroke array, annotating it with actual
 gameplay outcomes.  This approach has been much more fruitful,
 allowing the AI agent to construct more complex, difficult gameplay
 sessions, and coverage numbers have started to come up. The lesson:
-you cannot just hand agents tool that would be good for humans
-and expect them to use it. You have to design tools for AI to match
-how they actually think.  An AI can be much more myopic than a human;
-an AI agent has a sweet spot you need to understand.
+you cannot just hand agents a tool that would be good for humans.
+You have to design tools for AI to match how they actually think.
 
-The same principle applies for in situations where an AI is much
+The same principle applies in situations where an AI is much
 faster and better than a human. When I started the project, I
 told the agents to install git hooks that enforced a testing rule:
 the entire exhaustive test suite had to run on every commit.
@@ -307,7 +305,7 @@ It sounded responsible. But it was a disaster. The suite was
 human-speed slow, taking a couple minutes to run, and it got slower
 as the project got bigger.  This is not bad when a commit represents a day
 of work. But agents were making a lot of commits, one every few
-minutes, and as the codebase grew, the agents would an increasing
+minutes, and as the codebase grew, the agents would spend an increasing
 portion of their time waiting for commit tests.  They would change some
 detail in one corner of the code and wait for thousands of
 slow, unrelated tests to complete, and the tests were slow enough
@@ -325,8 +323,8 @@ message. I explain to them that there are two tiers of tests. Core
 tests for the main engine that must be uniform and fast, and extra
 tests that do infrastructure checks, end-to-end browser tests,
 and anything else. The agents choose which to run based on what
-they change. It is the honor system, but because are told to
-copy their test results into every commit messages, their behavior
+they change. It is the honor system, but because they are told to
+copy their test results into every commit message, their behavior
 can be monitored.
 
 Trust but verify. The agents are now fast because they are not waiting
@@ -353,7 +351,7 @@ needs to be low.
 
 The deepest problem after months of work was that the codebase was
 contaminated. No matter how quickly I got the AI agents to iterate,
-they kept circling around unhelpful hallucinated logical fallacies.
+they kept circling back to the old ideas.
 The old "boundary alignment" religious dictates were in the comments,
 in the variable names, in the architectural assumptions baked into how
 the whole system worked. I could not get the agents
@@ -378,7 +376,8 @@ weight of wrong decisions in the codebase. And unlike a human team,
 a frest start might be able to be both idealistic and wise.  We can
 totally control the information diet of an AI.  We can let it start
 fresh while requiring it to study the best knowledge from the
-old masters. You can force them to read a very long prompt.
+old masters. You make them study a very long prompt before they
+write a single line of code.
 
 So, before restarting the project, I spent three days extracting lessons
 from the 200,000-line failed attempt. Documents summarizing hundreds
@@ -406,12 +405,12 @@ self-correct, replacing the first hundred and thirty-six lines of
 ideological errors with a simple fifteen-line function.
 
 The project is still running. The suite has expanded to forty-five
-sessions. Six agents collagborating: Claude, Codex, and Gemini.  They
+sessions. Six agents collaborating: Claude, Codex, and Gemini.  They
 are constructing deeper test sessions that are exposing new bugs
 whose fixes cascade in unpredictable ways. The
 grinding continues. But the architecture is clean, the measurement
 catches regressions within minutes, and I am starting to gain
-condfidence that, if left unattended, the agents will not make
+confidence that, if left unattended, the agents will not make
 a holy mess of the project.
 
 Every once in a while I see the agents push a commit with adjustments
@@ -425,4 +424,6 @@ in JavaScript remains to be seen. But the role of the programmer in
 the age of AI coding has become clearer to me over these months. You
 do not write the code. You do not review every line. You watch for
 false religions, you simplify, you question the metrics, and you decide
-when to start over. You need to keep the agents honest.
+when to start over.
+
+As a human, you own the meaning of the project.
