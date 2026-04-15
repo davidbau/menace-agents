@@ -25,7 +25,8 @@ the classic 1980 dungeon game, from C to JavaScript in eighty-five minutes.
 [Hack](https://mazesofmenace.net/hack/), the 6,000-line 1982 game
 that became NetHack, took a few hours. *Test and test the tests* was
 all they needed; they could build and grow and program against a
-high-quality test suite to near 100\% coverage.
+high-quality test suite to near 100\% coverage.  Play them by clicking
+on the links.
 
 Then I pointed the agents at
 [NetHack](https://mazesofmenace.net/), the modern descendent of
