@@ -280,9 +280,8 @@ text. What is it? Click the "canon" button to see what C produced:
 Ah — an inventory listing. The user pressed the "i" key, the command
 to show inventory, and the original C NetHack rendered it on the
 screen. Our embryonic JS port has not yet implemented "i", so it is
-missing all this text. The dungeon map looks correct so far, but
-several monsters that should be in the dungeon are missing too
-(purple), and the cursor is in the wrong place (blue box).
+missing all this text. You can also see that the cursor is in the
+wrong place (blue boxes).
 
 This visualizer lets you see in detail what the agent is dealing with
 when it debugs. The agent's job is to make one screen match the other,
