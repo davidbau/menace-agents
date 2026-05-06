@@ -18,17 +18,19 @@ Round 1 freezes on November 30, 2026. Then there will be a sprint round
 in December where a new C checkpoint is revealed and you have to update
 your port to match it.
 
-We start you off with a contest skeleton that implements a tiny portion
-of the game in JavaScript, enough to score a few points. We give you 44
-groundtruth gameplay sessions to score your port against and keep a
-set of secret held-out sessions.  The maximum score is about 20,000:
-10,000 points from the public sessions and another 10,000 points or so
-from the held out sessions.  Every point is earned by producing exactly
-the right 80x24 tty output as the original C game in response to a
-gameplay keystroke.  Fork the
-[teleport-contest repo](https://github.com/davidbau/teleport-contest),
-push code, the judge scores you automatically. The full rules are in
-that repo.
+We start you off with a contest skeleton that implements a bit
+of the game in JavaScript, enough to score a few points. You get 44
+groundtruth gameplay sessions to score against; official scoring
+will also use a set of secret held-out sessions.  The maximum score is
+until November is about 20,000: 10,000 points from the public sessions
+and 10,000 from the secret sessions.  Every point is earned by
+producing exactly the right 80x24 tty output as the original C
+game in response to a gameplay keystroke.
+
+To play, just fork the
+[teleport-contest repo](https://github.com/davidbau/teleport-contest).
+Each time you push code, the judge scores you automatically.
+The full rules are in that repo.
 
 I am writing this announcement because I have spent four months
 trying to port NetHack myself, with a swarm of AI agents, and the
