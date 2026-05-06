@@ -2,14 +2,14 @@
 
 I am opening an LLM coding contest, and I want you to enter it.
 
-Four days ago [NetHack](https://nethack.org/) 5.0 was released.
-The contest is to take this 442,901-line C and Lua roguelike,
-a 46-year-old codebase that has accumulated decades of layers
-of intricate gameplay rules, and port it to readable JavaScript
-so that the game can run in the browser while playing *bit-exactly*
-like the original. You get points for getting closer:
-same random events in the same order. Same
-screen at every keystroke.
+Four days ago [NetHack](https://nethack.org/) 5.0 was released,
+a 46-year-old open-source roguelike game, 442,901 lines of C
+and Lua that have accumulated of layers of intricate and ingenious
+gameplay rules.
+
+The contest is to port it to simple, readable JavaScript so that
+the game can run in the browser while playing *bit-exactly*
+like the original. Same screen at every keystroke.
 
 You can use any approach: LLM agents, hand-coded JavaScript, a C-to-JS
 transpiler, or any hybrid. The contest is linked from
