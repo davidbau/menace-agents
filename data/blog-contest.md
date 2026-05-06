@@ -139,16 +139,18 @@ failed. But in reality, those tests had been passing for the wrong
 reason. The regressions that frightened the AI were real bugs,
 finally visible.
 
-**Advice for contestants:** Pick a strategy and commit to it. There
-are two basic ways to run an LLM coding project: maximize agent
-autonomy (and accept that most of your effort will go into breaking
-the agents out of self-built religions), or stay hands-on (and accept
-that you will personally read a lot of AI-written code). Drifting
-between modes is the worst place to be — autonomous agents need
-prompts and harnesses you trust to detect their own delusions; a
-hands-on operator needs tools that make a 100,000-line AI-written
-codebase legible to one human. Decide which one you are building
-toward, and build for it on day one.
+**Advice for contestants:** Be prepared to question the wisdom of
+your agents. There are two basic ways to run an LLM coding project:
+maximize agent autonomy (and accept that most of your effort will go
+into breaking the agents out of self-built religions), or stay
+hands-on (and accept that you will personally read a lot of
+AI-written code). In both cases, your main challenge will be dealing
+with elaborate, large-scale, but oddly well-reasoned hallucinations
+and agent-created fallacies. Autonomous agents will need prompts and
+harnesses you trust to detect and unwind their own delusions.
+Hands-on approaches will need tools that make a 100,000-line
+AI-written codebase legible to one human, so a person can step in
+and overrule the AI when its confident reasoning is wrong.
 
 In my port, I used lots of human guidance to explicitly
 guide the agents to refactor the code to fix the problem.
