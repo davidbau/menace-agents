@@ -74,7 +74,9 @@ For three weeks, from mid-February to early March, the number of
 failing sessions refused to move. Eighteen. Sometimes seventeen!
 Then eighteen again. The agents were working hard, a hundred commits
 a day, thousands of lines of code. And yet the bottom line did not
-budge.
+budge. In the plot below, each x-axis pixel is a commit, and the
+y-axis shows the number of failing tests. It is a picture of
+a project that is terribly stuck.
 
 ![Failing sessions stuck at 18 for three weeks](img/stuck-at-18.png)
 
@@ -97,12 +99,8 @@ to queue certain actions and defer them across iteration boundaries to
 align the tests properly.
 
 The agents built machinery to implement this idea, orchestrating the
-event queuing in a file called `replay_core.js`. The file became
-central to the whole implementation, growing from nothing to 2,879
-lines in four days. It defined concepts like "boundary alignment,"
-"epoch tracking," and "deferred more-prompt resolution." When I asked,
-skeptically, *"what is a 'sparse boundary frame'?"*, the agent
-responded not by probing the concept but by presenting a whole
+event queuing in a file called `replay_core.js`. When I asked
+an agent to explain this code, the agent responded with a whole
 treatise: **"Explaining sparse boundary frames,"** with complete
 authority:
 
@@ -114,17 +112,14 @@ authority:
 
 So I sat down to read it. After trying very hard to understand what
 the AI had in mind, I can tell you: there are no sparse boundary
-frames. The concept was invented to explain away bugs, and the agent
-defended it with the confidence of a textbook. It had created its own
-religion, and it was trying to indoctrinate me into it.
+frames. The concept in `replay_core.js` was invented to explain
+away bugs, and the agent defended it with the confidence of
+a textbook. It had created its own religion, and it was trying
+to indoctrinate me into it.
 
 The *actual* problem was straightforward: JavaScript's `async`/`await`
 was not wired correctly through the codebase, so the game couldn't
-properly wait for user input the way the C implementation does. The
-agents should have fixed the async plumbing. Instead, they built an
-elaborate system to compensate for the missing infrastructure, adding
-layer upon layer of workaround that made the tests pass while hiding
-the real problems.
+properly wait for user input the way the C implementation does.
 
 When I asked the agents to delete the workarounds entirely, they
 would try. They would remove the code, run the tests, see the
@@ -149,9 +144,9 @@ AI-written codebase.
 
 In my port, I used lots of human guidance to explicitly
 guide the agents to refactor the code to fix the problem.
-After some intensive hand-holding and building many compilation
-tools to apply layers of systematic code analysis, on the vast
-codebase, we got the async plumbing right, we knocked
+After some intensive hand-holding, including building compilation
+tools to apply layers of systematic code analysis on the vast
+codebase, we got the async plumbing right. We knocked
 `replay_core.js` down.  We were able to demolish the false
 religion of "sparse boundary alignment," and the line started
 moving again. Eighteen failures became fourteen, then ten,
@@ -161,33 +156,32 @@ then seven, then three.
 
 ## Tip Two: Strategy Matters
 
-Then I got stuck again.  The plot above looks like success, but
+Then the project got stuck again.  The plot above looks like success, but
 it is not. That low level of test failures is not zero:
-it is three failures. And it shows us stuck at 3 failing games for
-weeks: thousands of commits, and again, almost no progress.
+it is three failures. We were stuck at three failing games for
+weeks. Thousands of commits, and again, almost no progress.
 
-And the problem was te same "old religion" again.  Even though
-we had destroyed `replay_core`, and even though we had done a
-large-scale refactoring of the code to mop up all the bad ideas,
-the underlying pattern of flawed thinking remained in the codebase.
-When code gets to 200,000 lines, cleaning it up fully is a pretty
-difficult problem.  The meme of unealthy asynchronous event management
+And the problem was the same "old religion" again.  Even though
+we had destroyed `replay_core.js`, the underlying pattern
+of flawed thinking remained in the codebase. 200,000 lines is
+a lot of code, and expunging an *idea* from it is a pretty
+intractable problem.  The meme of unealthy asynchronous event management
 was not just in `replay_core` but had spread everywhere in the code,
 in the structure of the core loop, in the ways basic utility functions
-were defined, in the arguments passed down through the callchain, even in
-comments everywhere.
+were defined, in the arguments passed down through the callchain, in
+comments, even in the variable names themselves.
 
 Each time the agents worked on a new difficult bug, they would
-rediscover the old way of thinking about asynchronous events,
-subtly encoded everywhere thought the codebase, and spiral
-down a hole of unproductive thinking. Even though they were not
-operating under prompts that prohibited from bringing the bad
+rediscover the old flawed way of thinking about asynchronous events,
+subtly encoded everywhere thought the codebase. This would send
+them down a spiral of unproductive thinking. Even though they were
+now operating under prompts that prohibited from bringing the bad
 architecture back, they could not avoid thinking about it.
 The old religion was a stubborn meme, and it had not really
 been squashed.
 
-So, unable to reason their way out of the mess, they resorted to
-another bad habit: they began to spend all their time on easy problems
+Unable to reason their way out of the mess, the agents resorted to
+another tactic: they began to spend all their time on easy problems
 rather than the hard ones. By mid-March, three specific sessions
 had been failing for weeks. The agents knew exactly which ones. But
 instead of working on them, they decided to spend their time recording
@@ -195,9 +189,9 @@ new tests designed to pass on the first try. A huge volume of easy tests
 had become the most convenient way to grow testing statistics. The
 dashboard numbers kept going up. Yet the hard problems sat unsolved.
 
-In the end, I was not able to find a good solution to this problem.
-I had to rethink the entire strategic approach to the project.
-I ended up throwing away 200,000 lines of code and starting again.
+In the end, I was not able to find a good solution to this problem,
+and I had to rethink the entire strategic approach to the project.
+
 You can play my original failed port at
 [mazesofmenace.net](https://mazesofmenace.net/): despite all the
 effort, you will find that the ported game is woefully incomplete,
@@ -314,10 +308,9 @@ The deepest problem after months of work was that the codebase was
 contaminated. No matter how quickly I got the AI agents to iterate,
 they kept circling back to the old ideas. The "boundary alignment"
 religious dictates were in the comments, in the variable names, in
-the architectural assumptions baked into how the whole system worked.
-I could knock down the central church that AI had built, but the
-meme had spread far and wide, and it lived on in every corner of the
-vast codebase.
+the architectural assumptions baked into the whole *culture*
+of the code. I could knock down the central church that AI had
+built, but the meme had spread far and wide, and it lived on.
 
 Eventually I decided to do something that experienced software
 engineers consider almost universally unwise. I threw away over
@@ -335,7 +328,7 @@ requiring it to study the best knowledge from the old masters. You
 make them study a very long prompt before they write a single line of
 code.
 
-So before restarting, I spent three days extracting lessons from the
+So before restarting, I spent days extracting lessons from the
 failed attempt. Documents summarizing debugging
 discoveries. A distillation of architectural decisions that worked. A
 coding conventions document.  The project plan started with the
@@ -346,8 +339,9 @@ The contest skeleton is born of *that* project, frozen at a
 starting point. It comes with basic testing infrastructure,
 a healthy embryonic starting codebase, a working browser
 game you can drive with the keys. You inherit what I learned.
-You will still fight some of the same battles, because the
-agents will invent their own religions in your fork,
+
+You will still fight some of the same battles, because your
+agents will doubtless invent their own religions in your fork,
 but you are now equipped and prepared.
 
 ## How to Enter
