@@ -1,35 +1,39 @@
-# Port NetHack. Win a Contest. (Maybe Find a Religion.)
+# The Teleport Contest. (And How LLMs Invent Religions.)
 
-I am opening a contest, and I want you to enter it.
+I am opening an LLM coding contest, and I want you to enter it.
 
-The challenge is to take [NetHack](https://nethack.org/) — the
-442,901-line C and Lua roguelike that has accumulated forty-five
-years of intricate gameplay rules — and port it to JavaScript so
-that the game behaves *bit-exactly* like the original. Same random numbers in the
-same order. Same screen at every keystroke. Every divergence is a
-bug, and the bugs are countable.
+Four days ago [NetHack](https://nethack.org/) 5.0 was released.
+The challenge is to take this 442,901-line C and Lua roguelike,
+a 46-year-old codebase that has accumulated decades of layers
+of intricate gameplay rules, and port it to readable JavaScript
+so that the game can run in the browser while playing *bit-exactly*
+like the original. Same random events in the same order. Same
+screen at every keystroke.
 
 You can use any approach: LLM agents, hand-coded JavaScript, a C-to-JS
 transpiler, or any hybrid. The contest is linked from
 [mazesofmenace.ai](https://mazesofmenace.ai/), and the leaderboard is live.
-Round 1 freezes on November 30, 2026. There is a sprint round in
-December where a new C checkpoint is revealed and you have to update
+Round 1 freezes on November 30, 2026. Then there will be a sprint round
+in December where a new C checkpoint is revealed and you have to update
 your port to match it.
 
-The contest skeleton on day one passes one session out of the box.
-There are sixty sessions to score against, and more held-out sessions
-that get revealed at the end. Your score is the count of sessions
-where your JS produces the same PRNG sequence and screen output as
-the C original. Fork the
+We start you off with a contest skeleton that implements a tiny portion
+of the game in JavaScript, enough to score a few points. We give you 44
+groundtruth gameplay sessions to score your port against and keep a
+set of secret held-out sessions.  The maximum score is about 20,000:
+10,000 points from the public sessions and another 10,000 points or so
+from the held out sessions.  Every point is earned by producing exactly
+the right 80x24 tty output as the original C game in response to a
+gameplay keystroke.  Fork the
 [teleport-contest repo](https://github.com/davidbau/teleport-contest),
 push code, the judge scores you automatically. The full rules are in
 that repo.
 
 I am writing this announcement because I have spent four months
-trying to do this myself, with AI agents, and the experience taught
-me three things that I think will make the contest more fun if you
-know them going in. So this is part announcement and part field
-report.
+trying to port NetHack myself, with a swarm of AI agents, and the
+experience has humbled me.  I think it will make the contest more fun
+if you know what I faced before going in. So this is part announcement
+and part field report.
 
 ## What You Are Walking Into
 
@@ -42,17 +46,18 @@ guide a single agent to port [Rogue](https://mazesofmenace.net/rogue/)
 in eighty-five minutes. [Hack](https://mazesofmenace.net/hack/) took a
 few hours. Play them by clicking on the links.
 
-Then I pointed the agents at NetHack. Forty-five years of accumulated,
+Then I pointed the agents at NetHack 3.7. Forty-six years of accumulated,
 intricate gameplay rules. My
 [Mazes of Menace](https://mazesofmenace.net/) project records
 deterministic sessions from the original C game and replays them in
 JavaScript, comparing every random number call and every onscreen
 detail. Given the same seed and the same keystrokes, every event must
-match, in order. Every divergence is a bug.
+match, in order. I gave the LLMs a test framework and this objective,
+and I let them grind away.
 
 This worked at first. Within two weeks the agents had a playable game
-in the browser and a growing suite of test sessions. Four of nineteen
-gameplay sessions matched perfectly. Fifteen more to go, and each day
+in the browser and a growing suite of test sessions. Dozens of
+gameplay sessions matched perfectly. Twenty more to go, and each day
 the gap was closing. The trajectory felt right.
 
 Then it stopped. And I discovered that *test and test the tests* is
@@ -60,7 +65,7 @@ necessary but not sufficient. I needed three more principles. They
 are now baked into the contest skeleton, but I want to tell you about
 them because the skeleton will not protect you from them entirely.
 
-## The First Principle: Skepticism
+## Tip One: Be Skeptical
 
 For three weeks, from mid-February to early March, the number of
 failing sessions refused to move. Eighteen. Sometimes seventeen!
@@ -126,159 +131,181 @@ failed. But in reality, those tests had been passing for the wrong
 reason. The regressions that frightened the AI were real bugs,
 finally visible.
 
-**Advice for contestants:** When your agent presents you with a
-sophisticated concept that explains a bug, ask it to explain that
-concept three different ways. If the explanations conflict — or if
-the concept has no name in the C source — be skeptical. The C source
-is your ground truth. Anything the agent invents to compensate for a
-gap between C and JS is probably a religion, and the religion will
-spread through your codebase if you don't catch it early.
+**Advice for contestants:** There are two basic approaches we can
+take to LLM coding: one is to try to reduce human involvement,
+and the other is to try to increase human involvement.  Be
+intentional about which strategy you are taking.  If you are
+trying to get the agents to work autonomously, then you will
+face the difficult challenge of getting them to question and
+repair their own misguided assumptions after they have deluded
+themselves into a complex, reward-hacking solution.  If you are
+trying to involve humans, then once the agent has created
+100,000 lines of code, you face the challenge of helping a
+person understand how to make wise judgements in this vast
+AI-written codebase.
 
-Once we got the async plumbing right and the religion demolished,
-the line started moving again. Eighteen failures became fourteen,
-then ten, then seven, then three.
+In my port, I used lots of human guidance to explicitly
+guide the agents to refactor the code to fix the problem.
+After some intensive hand-holding and building many compilation
+tools to apply layers of systematic code analysis, on the vast
+codebase, we got the async plumbing right, we knocked
+`replay_core.js` down.  We were able to demolish the false
+religion of "sparse boundary alignment," and the line started
+moving again. Eighteen failures became fourteen, then ten,
+then seven, then three.
 
 ![Failing sessions drop from 18 to 3 after the intervention](img/stuck-at-3.png)
 
-## The Second Principle: Simplify
+## Tip Two: Strategy Matters
 
-The `replay_core` story was the dramatic case, but the underlying
-pattern appeared everywhere. The agents' instinct, always, is to add
-code rather than remove it.
+Then I got stuck again.  The plot above looks like success, but
+it is not. That low level of test failures is not zero:
+it is three failures. And it shows us stuck at 3 failing games for
+weeks: thousands of commits, and again, almost no progress.
 
-When a test fails, the first impulse of AI is to add something that
-makes it pass. When a screen doesn't match, it wants to patch up
-display-state logic. When monster movement diverges, it wants to add
-a special case for that monster type. Each addition tends to fix one
-symptom. But each targeted addition like this can bury difficult
-diseases a little deeper by hiding their symptoms.
+And the problem was te same "old religion" again.  Even though
+we had destroyed `replay_core`, and even though we had done a
+large-scale refactoring of the code to mop up all the bad ideas,
+the underlying pattern of flawed thinking remained in the codebase.
+When code gets to 200,000 lines, cleaning it up fully is a pretty
+difficult problem.  The meme of unealthy asynchronous event management
+was not just in `replay_core` but had spread everywhere in the code,
+in the structure of the core loop, in the ways basic utility functions
+were defined, in the arguments passed down through the callchain, even in
+comments everywhere.
 
-In one case, the display layer had grown an 80-line hack that
-temporarily mutated underlying game state during screen refreshes.
-*"The display layer should never know about or modify game state,"* I
-said. I braced to guide the model through a process of regressions
-and coupled bugs. The fallout of the cleanup? Zero test failures
-across 550 sessions. The AI had invented a complex hack that had been
-compensating only for itself. The underlying problem did not exist.
+Each time the agents worked on a new difficult bug, they would
+rediscover the old way of thinking about asynchronous events,
+subtly encoded everywhere thought the codebase, and spiral
+down a hole of unproductive thinking. Even though they were not
+operating under prompts that prohibited from bringing the bad
+architecture back, they could not avoid thinking about it.
+The old religion was a stubborn meme, and it had not really
+been squashed.
 
-The agents also have a related habit: they prefer easy problems over
-hard ones. By mid-March, three specific sessions had been failing for
-weeks. The agents knew exactly which ones. But instead of working on
-them, they decided to spend their time recording new tests designed
-to pass on the first try. A huge volume of easy tests had become the
-most convenient way to grow testing statistics. The dashboard numbers
-kept going up. Yet the hard problems sat unsolved.
+So, unable to reason their way out of the mess, they resorted to
+another bad habit: they began to spend all their time on easy problems
+rather than the hard ones. By mid-March, three specific sessions
+had been failing for weeks. The agents knew exactly which ones. But
+instead of working on them, they decided to spend their time recording
+new tests designed to pass on the first try. A huge volume of easy tests
+had become the most convenient way to grow testing statistics. The
+dashboard numbers kept going up. Yet the hard problems sat unsolved.
 
-After I prompted them explicitly — *"I do not want you to avoid the
-difficult and important work"*; *"We give no credit for passing easy
-tests"* — they tackled the hard sessions. The day before, zero
-commits on the hard sessions. The day after, twenty-four percent.
+In the end, I was not able to find a good solution to this problem.
+I had to rethink the entire strategic approach to the project.
+I ended up throwing away 200,000 lines of code and starting again.
+You can play my original failed port at
+[mazesofmenace.net](https://mazesofmenace.net/): despite all the
+effort, you will find that the ported game is woefully incomplete,
+with lots of missing features and obvious bugs.
 
-**Advice for contestants:** Watch what your agents are working on,
-not just what numbers go up. The contest scores you on session
-passes, but a fork that climbs from 1 → 20 by porting easy sessions
-will plateau hard. A fork that closes its hardest *failing* session
-each week scales further. You will know which of your sessions are
-the hard ones. Make your agents work on those.
+But I am sure that you can do better!
 
-## The Third Principle: Design for the Machine
+**Advice for contestants:**  Think strategically about what your agents
+are doing, not just what numbers go up. The contest scores you on
+matching screens, but an agent that spends all its time chasing easy
+points will plateau hard. But if you can successfully start off right
+by identifying and tackling the fundamental architectural issues; if you
+can begin by creating systematic processes and tools for addressing
+systematic problems from the beginning, your solution will scale better.
+You will need a way to look beyond he metrics to understand what the 
+oot problems are. You will need have a strategy to make your agents work
+on those fundamental problems early.
 
-The most interesting discovery was what went right.
+One thing that will almost certainly help is to actually begin by
+creating better, more stringest tests than the ones provided by
+the contest. You will need a way to turn difficult long-term problems
+into more tractable short-term problems. Often, a set of
+well-designed tests is a good way to do that.
 
-The test measurement system has three channels. Given the same random
-seed and the same keystrokes, the C game and the JavaScript port must
-produce the same pseudo-random number calls, the same gameplay
-events, and the same screen output, in the same order. I call these
-channels PES: PRNG, Events, Screen. Every test session records the C
-game's PES trace, and every test run compares the JavaScript port's
-trace against it. The first divergence is the bug.
+## Tip Three: Invest in Human-AI Tooling
 
-This sounds rigid, and it is. The random numbers are an
-incorruptible ground truth. You cannot fudge them. You cannot add
-compensating logic to make them line up. Either the 47th random
-number is consumed as an `rn2(8)` within `movedog()`, or it is not.
+The most interesting discovery was what went right. I found that
+that the most productive investments were in tools that expanded
+shared human-AI insights.  For example, I found it very useful to 
+create code analysis tools to help myself understand the hundreds of
+thousands of lines of AI-generated code, to make it feasible
+with my limited human perspective to track and discuss vast numbers
+of details that the AI had generated. And I found it very useful
+to create game board analysis tools to help an AI better understand
+what is happning in a NetHack game, cataloging what can be seen on
+the map, and explaining what is reachable from where and how.
+Without such assistance, the AI is oddly blind, with very weak
+commonsense knowledge about what is actually happening on the
+gameboard.
+
+The contest is built around one tool that I found very useful:
+the deterministic gameplay session, together with a session viewer.
+You can see this viewer on the [contest leaderboard](https://mazesofmenace.ai/)
+by pressing the "Test" button next to any contestant
 
 ![PRNG and screen-diff timeline for seed8000, step 12 — the contest session viewer](img/timeline-8000-12.png)
 
-The contest session viewer plots the divergence as you scrub through
-a session. Above is what it looks like at step 12 of the seed8000
-starter session: green where C and JS agree, red where they
-diverge. Click any step and you get the underlying 80×24 viewport
-from both implementations:
+The top of the viewer shows the timeline of a single game playthough.
+You can scrub through a game by dragging your mouse horizontally
+over the timeline. The bumpy shape shows the pofile of PRNG calls;
+this provides some intuition about game logic intensity within
+each step.  Here we have shown three timeseries in parallel:
+there is a canonical profile of the PRNG behavior of the C
+implementation, a line for the JS behavior, and then another 
+ine that indicates how much the screens agree (or disagree).
+Colors indicate different types of agreement or divergences.
+
+Underenath the timeline you can see the 80x24 gameboard at
+any step.  This shows the output of your Javascript port
+after a particular keystroke is provided:
 
 ![Canon C output, seed8000 step 12](img/tty-canon-8000-12.png)
 
+The reddish and purplish coloring show where the screen
+is wrong: purple means that the symbol differs from the
+symbol drawn by the original NetHack 5.0 game, and red means
+that some symbol was missing, where the JS drew nothing.
+In the specific screenshot above you can see many rows
+of empty text squares that look like a lot of missing text.
+What could they be?
+
 ![JS output with diff highlighting, seed8000 step 12](img/tty-js-8000-12.png)
 
-That is the unit of debugging. The agent's job is to make the bottom
-picture match the top, character by character, with the same random
-numbers consumed in the same order.
+If you click on the "canon" button above the viewer, the canonical
+view reveals the true screen: Ah, an inventory listing! The
+user had pressed the "i" key, which is the command to show
+inventory, and the original C nethack showed the inventory on
+the screen. But our embryonic JS port has not yet implemented
+the "i" command so it is missing all this text.  Also: although
+the dungeon map looks correct so far in our JS port, several
+monsters that are supposed to be in the dungeon with the hero
+are missing. These are highlighted in purple. You can also
+see the cursor positions in the JS and the C that differ,
+outlined as blue boxes.  If a glyph in the screen were correct
+but in the wrong color, it would be highlighted with a yellow
+background.
 
-But PES is also flexible in a way I did not anticipate. The Events
-channel is extensible. The agents can add new event types to the C
-harness and the JavaScript port, logging internal state that the
-screen never shows: which monster is moving, which item is being
-picked up, which branch of a conditional was taken. When a PRNG
-divergence appears at step 47, the agents add events around step 47
-to see what the game was doing internally at that moment. They narrow
-the search. They are genuinely excellent at this. It is the debugging
-task they do best.
+This visualizer lets you see in detail what the agent is dealing
+with when it is debugging.  The agent's job is to make one screen
+match the other, character by character, step by step, asligning
+the logic so that the same random numbers are consumed in the same
+order to produce the same screen output.
 
-The contest skeleton scores P (PRNG) and S (Screen) only — a
-two-channel game. But the full PES infrastructure is in the skeleton
-for you to use during development. Add events. Localize divergences.
-The flexibility of the PES log turns a long-horizon problem into a
-short-horizon one.
+Some of the sessions are more complex, spanning multiple games
+where a player saves and loads, or where multiple players die,
+leaving "bones" that persist in the dungeon that a subsequent
+player can encounter. A NetHack port is not complete unless
+it implements all this logic as well.
 
-There is a related lesson in the skeleton's tooling. I built an
-interactive command-line tool called Sherpa to help agents construct
-test sessions, with commands like `goto fountain` and `state` to
-inspect the hero. It was a beautiful, interactive tool. And the
-agents did not want to use it. They lost track of game state between
-commands. They made mistakes a human user would never make.
 
-The problem was not the tool's functionality. It was the interaction
-model. Coding agents do not think interactively. They think in terms
-of constructing files. They want to see the game state timeline as a
-data structure they can shape, not as a terminal they have to watch.
+**Advice for contestants:** Invest in tooling.
+As you develop your port, I recommend that you consider
+supplementing the basic test sessions with more tests with
+more stringent assertions. And that you also consider
+creating more tools to visualize and understand both
+strategy and tactics as your agents create their port.
+To help you with this, the contest skeleton comes with the
+full details of the patches and scripts you use with the
+original NetHack 5.0 code to create detailed session recordings.
 
-So Sherpa is now built around file editing. Sessions are text files.
-The agent manipulates the keystroke array, runs the engine to see
-what happens, edits the array again. The keystrokes are too opaque,
-so Sherpa now produces a commented keystroke array, annotating it
-with actual gameplay outcomes.
-
-You cannot just hand agents a tool that would be good for humans. You
-have to design tools for AI to match how they actually think.
-
-The same principle applies to testing rules. When I started the
-project, I told the agents to install git hooks that enforced a
-testing rule: the entire exhaustive test suite had to run on every
-commit. It sounded responsible. But it was a disaster. The suite was
-human-speed slow, taking a couple of minutes to run. Agents commit
-every few minutes. They started waiting for tests more than they
-wrote code. They got merge conflicts because their tests were still
-running while other agents pushed. They knew the tests were
-irrelevant to their changes, so when they got frustrated they would
-add flags to override and skip the hooks. At exactly the moments when
-testing mattered most, the project was both blind and slow.
-
-Better strategy: meaningful instructions, not hard rules. Run the
-relevant tests yourself, and format the results in your commit
-message. There are two tiers: core tests for the main engine that
-must be uniform and fast, and extra tests for infrastructure and
-end-to-end. The agents choose which to run based on what they change.
-It is the honor system, but because they are told to copy results
-into every commit message, their behavior can be monitored. I parse
-the commit messages and watch the trends. The honor-system commit
-messages have turned out to be faster and better at monitoring
-project progress than the enforced git hooks ever were.
-
-**Advice for contestants:** Trust but verify. Give your agents tools
-designed for how they think. Avoid hard rules; prefer soft norms with
-visible trails.
-
-## Why I Restarted the Project (And You Get the Result)
+## Why I Restarted the Project
 
 The deepest problem after months of work was that the codebase was
 contaminated. No matter how quickly I got the AI agents to iterate,
@@ -306,26 +333,19 @@ make them study a very long prompt before they write a single line of
 code.
 
 So before restarting, I spent three days extracting lessons from the
-failed attempt. Documents summarizing hundreds of debugging
+failed attempt. Documents summarizing debugging
 discoveries. A distillation of architectural decisions that worked. A
-coding conventions document. And critically, *cardinal rules*
-forbidding the patterns that had led to the religion. The project
-plan started with the insight that had been hardest to learn: get the
-game loop ordering right on day one. An explicit prohibition against
-boundary-alignment hacks was rule number one.
+coding conventions document.  The project plan started with the
+insight that had been hardest to learn: get the
+game loop ordering right on day one.
 
-The new project — internally we call it teleport — started on March
-29 with four agents. Within twelve days, the suite hit 100% test
-success across thirty-five sessions. The original ran for fifty-one
-days and never achieved that level of quality.
-
-The contest skeleton is *that* project, frozen at a starting point.
-It comes with the cardinal rules, the LORE knowledge base, the PES
-infrastructure, the file-based Sherpa, the two-tier test convention,
-one passing session, and a working browser game you can drive with
-the keys. You inherit what we learned. You will still fight some of
-the same battles, because the agents will discover their own
-religions in your fork, but you will catch them faster.
+The contest skeleton is born of *that* project, frozen at a
+starting point. It comes with basic testing infrastructure,
+a healthy embryonic starting codebase, a working browser
+game you can drive with the keys. You inherit what I learned.
+You will still fight some of the same battles, because the
+agents will invent their own religions in your fork,
+but you are now equipped and prepared.
 
 ## How to Enter
 
@@ -342,7 +362,8 @@ times a day, scores every fork, and updates the public board.
 
 **Timeline:**
 
-- April 30, 2026 — contest opens
+- May 2, 2026 - NetHack 5.0 is released
+- May 6, 2026 — The Teleport contest opens
 - November 30, 2026 — Round 1 leaderboard freezes
 - December 1, 2026 — Round 2: new C checkpoint and sessions revealed
 - December 31, 2026 — final submissions due
@@ -356,22 +377,23 @@ port it faithfully, including its bugs.
 
 ## Why You Might Want To Enter
 
-The honest answer is that I don't know whether AI agents can faithfully
+The honest answer is that I do not know whether AI agents can faithfully
 port a 442,901-line C and Lua codebase. I have one data point — my own
-project, which is going better since the restart but is not yet
-finished. A contest with many forks taking different approaches is the
-fastest way to learn what actually works.
+project, which is going better since the restart but is still running
+into challenges.
 
 If your fork uses a different LLM than I do, or a different agent
-harness, or a manual approach, your data point matters. The
-leaderboard is also a behavioral instrument: when one fork pulls
-ahead, the diff is public, and the rest of us learn.
+harness, or a manual approach, you will follow a differnet path than
+I did. Show off what you can do by submitting to the leaderboard.
+When somebody pulls ahead, it will inspire the rest of us to lean
+how to manage our LLMs better.
 
 The role of the programmer in the age of AI coding has become clearer
 to me over these months. You do not write the code. You do not review
-every line. You watch for false religions, you simplify, you question
-the metrics, and you decide when to start over.
+every line. You maintain a skeptical eye, you manage the strategy,
+and you invest in tools to expand the common understanding of humans
+an AIs.  And you decide when to start over.
 
-As a human, you defend the meaning of the project.
+As a human in an AI world, you defend the meaning of the work.
 
 Come defend it with me.
