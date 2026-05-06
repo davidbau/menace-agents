@@ -32,9 +32,13 @@ To play, just fork the
 Each time you push code, the judge scores you automatically.
 The full rules are in that repo.
 
-Why is this interesting?  I am writing this announcement because
-I have spent four months trying to port NetHack myself, using a swarm
-of AI agents as best I know how, and the experience has humbled me.
+Why is this interesting?  Porting a piece of code seems so simple
+for an LLM: it is exactly the kind of easily-verified task that
+they excel at.
+
+I am writing this announcement because I have spent four months
+trying to port NetHack myself, using a swarm of AI agents as
+best I know how, and the experience has humbled me.
 I think it will make the contest more fun if you know what I faced
 before going in. So this is part announcement and part field report.
 
