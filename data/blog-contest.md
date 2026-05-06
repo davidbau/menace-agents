@@ -74,9 +74,8 @@ gameplay sessions matched perfectly. Twenty more to go, and each day
 the gap was closing. The trajectory felt right.
 
 Then it stopped. And I discovered that *test and test the tests* is
-necessary but not sufficient. I needed three more principles. They
-are now baked into the contest skeleton, but I want to tell you about
-them because the skeleton will not protect you from them entirely.
+necessary but not sufficient. I needed three more principles. I am
+describing them here to give you a leg up on the contest.
 
 ## Tip One: Be Skeptical
 
