@@ -3,9 +3,9 @@
 I am opening a contest, and I want you to enter it.
 
 The challenge is to take [NetHack](https://nethack.org/) — the
-200,000-line C roguelike that has accumulated forty-five years of
-intricate gameplay rules — and port it to JavaScript so that the game
-behaves *bit-exactly* like the original. Same random numbers in the
+442,901-line C and Lua roguelike that has accumulated forty-five
+years of intricate gameplay rules — and port it to JavaScript so
+that the game behaves *bit-exactly* like the original. Same random numbers in the
 same order. Same screen at every keystroke. Every divergence is a
 bug, and the bugs are countable.
 
@@ -357,7 +357,7 @@ port it faithfully, including its bugs.
 ## Why You Might Want To Enter
 
 The honest answer is that I don't know whether AI agents can faithfully
-port a 200,000-line C codebase. I have one data point — my own
+port a 442,901-line C and Lua codebase. I have one data point — my own
 project, which is going better since the restart but is not yet
 finished. A contest with many forks taking different approaches is the
 fastest way to learn what actually works.
