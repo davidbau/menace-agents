@@ -1,4 +1,4 @@
-# The Teleport Contest. (And How LLMs Invent Religions.)
+# The Teleport Contest (and Dealing With LLM Religion)
 
 I am opening an LLM coding contest, and I want you to enter it.
 
