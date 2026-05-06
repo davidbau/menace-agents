@@ -4,7 +4,7 @@ I am opening an LLM coding contest, and I want you to enter it.
 Phase 2 specifically rewards methods that generalize, so this is
 less a measurement of code than a measurement of agent harnesses.
 
-Four days ago [NetHack](https://nethack.org/) 5.0 was released,
+This week [NetHack](https://nethack.org/) 5.0 was released,
 the newest major version of a 46-year-old open-source roguelike
 game, 442,901 lines of C and Lua that have accumulated layers
 of intricate and ingenious gameplay rules.
