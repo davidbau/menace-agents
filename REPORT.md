@@ -790,7 +790,8 @@ across all three ports see [analysis-techniques-catalogue.md](data/analysis-tech
 
 **Chapter 2 (teleport + monk):**
 
-- **[analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md)** — Per-technique deep-dive: 32 techniques across 8 categories, master table plus per-entry problem/infra/effectiveness/outcome/failed-variant
+- **[analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md)** — Per-technique deep-dive: 40 techniques across 9 categories, master table plus per-entry problem/infra/effectiveness/outcome/failed-variant
+- **[LESSONS.md](LESSONS.md)** — The generalizable lesson behind each of the 40 techniques (same numbering), distilled for teaching: lesson / illustration / signs-you-need-it, grouped into eight arcs
 - [ROLLUP.md](ROLLUP.md) — Rollup 1 (May 1, day 33) + Rollup 2 (Jul 11, day 104) + monk introduction
 
 ---
@@ -1792,7 +1793,8 @@ question for the next attempt.
 
 ### Deep-dive analyses
 
-- **[analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md)** — Exhaustive per-technique catalogue: 32 techniques across 8 categories, with master table + per-entry problem/infra/effectiveness/outcome
+- **[analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md)** — Exhaustive per-technique catalogue: 40 techniques across 9 categories, with master table + per-entry problem/infra/effectiveness/outcome
+- **[LESSONS.md](LESSONS.md)** — The generalizable lesson behind each technique, distilled for teaching (lesson / illustration / signs-you-need-it, eight arcs)
 - [ROLLUP.md](ROLLUP.md) — Rollup 1 (May 1, 2026, day 33) + Rollup 2 (July 11, 2026, day 104) + monk introduction
 - [chapters.json](data/chapters.json) — Chapter index across all three ports (menace + teleport + monk)
 

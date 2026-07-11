@@ -1161,6 +1161,7 @@ the port is done. This is teleport's currently-approaching endgame.
 
 ## References
 
+- [LESSONS.md](../LESSONS.md) — the generalizable lesson behind each technique (same numbering), for teaching
 - [REPORT.md](../REPORT.md) — Chapter 1 (menace) + Chapter 2 (teleport + monk)
 - [ROLLUP.md](../ROLLUP.md) — May 1 + July 11 rollups
 - [chapters.json](chapters.json) — chapter index (menace + teleport + monk)
