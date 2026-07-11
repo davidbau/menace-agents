@@ -1460,6 +1460,118 @@ estimators (uluck, ualign, pet_hungrytime) not yet wired.
 
 ---
 
+### 21. The session as the unit of testing
+
+**What it is.** The theme that runs under nearly everything above: a
+*session* — a recorded series of input/output events (seed + rc +
+keystroke stream, plus the C ground truth captured at record time:
+RNG calls, display events, screens, cursor) — is the unit of testing.
+Not the unit test, not the assertion: the session. Everything in the
+project consumes or produces `.session.json` files: PES scores them,
+coverage runs them, the viewers render them, the live game loads
+them, forking mutates them, sherpa authors them, the contest collects
+them, autoascend emits them.
+
+**Infrastructure built.** The recorder, the `.session.json` format,
+`scripts/session_loader.mjs` normalization, multi-segment support for
+save/reload/bones round-trips, and the curated corpus itself in
+`test/comparison/sessions/`.
+
+**Measured effectiveness.** The corpus is an accumulating asset:
+19 sessions (maud, day 3) → 38 curated → 82 (May 1) → 307 (July 11,
+all passing on all four channels). Each addition pins a behavior
+someone found worth testing — a human recording, an autoascend death,
+an adversarial mutation, a NAO mid-game state. And the value of each
+session is itself measured: `cov-per-session.mjs` and
+`cov-rank-redundant.mjs` rank which sessions add coverage and which
+are redundant.
+
+**Verdict.** *Foundational* — arguably the central design decision
+after "match every random number." Bugs convert into regression tests
+at near-zero marginal cost, and the entire tooling layer of §22
+exists because there is one artifact for it to operate on.
+
+---
+
+### 22. Human-insight visualization and interactive session tooling
+
+**What it is.** A suite of tools built so that humans (and agents)
+could *see* what the harness measures — and act on a session
+interactively rather than reading JSON diffs. Seven pieces:
+
+**Coverage dashboard.** `scripts/run-coverage.sh` runs `c8` over the
+whole session corpus and publishes a re-themed, flattened Istanbul
+report (`coverage/`, ~45 MB, GitHub-Pages-served) — per-file, per-line
+red/green. Coverage of the JS engine as exercised by the corpus:
+lines 64.3%, statements 78.3% as of July. Its real job is corpus
+curation: showing where the *next* valuable session should come from.
+
+**Timeline dashboard.** `timeline/index.html` charts parity and
+coverage over the entire commit history with hand-rolled canvas
+rendering: a PES "skyline" (steps passing per channel), a coverage
+chart, and a session×commit heatmap where each cell blends
+green=RNG% / purple=Events% / blue=Screen%. Fed by
+`scripts/gen-timeline.mjs` (643 LoC) parsing the same git-trailer data
+as §8 — the dashboard is a *view* over the trailer convention, proof
+that the revert-safe design pays compound interest. Regressions
+become one-glance attributions: which sessions broke at which commit.
+
+**Parity-debugger.** `tools/parity-debugger/` (~3.9 KLoC): a localhost
+app that spawns the real C binary via node-pty next to a hidden JS
+engine iframe, mirrors every keystroke into both, and overlays
+**cell-level divergence** on a 24×80 grid with C / JS / Diff toggles.
+Any recorded session — including failed ones — can be picked from the
+corpus, replayed, resumed from any step, or forked mid-replay. An
+embedded Claude CLI pane does in-context triage.
+
+**Session viewers and scrubbers.** Generated, self-contained HTML
+scrubbers — `session-viewer.mjs`, `pes-viewer.mjs` (per-step C-vs-JS
+with DEC graphics parsed into a colored terminal grid),
+`playthrough-viz.mjs`, and `autoascend-replay-viz.mjs` →
+`autoascend-viz/` (per-seed scrubbers over thousands of agent turns,
+used to see where the bot stalls or dies). Plus a live scrubber in
+the multiplayer client: a scrub bar over the running game, backed by
+a ring of RTX snapshots — `rollbackToStep(N)` thaws the nearest
+anchor and replays forward. The RTX engine of §9, surfaced as a
+human affordance.
+
+**The live game as session loader.** The playable page itself accepts
+`?seed=`, `?datetime=`, `?nethackrc=`, `?replay=1` — so any session
+in the corpus, including diverged ones, loads into the production
+engine. No separate test-viewer app to drift from the real game.
+
+**Session forking.** Three mechanisms to resume a session at a chosen
+point with changed input: the multiplayer fork API
+(`POST /api/heads/<parent>/fork {at_step}` — re-bases the keystream
+prefix and replays to derive fork-point state, with fork markers in
+the scrub bar and lineage tracking), the parity-debugger's live fork
+(capture C state mid-replay and take over), and offline mutation
+(`adversarial-session-mutate.mjs --index N --mode
+insert|replace|delete|splice`, beam-searching for the earliest
+divergence). Forking is what makes the corpus *compound*: every
+valuable session prefix seeds families of new tests.
+
+**Sherpa.** A session builder designed for how AI agents actually
+work: stateless. Every invocation loads a `.kp` keyplan (readable
+header + quoted key strings + `#>` checkable assertions), replays it,
+runs one verb, prints the observation. Verbs span `init` / `map` /
+`state` / `try` / `goto` / `fight` / `autocombat` / `check`, plus the
+`run-until` verb (`--pline`, `--event`, `--steps` stop conditions)
+and multi-segment keyplans — the unlock behind the bones round-trip
+sessions in the 45→82 suite expansion. ~680 KB across 24 modules,
+~150 keyplans, exporting `.session.json` fixtures straight into the
+PES corpus (`docs/SHERPA_DESIGN.md`). Sherpa is how an agent *writes*
+a test, the way the scrubbers are how a human *reads* one.
+
+**Verdict.** *Load-bearing across the board.* The harness measures;
+these tools are why the measurements produced insight. The
+parity-debugger and scrubbers are where divergence counts became
+understood root causes; the dashboards are where regressions became
+one-glance attributions; forking and sherpa are where the session
+corpus turned from a frozen suite into a generative one.
+
+---
+
 ## The Effectiveness Scorecard
 
 | Technique | Infra cost | Measured impact | Verdict |
@@ -1484,6 +1596,10 @@ estimators (uluck, ualign, pet_hungrytime) not yet wired.
 | Recorder-probe forensics | C probes + rebuild | +13,842 P on seed0108; +406 P on seed0015 | Genuine innovation |
 | NAO xlogfile / RC files | 108 files curated | Reframed autoascend fleet metric | Late but load-bearing |
 | Estimation engine | Oracle emitter + fitters | HUNGER_BANDS, prayer cooldown refit | Emerging |
+| Session as unit of test | Recorder + `.session.json` + corpus | 19→307 sessions; every bug becomes a test | Foundational |
+| Visualization suite | Coverage + timeline dashboards, parity-debugger, scrubbers (~6 KLoC + generated HTML) | Divergence counts → understood root causes; regression ↔ commit at a glance | Load-bearing |
+| Session forking | mp fork API + debugger fork + session-mutate | Any session prefix → family of new tests | Load-bearing |
+| Sherpa | 24 modules + ~150 keyplans | AI-authored sessions; bones round-trips (suite 45→82) | Load-bearing |
 
 ---
 
@@ -1660,6 +1776,11 @@ question for the next attempt.
 | `teleport/maud/judge/{sandbox,frozen,play,scripts}/*` (~16 modules) | Contest judge sandbox |
 | `teleport/maud/sherpa/*` (~24 modules + 150+ keyplans) | Sherpa test harness |
 | `teleport/maud/contest/*` + `contestant/teleport-contest/*` | Contest infrastructure + template |
+| `teleport/maud/test/comparison/sessions/*` (307 sessions) | The curated `.session.json` corpus — the unit of testing |
+| `teleport/maud/coverage/` (~45 MB) + `scripts/run-coverage.sh`, `cov-*.mjs` | Coverage dashboard + per-session coverage ranking |
+| `teleport/maud/timeline/` (104 MB data + `VIEWER_SPEC.md`) + `scripts/gen-timeline.mjs` | Parity/coverage-over-commits dashboard, session×commit heatmap |
+| `teleport/maud/tools/parity-debugger/` (~3.9 KLoC) + `docs/PARITY_DEBUGGER.md` | Live side-by-side C-vs-JS debugger with cell-level diff overlay |
+| `teleport/maud/scripts/{session,pes}-viewer.mjs`, `playthrough-viz.mjs`, `autoascend-replay-viz.mjs` + `autoascend-viz/` | Generated session scrubbers (step any session forward/back) |
 
 ### External data + git
 

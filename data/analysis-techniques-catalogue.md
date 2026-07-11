@@ -11,10 +11,15 @@ reusable methodology, every measurement tool, every documentation artifact
 that made a measurable difference on any of the three ports. Where evidence
 supports it, effectiveness is quantified.
 
-The catalogue is organized as (1) a **master table** of 32 techniques with
+The catalogue is organized as (1) a **master table** of 40 techniques with
 columns for infrastructure cost, measured impact, verdict, and evidence
-citation; then (2) **per-technique deep-dives** grouped into 8 thematic
+citation; then (2) **per-technique deep-dives** grouped into 9 thematic
 categories.
+
+One theme runs through nearly every entry: **the session — a recorded
+series of input/output events — became the unit of testing.** Techniques
+33–40 (Category 9) are the tools built around that unit: visualizing it,
+scrubbing it, loading it live, forking it, and authoring it.
 
 ---
 
@@ -54,6 +59,14 @@ categories.
 | 30 | Multi-agent collaboration | Collaboration | Worktrees + trailers | Different blind spots per model | Compounded | menace |
 | 31 | Recorder-probe forensics | Forensics | C probes + rebuild | +13842 P on seed0108 | Genuine innovation | monk |
 | 32 | NAO xlogfile + top-player configs | External data | 108 rc files, 239 dumplogs | Reframed fleet metric | Late but load-bearing | teleport |
+| 33 | Session as unit of test + curated corpus | Testing | Recorder + `.session.json` + corpus | Corpus 19→307 sessions; every tool consumes it | Foundational | menace → teleport |
+| 34 | Coverage dashboard + per-session ranking | Visualization | `run-coverage.sh` + `coverage/` (45 MB) + 3 cov-\*.mjs | Uncovered code visible per line; redundant sessions pruned | Load-bearing | teleport |
+| 35 | Timeline dashboard (parity over commits) | Visualization | `gen-timeline.mjs` (643 LoC) + `timeline/` (104 MB data) | Regression ↔ commit legible; session×commit heatmap | Load-bearing | teleport |
+| 36 | Parity-debugger (live C-vs-JS side-by-side) | Visualization | ~3.9 KLoC server + client | Cell-level divergence overlay; resume/fork any step | Load-bearing | teleport |
+| 37 | Session viewers + timeline scrubbers | Visualization | 4 generator scripts + RTX live scrubber | Any session scrubbable ←/→, incl. failed ones | Load-bearing | teleport |
+| 38 | Live game page as session loader | Visualization | `?replay=1` URL params + `session_loader` | Diverged sessions load in the real engine | Quiet win | teleport |
+| 39 | Session forking (resume + changed input) | Test generation | mp fork API + debugger fork + `session-mutate` | Any session → family of new tests | Load-bearing | teleport |
+| 40 | Sherpa (keyplan session builder for AI) | Agent tooling | `sherpa/` ~680 KB, 24 modules, 150+ keyplans | AI-authorable sessions; run-until verb; assertions | Load-bearing | teleport |
 
 ---
 
@@ -804,6 +817,259 @@ calibration also gains ground truth from NAO-parametric fits.
 
 ---
 
+## Category 9: The Session as the Unit of Testing — Visualization and Interactive Tooling
+
+### 33. The session as the unit of testing (and the curated corpus)
+
+**Problem addressed.** A parity port needs a test artifact that is at
+once reproducible (deterministic replay), comparable (C and JS both
+consume it), human-meaningful (it's a game someone played), and
+accumulable (finding a bug should permanently add a test). Unit tests
+satisfy none of the last three.
+
+**The design.** A *session* is a recorded series of input/output
+events: seed + datetime + nethackrc + the keystroke stream, plus the
+C-side ground truth captured during recording (RNG calls, display
+events, screens, cursor). Serialized as `.session.json`
+(`test/comparison/sessions/`), normalized by `scripts/session_loader.mjs`,
+optionally multi-segment (save/reload/bones round-trips).
+
+**Everything consumes or produces sessions.** PES scores them (#17),
+coverage runs them (#34), viewers render them (#37), the live game
+loads them (#38), forking mutates them (#39), sherpa authors them
+(#40), the contest collects them (#22), autoascend emits them (#23),
+adversarial search breeds them (#24), the recorder probes annotate
+them (#31). One artifact, one interchange format, ~15 tool families.
+
+**Measured effectiveness.** The corpus is an accumulating asset:
+19 sessions (maud, day 3) → 38 curated parity sessions → 45 → 82
+(May 1, bones/polyself/shops/alchemy expansion) → 307 (July 11, all
+passing on all 4 channels). Each addition pins a behavior someone
+found worth testing — a human recording, an autoascend death, an
+adversarial mutation, a NAO mid-game state. Value is measured, not
+assumed: `cov-per-session.mjs` and `cov-rank-redundant.mjs` rank which
+sessions add coverage and which are redundant.
+
+**Outcome.** Foundational — arguably the central design decision after
+"match every random number." It's the reason bugs convert into
+regression tests at near-zero marginal cost, and the reason the
+Category 9 tooling below could exist at all.
+
+**Failed variant.** Re-recording is not canonical (#31's caveat): the
+local recorder can diverge from the stored session because C
+trap-effect evaluation order is unspecified. Rule: always diff against
+the canonical `.session.json`, never against a re-record.
+
+---
+
+### 34. Code-coverage dashboard with per-session ranking
+
+**Problem addressed.** "What has the session corpus *not* exercised?"
+is invisible from pass/fail counts. Humans needed to see uncovered
+code to know where the next valuable session should come from.
+
+**Infrastructure.**
+- `scripts/run-coverage.sh` — runs `c8` over the whole PES session
+  corpus (`session_test_runner.mjs`), emits an Istanbul HTML report,
+  re-themes it with a NetHack skin, flattens the index so every file
+  shows on one page, and pushes to GitHub Pages
+- `coverage/` (~45 MB, committed) — per-file, per-line/branch pages
+  (`monsters.js.html` 857 KB, `objects.js.html` 1.09 MB, ...) plus
+  machine-readable `coverage-summary.json` / `coverage-final.json`
+- `scripts/cov-per-session.mjs`, `cov-analyze-subsets.mjs`,
+  `cov-rank-redundant.mjs` — which sessions earn their keep
+- `sherpa/coverage.js` — coverage awareness inside the authoring tool
+
+**Measured effectiveness.** Headline numbers visible at a glance
+(lines 64.3%, functions 51.0%, branches 59.9%, statements 78.3% as of
+July). The per-session rankers turn coverage from a vanity metric into
+corpus curation: redundant sessions identified, gaps directed the
+contest and midgame-harness efforts toward unexercised subsystems.
+
+**Outcome.** Load-bearing for corpus curation and for humans deciding
+where test-generation effort goes next.
+
+---
+
+### 35. Timeline dashboard: parity and coverage over commits
+
+**Problem addressed.** `parity-history.mjs` (#19) prints an ASCII
+timeline, but regressions hide in text. Humans needed to *see* the
+pass-rate trajectory and spot which commit bent the curve.
+
+**Infrastructure.**
+- `timeline/index.html` (~57 KB) — single-page dashboard with
+  hand-rolled canvas charts (no chart library): the default **PES
+  skyline** (total tested steps with per-channel RNG/Events/Screen
+  lines), a **coverage-over-commits** chart, and a **session×commit
+  heatmap** — rows are sessions, columns are commits, each cell blends
+  green=RNG% / purple=Events% / blue=Screen%, with retired-row folding
+- Per-commit expandable failure tables (session / PRNG / Events /
+  Screen fractions)
+- `scripts/gen-timeline.mjs` (643 LoC) — walks the full git log,
+  parses `Parity-Status:` / `Coverage-Status:` trailers (#19's data),
+  writes `timeline/data.json` (104 MB) + 289 detail-chunk files
+- `timeline/VIEWER_SPEC.md` — design doc; Layer 3 (step-by-step replay
+  of historic commits from raw.githubusercontent.com) specced
+
+**Measured effectiveness.** Every regression is attributable by sight:
+the heatmap makes "which sessions broke at which commit" a one-glance
+query that previously required scripting. Built entirely on the
+git-trailer convention — the dashboard is a *view* over #19, proving
+the revert-safe trailer design pays compound interest.
+
+**Outcome.** Load-bearing. The human-facing complement to the
+CLI reporters (`parity-history.mjs`, `parity-dashboard.mjs`).
+
+---
+
+### 36. Parity-debugger: live side-by-side C vs JS
+
+**Problem addressed.** Once PES flags a divergence, a human (or agent)
+needs to *watch* it happen: the same keystrokes driving real C NetHack
+and the JS engine simultaneously, with the difference highlighted.
+
+**Infrastructure** (`tools/parity-debugger/`, ~3.9 KLoC):
+- `server.mjs` (~950 LoC) — localhost server that spawns the real C
+  binary via node-pty, tails its RNG/event log, and records sessions
+- `debugger.js` (~88 KB client) — C terminal as a 24×80 grid beside a
+  hidden JS-engine iframe (`/?seed=…&replay=1&logrng=1`) mirroring
+  every keystroke; **cell-level divergence overlay** with C / JS /
+  Diff toggle; Log/RNG/Events/Config side panes
+- Session workflow: pick any recorded session from
+  `test/comparison/sessions/` (including failed ones), replay, **resume
+  from any step**, fork mid-replay (see #39)
+- An embedded Claude CLI pane for in-context triage
+- `docs/PARITY_DEBUGGER.md`
+
+**Outcome.** Load-bearing for divergence diagnosis. This is where
+"22 actionable divergences in 500 sessions" becomes 22 understood
+root causes: the cell-level overlay turns a failing session from a
+JSON diff into something a human can watch and reason about.
+
+---
+
+### 37. Session viewers and timeline scrubbers
+
+**Problem addressed.** Divergences and agent behaviors live deep
+inside thousand-step sessions. Humans needed to scrub a whole session
+forward/back the way a video editor scrubs film.
+
+**Infrastructure** — two scrubber families:
+- **Generated, self-contained HTML** (no server; every frame embedded):
+  - `scripts/session-viewer.mjs` (403 LoC) — one session, step
+    forward/back, flip C vs JS, diffs highlighted
+  - `scripts/pes-viewer.mjs` (568 LoC) — all sessions, one tab each,
+    per-step screen + PRNG/Events comparison, DEC-graphics parsed
+    into a colored 24×80 grid
+  - `scripts/playthrough-viz.mjs` (168 LoC) — scrubber from any keylog
+  - `scripts/autoascend-replay-viz.mjs` (202 LoC) → `autoascend-viz/`
+    — per-seed scrubbers (0.3–4.1 MB each) over thousands of agent
+    turns, with an index table (steps/XL/depth/outcome); used to see
+    where the bot stalls or dies
+- **Live scrubber backed by RTX** (`mp.html` + `multiplayer/client/`):
+  a bottom scrub bar over the running game; scrubbing is purely local —
+  the client keeps a ring of RTX snapshots and `rollbackToStep(N)`
+  thaws the nearest anchor ≤ N and replays forward
+  (`docs/MULTIPLAYER_PROTOCOL.md` §7). This is the RTX engine (#20)
+  surfaced as a human affordance.
+
+**Outcome.** Load-bearing. The scrubbers are how failed sessions get
+*understood* rather than just counted — and the autoascend scrubbers
+are how fleet-behavior questions ("why did seed 5 die at t3200?") get
+answered without re-running anything.
+
+---
+
+### 38. The live game page as a session loader
+
+**Problem addressed.** A separate "test viewer" app would drift from
+the real engine. The page a human plays should be the page that
+replays a diverged session.
+
+**Infrastructure.**
+- URL-parameter surface in `js/nethack.js` (`parseUrlParams`):
+  `?seed=`, `?datetime=`, `?nethackrc=`, `?replay=1` (session-replay
+  mode, matching recording conditions), `?logrng=1`, `?pet=`
+- `js/session_loader` + `gameFromSession()` / `runSegment()` in
+  `js/jsmain.js` — multi-segment replay through the production engine
+- The parity-debugger (#36) and multiplayer client both drive this
+  same surface rather than a parallel implementation
+
+**Outcome.** Quiet win. Zero drift between "the game" and "the test
+harness's idea of the game," because they are one artifact. Any
+session in the corpus — including failing ones — is a URL away from
+running live.
+
+---
+
+### 39. Session forking: resume at a point with changed input
+
+**Problem addressed.** A valuable session is a reusable *prefix*: the
+interesting state it reaches can seed many new tests. Re-recording
+from scratch to explore "what if the player had done X at step N
+instead?" wastes the prefix.
+
+**Infrastructure** — three fork mechanisms:
+- **Multiplayer fork API** — `POST /api/heads/<parent>/fork
+  {at_step: N}`: the server re-bases the parent keystream prefix,
+  replays it to re-derive fork-point state, and returns a new head;
+  fork markers render in the scrub bar; lineage tracked by
+  `scripts/mp-head-lineage.mjs` (`docs/MULTIPLAYER_PROTOCOL.md` §7.2)
+- **Parity-debugger fork** (#36) — stop a replay at any step; the
+  server captures C state and the human takes over live from there
+- **Offline mutation** — `scripts/adversarial-session-mutate.mjs`
+  forks a `.session.json` at `--index N` with
+  `--mode insert|replace|delete|splice`, then beam-searches for the
+  earliest C-vs-JS divergence (the engine behind #24's session-mutate
+  arm); the midgame harness (#26) is the same idea with NAO states as
+  the fork point
+
+**Outcome.** Load-bearing. Forking is what makes the session corpus
+(#33) *compound*: every accumulated session becomes a launch pad for
+families of new tests instead of a single frozen check.
+
+---
+
+### 40. Sherpa: a session builder designed for AI agents
+
+**Problem addressed.** Agents are bad at babysitting long-lived
+interactive processes. Authoring a new test session by "playing the
+game" over a pty burns context and goes stale mid-conversation. The
+tool an AI needs is *stateless*: every invocation self-contained.
+
+**Infrastructure** (`sherpa/`, ~680 KB, 24 modules):
+- Keyplans (`.kp`): human-readable header (`seed:` / `datetime:` /
+  `nethackrc:`) + quoted key-string lines + `#` comments + `#>`
+  checkable assertions. ~150 keyplans in `sherpa/keyplans/`
+  (including `deaths/`, `nhbug/` corpora)
+- Stateless CLI (`main.js`): each invocation loads a keyplan, replays
+  it against the C binary (or JS engine via `js_engine.js`), runs one
+  verb, prints the observation. Verbs: `init`, `map`, `state`,
+  `screen`, `try <keys>`, `goto <target>`, `pickup`, `throw`, `fight`,
+  `autocombat`, `search`, `open`, `save`, `import`, `check`
+- `run_until.js` — the "run-until" verb: `--pline`, `--pline-regex`,
+  `--event`, `--steps` stop conditions
+- Multi-segment keyplans (save/reload/bones round-trips) via
+  `segment_args.js`; `--update` edits the keyplan in place;
+  `check` replays with assertion verification
+- Pathfinding and observation layers (`navigate.js`, `pathfind.js`,
+  `map_render.js`, `observe.js`, `combat.js`) so `goto`/`autocombat`
+  are single verbs rather than key-by-key micromanagement
+- Exports `.session.json` fixtures directly into the PES corpus
+- `docs/SHERPA_DESIGN.md`
+
+**Measured effectiveness.** The 150-keyplan corpus and the multi-
+segment keyplans behind the bones round-trip sessions (suite expansion
+45→82) were sherpa-authored. Cited in the Wiring-Oversight chapter as
+the unlock for bones round-trips.
+
+**Outcome.** Load-bearing. Sherpa is the bridge between agents and the
+session corpus: it is how an AI *writes* a test, the same way the
+scrubbers (#37) are how a human *reads* one.
+
+---
+
 ## Cross-Cutting Scorecard: What Compounded, What Didn't
 
 ### Techniques that compounded across all three ports
@@ -823,6 +1089,10 @@ calibration also gains ground truth from NAO-parametric fits.
 6. **check-async.mjs** (originated with monk's async flip, then adopted broadly)
 7. **NAO xlogfile external ground truth**
 8. **Estimation engine oracle calibration**
+9. **The session corpus as an accumulating asset** (19→307 sessions; every bug becomes a test)
+10. **Human-insight visualization suite** (coverage + timeline dashboards, parity-debugger, scrubbers)
+11. **Session forking** (any session prefix seeds families of new tests)
+12. **Sherpa** (stateless keyplan authoring — how an AI writes a test)
 
 ### Techniques introduced by monk that innovated but did not scale
 
@@ -851,6 +1121,14 @@ calibration also gains ground truth from NAO-parametric fits.
 ---
 
 ## Meta-Observations
+
+**0. The session became the unit of testing.** One theme runs through
+the whole catalogue: a *session* — a recorded series of input/output
+events — is the artifact every tool consumes or produces. Accumulating
+valuable sessions (each one exposing a behavior that needed testing)
+turned out to be the same thing as accumulating tests; visualizing
+sessions is how humans gained insight; forking sessions is how tests
+generated more tests; sherpa is how agents author them. See #33–40.
 
 **1. The techniques compound only when they're named, measured, and
 cited across agents.** Everything in this catalogue that compounded had
