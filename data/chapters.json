@@ -135,5 +135,80 @@
       "2026-04-13"
     ],
     "summary": "Phase 1 complete Day 12: 100% RNG + 100% Events on 35 sessions. Phase 2 begins: sessions expand to 45 covering polyself, shops, alchemy, options menus. 6-agent swarm (Claude + Codex + Gemini). 2,955 commits, 149K LOC."
+  },
+  {
+    "id": "teleport-wiring-audits",
+    "name": "Wiring-Oversight Audits",
+    "dates": [
+      "2026-04-14",
+      "2026-04-15",
+      "2026-04-16",
+      "2026-04-17",
+      "2026-04-18",
+      "2026-04-19",
+      "2026-04-20",
+      "2026-04-21",
+      "2026-04-22",
+      "2026-04-23",
+      "2026-04-24",
+      "2026-04-25",
+      "2026-04-26",
+      "2026-04-27",
+      "2026-04-28",
+      "2026-04-29",
+      "2026-04-30",
+      "2026-05-01"
+    ],
+    "summary": "Waves III-V of wiring-oversight audits produce 60+ commits and 40+ LORE entries. Sherpa multi-segment keyplans + 'run-until' verb unlock bones round-trips. Session suite 45→82. Cleaver dominant (Opus 4.6→4.7 mid-project, no disruption). PROJECT_PLAN.md archived: agents now emergent, not plan-driven. Peak 211 commits (Apr 30, seed0030 closure)."
+  },
+  {
+    "id": "monk-experiment",
+    "name": "Monk: The Readable Transpiler Counter-Experiment",
+    "dates": [
+      "2026-05-05",
+      "2026-05-15",
+      "2026-05-25",
+      "2026-06-05",
+      "2026-06-15",
+      "2026-06-25",
+      "2026-07-05",
+      "2026-07-11"
+    ],
+    "summary": "A third port launched May 5 with a different premise: could a readable-transpiler-first approach eliminate CODEMATCH-style hand-porting? Monk built a single-pass transpiler with a formal 7-class lowering-bug taxonomy (6 closed, 1 reverted). Reached 24/44 PASS on a frozen judge. Signature innovation: PRNG-index-aligned C recorder probes. But hit an architectural ceiling — cross-TU async coloring can't be resolved at single-TU scope. Latent translator fixes are stranded from the scored engine. A genuine methodology innovation and a genuine architectural indictment."
+  },
+  {
+    "id": "autoascend-campaign",
+    "name": "Autoascend Campaign: Fleet as Fuzzer",
+    "dates": [
+      "2026-05-15",
+      "2026-06-01",
+      "2026-06-15",
+      "2026-07-01",
+      "2026-07-11"
+    ],
+    "summary": "Cleaver runs 88 pre-registered matrices (m1-m88) using the autoascend agent as both a productivity multiplier AND a fuzzer against the parity harness. 130-seed × 15k-step baselines land the fleet at 59 deaths / 130 sessions / 0 hard-stops / 43 depth-4+ / 49 median depth. Sokoban chain live end-to-end (first organic solve seed21 t1129). Phase 2 reactive playbooks hit a firm 104-death floor: architecture-limited, not tuning-limited. Estimation engine + oracle calibration refits HUNGER_BANDS and prayer cooldown estimators."
+  },
+  {
+    "id": "rtx-hardening",
+    "name": "RTX (Reversible Transactions) Engine",
+    "dates": [
+      "2026-06-02",
+      "2026-06-15",
+      "2026-06-25",
+      "2026-07-01",
+      "2026-07-11"
+    ],
+    "summary": "Xorn (Codex GPT-5.3-Codex-Spark) runs a continuous 26-day rollout dominantly on RTX engine work. 2,255 commits, 186 issues closed. Issue #825 Phase 1 (proxy-root journaling), #827 (setPrototypeOf/preventExtensions traps), #861 (occupation continuation journaling), #862 (replay-N Luck restoration), #865 (visual cache rollback consolidation). Scan-semantic findings driven to zero unmatched suppressions (Jul 9). Session channel model expanded from 3 to 4 (Cursor added). Verify-before-push discipline: 5-10 commits per day, each with 307/307 verification."
+  },
+  {
+    "id": "500x100-hunts",
+    "name": "500×100 Divergence Hunts as Steady State",
+    "dates": [
+      "2026-06-15",
+      "2026-06-25",
+      "2026-07-01",
+      "2026-07-11"
+    ],
+    "summary": "Random 500-session × 100-turn hunts become the daily rhythm. First-failure depth is the metric: when the tail is long, the port is done. Jul 7 sample: 22 actionable divergences in 500 sessions (4.4%). Jul 11: first-failure depths of 7, 32, 51, 112, 479 across consecutive hunts — the tail is lengthening. Rerecord.py + capture-truncation filter separates real divergences from recording artifacts. The steady-state measurement toward which the whole port has been driving."
   }
 ]

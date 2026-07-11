@@ -74,193 +74,34 @@ that have measurable productivity costs and require human countermeasures.
 > *"Fold 10 strategic LORE lessons into plan, LORE, and DECISIONS."*
 > — First commit on the teleport branch, Mar 29, 2026
 
-### What Is Teleport?
+On March 29, 2026 — four days after the original menace port concluded — the
+project forked into a new repository called **teleport**. Where menace had
+been a 48-day accumulation of lessons, experiments, and sometimes painful
+architectural discoveries, teleport started with all of that pre-loaded. The
+existing NetHack-to-JavaScript infrastructure was imported wholesale: the
+PRNG oracle, the PES three-channel test harness, the session recorder, and
+753 LORE entries distilled into DECISIONS.md and PROJECT_PLAN.md. Then the
+game logic was stripped out and the port restarted from zero — this time
+knowing what to avoid.
 
-On March 29, 2026 — four days after the original menace port concluded — the project
-forked into a new repository called **teleport**. Where menace had been a 64-day
-accumulation of lessons, experiments, and sometimes painful architectural discoveries,
-teleport started with all of that pre-loaded. The existing NetHack-to-JavaScript
-infrastructure was imported wholesale: the PRNG oracle, the PES three-channel test
-harness, the session recorder, and 753 LORE entries distilled into DECISIONS.md and
-PROJECT_PLAN.md. Then the game logic was stripped out and the port restarted from
-zero — this time knowing what to avoid.
+The goal was to answer a specific question: *how much of the 48-day menace
+project had been solving problems that shouldn't have existed in the first
+place?*
 
-The goal was to answer a specific question: how much of the 64-day menace project had
-been solving problems that shouldn't have existed in the first place?
+The five-day sprint that answered that question ended April 2, 2026 with
+975 commits from 4 agents (cleaver, maud, xorn, mac), 24/24 short sessions
+at full triple-channel PASS, 94 gameplay modules ported, and 100% RNG
+parity reached on day 3 — a milestone that had taken menace 46 days.
 
-### The Four-Agent Swarm
+That was the *start* of teleport. It ran for another three months.
 
-Teleport launched with three concurrent agents and gained a fourth on Day 3:
-
-| Agent | Model | Role | Commits |
-|-------|-------|------|---------|
-| **cleaver** | Claude Opus 4 | Parallel parity tracks, screen rendering, batch translation | 365 |
-| **maud** | Claude Opus 4 | Primary parity work, infrastructure, orchestration | 208 |
-| **xorn** | Codex GPT-5 | Combat system, monster AI, event stream work | 181 |
-| **mac** | Claude Opus 4 | Gameplay modules, batch-translation coordination | 107 |
-
-This was the first time the project ran a heterogeneous swarm — two different LLM
-families working in parallel on the same codebase. The coordination mechanism was
-the same as before: Parity-Status commit trailers showing all four agents the live
-state of every test session.
-
-### The Five-Day Arc
-
-**Day 1 — Mar 29: Infrastructure and Foundation (176 commits)**
-
-The day began by stripping 254 old test files and rewriting onboarding docs so any
-fresh agent could understand the project from scratch. By afternoon, the C harness
-was recording sessions and the session test runner was live. By evening, the first
-parity numbers appeared: 9.9% RNG on the initial 4 sessions, climbing to 78.9% by
-end of day as dungeon generation, level init, and the game loop skeleton came online.
-
-```
-16:30  infra: build C harness, record 3 initial sessions -- 0/3 passing
-17:17  infra: add session test runner -- 0/4 passing, ~155 RNG calls match
-17:51  infra: auto-append Parity-Status via commit-msg hook
-19:42  parity: mineralize uses real mksobj+place_object -- 80.2% RNG, 2.1% events
-22:02  parity: port peace_minded() with alignment RNG -- seed42 93%->97%, total 94.1%
-```
-
-The contrast with menace Day 1 is stark. Menace Day 1 was building the PRNG from
-scratch, getting the first 55/63 map cells to match. Teleport Day 1 ended at 80%+
-RNG — because the PRNG was already correct, dungeon generation was already understood,
-and the common architectural mistakes were pre-documented in DECISIONS.md.
-
-**Day 2 — Mar 30: Gameplay and Screen (234 commits, the most productive day)**
-
-Day 2 expanded the test suite from 4 sessions to 7 and pushed into gameplay.
-The parity trajectory is steep: starting at 77.6% RNG (where Day 1 left off) and
-ending at 77.6% RNG / 21.5% Events. Key milestones:
-
-```
-00:45  parity: fix rigidRoleChecks -- seed077 100% RNG!
-04:03  parity: implement wipeout_text rubout substitution -- seed300 88%->RNG-green
-20:24  parity: seed500 100% RNG -- 7/7 sessions passing, all RNG 100%
-```
-
-By end of Day 2, the session suite had 5/7 achieving full RNG pass. Events parity
-came online as the event-stream infrastructure was wired in. The infrastructure
-overhead here was near-zero: no time spent fighting foundational architecture
-because the foundation was already known-correct.
-
-**Day 3 — Mar 31: Level Transitions and Screen Rendering (215 commits)**
-
-Day 3 expanded to 19 sessions — adding multi-level, bow-fire, combat, and chargen
-sessions — and drove RNG parity to 93.5% with Events at 73.6% and Screen at 53.2%.
-11 of 19 sessions achieved full triple-channel PASS.
-
-```
-12:59  infra: port symset system from C drawing.c/symbols.c -- proper foundation
-13:29  parity: reset fmon linked list during level transition -- seed015 98%->99.7%
-13:59  browser: proper object names in 'You see here...' messages
-15:34  screen: fix chargen name-prompt capture -- seed077 2->16, seed500 1->16
-18:25  infra: port NHW_MENU window system -- tutorial prompt now matches C
-19:17  infra: include per-step fidelity in Parity-Status commit trailers
-```
-
-**Day 4 — Apr 1: Batch Translation Breakthrough (239 commits)**
-
-Day 4 was the most architecturally significant day of the sprint. The suite stayed
-at 19 sessions and parity reached its first 100% RNG / 100% Events milestone, with
-15/19 sessions at full triple-channel PASS. Screen parity climbed to 65.2%.
-
-The key development was the start of **batch translation** — using LLM prompts to
-port large blocks of NetHack C gameplay modules in one pass, rather than
-function-by-function. This produced stubs for many functions that would take days
-to implement manually. A new fourth agent, **mac**, joined to coordinate the
-batch-translation work.
-
-**Day 5 — Apr 2: Scale-Up and the 94-Module Milestone (115 commits)**
-
-Day 5 expanded the session suite to 24 sessions, with 24/24 achieving full
-triple-channel PASS. RNG parity held at 99.7%, Events at 94.5%, Screen at 78.7%.
-The batch-translation work yielded 94 JavaScript gameplay modules — 17 ported in a
-single day via LLM batch prompts.
-
-The total sprint: **975 commits across 5 days** from 4 agents.
-
-### Comparison: Menace vs. Teleport at Day 5
-
-**The encouraging numbers:**
-
-| Metric | Menace Day 5 | Teleport Day 5 |
-|--------|--------------|----------------|
-| Commits | 257 | 975 |
-| First RNG match | Day 5 (~94%) | Day 1 (9.9%) |
-| Session parity | 0/4 full pass | 24/24 full pass |
-| JS gameplay modules | ~10 | 94 |
-| Agents | 2 | 4 |
-
-**The honest comparison:**
-
-| Metric | Menace Day 54 | Teleport Day 5 |
-|--------|---------------|----------------|
-| JS gameplay modules | 153 | 94 |
-| Sessions passing | 556/563 | 24/24 (but short) |
-| Deep session (seed800) | ~100% | ~3% |
-| Browser playable | Yes | No |
-
-The menace project needed 48 days to reach 100% RNG on its full session suite.
-Teleport reached 100% RNG in 3 days — because the PRNG was already correct,
-dungeon generation was already ported, and architectural decisions that took weeks
-to discover in menace were pre-loaded into DECISIONS.md on Day 0.
-
-### The Honest Assessment
-
-The 100% session pass rates and 94-module count are real but require context:
-
-**The stub debt**: The 17 gameplay modules ported via batch translation in Day 5 come
-with approximately 1,088 function stubs — placeholders that pass the short test
-sessions but will diverge on real gameplay. Teleport has traded deep correctness
-for broad coverage.
-
-**The seed800 problem**: seed800 is the "grand tour" session — a 262-step sequence
-that exercises deep gameplay, multi-level navigation, and complex interactions.
-At Day 5, seed800 sits at approximately 3% RNG parity. The 24/24 pass rate is real,
-but all 24 sessions are short (under 30 steps). Teleport's sessions are carefully
-curated for tractability — they test the porting infrastructure rather than full game
-coverage.
-
-**Scope**: The menace final suite covered 563 sessions including multi-hour gameplay.
-Teleport's 24 sessions are a foundation, not a ceiling.
-
-**Game logic coverage**: 94 modules is impressive for 5 days, but many are
-stub-heavy. The menace port at Day 54 had 153 modules with deep correctness.
-Teleport has a head start but needs to convert stubs to real implementations.
-
-**Screen parity**: 78.7% screen parity by Day 5 is strong progress. The remaining
-gap is concentrated in chargen sequences and complex tty rendering paths.
-
-**Browser playability**: The game does not yet run interactively in a browser.
-That milestone — the original goal of the whole project — remains ahead. The teleport
-infrastructure is correct; the game logic is partially ported.
-
-### What the Experiment Proves
-
-Five days in teleport produced 975 commits from 4 agents — roughly the same 5-day
-output that menace achieved, but with far more to show for it. The infrastructure
-advantage was real and measurable. The architectural mistakes that cost weeks in
-menace (game loop ordering, PRNG alignment, test harness scaffolding, agent
-onboarding) were absent from teleport because they were pre-documented.
-
-This validates one of menace's core lessons: **infrastructure compounds**. The 64-day
-menace project was, in part, building the knowledge base that made a 5-day teleport
-sprint possible. A project that started as teleport started — with correct
-infrastructure and pre-loaded lessons — is on pace to reach playability in weeks
-rather than months.
-
-The batch-translation breakthrough (17 modules in one day) is a new development with
-no precedent in menace. It may compress the remaining porting work dramatically —
-or it may produce a stub debt that takes as long to pay down as the original porting
-would have taken. That question will be answered in Days 6–10.
-
-The question teleport answers so far is not "can agents port NetHack in 5 days?" —
-they cannot; seed800 at 3% makes that clear. The question it answers is: "how much
-of the original 48 days was solving problems that shouldn't have existed?" The answer
-appears to be: a lot. And the batch-translation approach may answer a second question:
-"can LLMs write large amounts of correct game logic in bulk?" That answer is still
-pending.
+**The full arc — including teleport's extension through July 2026, the
+parallel monk counter-experiment, the autoascend campaign, the RTX rollback
+engine, the 500×100 divergence hunts, and the complete catalogue of every
+technique the project tried — is documented in Chapter 2 below.** The
+Rollup ([ROLLUP.md](ROLLUP.md)) provides the intermediate state at day 33
+(May 1) and day 104 (July 11). For a per-technique deep-dive table, see
+[analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md).
 
 ---
 
@@ -912,19 +753,26 @@ then get out of the way — and intervene precisely when agents drift.
 
 ---
 
-## Appendix: Data Sources
+## Appendix: Data Sources (Chapter 1 — Menace)
 
 | Source | Size | Contents |
 |--------|------|----------|
 | `data/timeline.jsonl` | 34 MB | Pre-processed 48-day timeline |
-| `agent-logs/` | 23 GB, 9,910 files | Raw session JSONL (every message and tool call) |
+| `agent-logs/` (menace-era subdirs) | 23 GB, 9,910 files | Raw session JSONL (every message and tool call) |
 | `wave/docs/LORE.md` | 910 KB | 229 topics of porting knowledge |
 | `wave/docs/*.md` | 97 files | Plans, specs, postmortems |
 | `wave/AGENTS.md` | 397 lines | Agent instruction document |
-| Git history | 6,272 commits | Full diffs and blame |
+| Git history (menace) | 6,272 commits | Full diffs and blame |
 | `REFLECTIONS.md` | 344 lines | Human's essay on the collaboration |
 
+*For Chapter 2 (teleport + monk) data sources see the appendix at the
+end of the file. For the extended rollup covering both eras see
+[ROLLUP.md](ROLLUP.md). For the exhaustive per-technique catalogue
+across all three ports see [analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md).*
+
 ### Deep-Dive Analyses
+
+**Chapter 1 (menace-era):**
 
 - [analysis-infrastructure.md](data/analysis-infrastructure.md) — Infrastructure inventory and compounding effects
 - [analysis-verifiability.md](data/analysis-verifiability.md) — Measurement precision timeline and PRNG case study
@@ -933,3 +781,897 @@ then get out of the way — and intervene precisely when agents drift.
 - [analysis-complexity-removal.md](data/analysis-complexity-removal.md) — Simplification catalog and replay_core arc
 - [analysis-corrections.md](data/analysis-corrections.md) — Complete correction catalog and taxonomy
 - [analysis-agent-emotions.md](data/analysis-agent-emotions.md) — Agent behavioral patterns and countermeasures
+- [analysis-porting-lessons.md](data/analysis-porting-lessons.md) — Porting-specific lessons
+- [analysis-reusable-code.md](data/analysis-reusable-code.md) — Reusable code inventory
+- [analysis-strategy-effectiveness.md](data/analysis-strategy-effectiveness.md) — Strategy scorecard
+- [analysis-human-wisdom.md](data/analysis-human-wisdom.md) — Human's contributions
+- [analysis-agent-emotions.md](data/analysis-agent-emotions.md) — Behavioral patterns
+- [audit-teleport-cleanup.md](data/audit-teleport-cleanup.md), [audit-teleport-final.md](data/audit-teleport-final.md) — Early teleport audits
+
+**Chapter 2 (teleport + monk):**
+
+- **[analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md)** — Per-technique deep-dive: 32 techniques across 8 categories, master table plus per-entry problem/infra/effectiveness/outcome/failed-variant
+- [ROLLUP.md](ROLLUP.md) — Rollup 1 (May 1, day 33) + Rollup 2 (Jul 11, day 104) + monk introduction
+
+---
+
+# Chapter 2: The Second Attempt — Cataloguing Technique Across the Teleport and Monk Ports
+
+> *"i'm more interested in performance benchmarking to improve the quality of the autoascend agents"*
+> — human, 2026-07-01 — the pivot that marks teleport's transition from parity port to fleet-quality project
+
+The menace port closed on March 25. Four days later, on March 29, the
+project forked into a second attempt called **teleport** — a re-port
+of NetHack 3.7 with menace's lessons baked into the initial prompt,
+the initial infrastructure, and the initial rules.
+
+At roughly the same time, a **third** port was spun up as a parallel
+counter-experiment: a "readable transpiler first" approach called
+**monk**. Where teleport imported menace's proven hybrid — translated
+code plus hand-porting plus recorder plus watchdog — monk asked a
+different question: *could a single high-quality transpiler produce
+JavaScript readable enough that the port would not need CODEMATCH-style
+hand curation at all?*
+
+The two attempts have now run in parallel for three and a half months.
+This chapter is the technique catalogue that resulted: **every
+programming approach we tried**, what infrastructure we built to
+support it, how we measured whether it worked, and — for a
+non-trivial fraction — why it failed. The catalogue is the point.
+The lessons in Chapter 1 said what mattered. Chapter 2 says
+*what we actually did*.
+
+---
+
+## The Three Ports, Side by Side
+
+| | **Menace** | **Teleport** | **Monk** |
+|---|---|---|---|
+| Duration | Feb 6 – Mar 25 (48 days) | Mar 29 – present (~104 days) | May 5 – present (~68 days) |
+| Premise | Fresh port, no priors | Menace lessons pre-loaded | Readable transpiler as first-class artifact |
+| Result | 556/563 sessions matching | 307/307 fixed suite at 100%; 500×100 hunts finding <5% actionable | 24/44 sessions matching; architectural ceiling |
+| Agents | ~7 named agents + human | maud, cleaver, xorn, golem, contestant | monk (solo) |
+| Commits | 6,272 | ~4,500 (xorn alone: 2,255 in 26 days) | ~700 |
+| Peak parity metric | Session PASS rate | 3.8 M RNG events at 100% (RNG/Events/Screen/Cursor) | 4804/4804 PRNG on frozen judge |
+| Signature technique | CODEMATCH hand-porting | Autoascend fleet as fuzzer | PRNG-index-aligned recorder probes |
+| Architectural bottleneck | Test overfitting | 500×100 tail (rare divergences) | Cross-TU async coloring |
+
+Monk is not a failed port. Its 24/44 parity is a genuine
+accomplishment against a real C codebase, and its recorder-probe
+methodology is arguably the most sophisticated forensic technique
+produced across all three attempts. But it hit an architectural
+ceiling that teleport — because it accepted hybrid hand-porting from
+the start — did not. That contrast is the counter-experiment the
+catalogue below will refer back to.
+
+---
+
+## The Technique Catalogue
+
+Every technique below is one of two shapes: **an approach the project
+tried**, or **an infrastructure piece it built to make that approach
+possible**. For each, the same fields: what problem it addresses,
+what got built to support it, how we measured whether it worked, and
+the outcome — with concrete numbers where the evidence supports them.
+
+---
+
+### 1. Documentation as institutional memory
+
+**What it is.** A hierarchy of markdown documents intended to survive
+across sessions, agents, and models: `LORE.md` (debugging discoveries),
+`DECISIONS.md` (design rationale), per-file design docs, per-agent
+role documents, per-subsystem specs, and auto-memory dirs written by
+Claude Code's memory system.
+
+**Infrastructure built.**
+- `teleport/maud/docs/LORE.md` (546 KB) — hard-won porting lessons
+  ported forward from menace's `wave/docs/LORE.md` (910 KB, 229 topics)
+- `teleport/maud/docs/DECISIONS.md`, `CONVENTIONS.md`, per-subsystem
+  specs (`COMBAT.md`, `VISION.md`, `MONSTERS.md`, `HALLUCINATION.md`,
+  `WEAPONS.md`, `MAPMAKING.md`, `SESSION_FORMAT.md`, `GAMESTATE.md`,
+  `EVENTS.md`)
+- Per-agent role docs: `GEMINI_ROLE.md` for golem, `AGENTS.md` symlinked
+  to `README.md` as the canonical agent instruction
+- Auto-memory dirs (created by Claude Code's memory system): 210 files
+  in cleaver's memory, 169 in monk's, 38 in maud's, 105 in menace-era
+  wave
+
+**Measured effectiveness.** LORE lessons carry — the "sycophancy / zero
+carry-over" pattern from Chapter 1 is why LORE exists at all. In
+teleport, `LESSONS.md` (546 KB, 220 entries) plus cleaver's memory
+grew to become an unofficial LORE, cross-cited across agents. Cleaver's
+`retirement_pattern`, `test_unification_pattern`, `comment_audit_pattern`,
+`tombstone_audit_pattern`, `impossible_audit`, and `sanity_check_arc`
+files are load-bearing methodology — each records a recipe used
+repeatedly by later work.
+
+**Verdict.** *Compounded.* Documentation scales when it's dense and
+short, and when subsequent agents cite it. Documentation that's not
+cited decays silently.
+
+**Failed variant.** Long strategic design docs written early (menace
+era) that were never referenced again. The `retirement_pattern`
+methodology exists in part *because* an earlier attempt at
+"design-doc-first" was silently ignored.
+
+---
+
+### 2. Planning, pre-registration, and phase discipline
+
+**What it is.** Formal pre-registration of decision rules before
+running experiments. The rule ("advance only if `Dlvl≥4 ≥ 31` AND
+`deaths ≤ 45` AND `hard-stops = 0`") is committed *before* the sweep
+runs, so a marginal result cannot be reinterpreted into a landing.
+
+**Infrastructure built.**
+- Matrix pre-registration in `LESSONS.md` (cleaver `01e2cc7a1`)
+- Phase gates: Phase 0/1/2/3 with named exhaustion criteria
+- Campaign roadmap in `docs/CAMPAIGN_PLAYBOOK_ROADMAP.md`
+
+**Measured effectiveness.** Pre-registration prevented at least 3
+documented revert wars. In cleaver's autoascend campaign, matrix14
+would have been reverted on an AC-band confound and re-landed on
+the correct `hp*2 < hpMax` rule; the pre-registered rule caught it
+inside one sweep instead of two. Phase 2 exhaustion (`phase_2_1_exhausted_2026_07_09.md`)
+declared reactive playbooks tuned-out at a firm 104-death floor across
+12 configs (v22–v33) — the phase gate blocked further sweeps in the
+same direction and forced the Phase 3 pre-emptive design pivot.
+
+**Verdict.** *Load-bearing.* Cleaver: "every guessed cause wrong;
+instrument before fixing" is the corollary. Without pre-registration,
+the autoascend campaign would still be relitigating m14 vs m15.
+
+**Failed variant.** Premature "exhausted" declarations. The Phase 2
+verdict was itself later disputed by v48–v60 which found deaths
+110→104 via turn-economy fixes; the ceiling was real but the pause
+was slightly early.
+
+---
+
+### 3. Iteration speed as a knob
+
+**What it is.** A discipline of running two versions of most tools:
+a fast one for exploration, an exhaustive one for landing. The
+choice of which to run is treated as a decision, not a default. The
+principle: *make things slimmer and faster for faster iteration at the
+right time, and only make the process more exhaustive and slower as
+we bring things in for landing.*
+
+**Infrastructure built.**
+- `scripts/pes-fast.mjs` (exploration) vs `scripts/pes-report.mjs`
+  (landing) — three-channel parity, same output shape, different runtime
+- `scripts/parity-line.mjs` (single session) vs `scripts/parity-history.mjs`
+  (all sessions, from git log)
+- `tools/skeleton-diff/skeleton-diff.mjs | head -30` (top risk-scored
+  pairs) vs full-tree scan with `--csv`
+- `pes-viewer.mjs` (interactive) vs `bpes.mjs`, `bpes-smoke.mjs`
+  (batch modes)
+- Depth-3 vs depth-10 RTX oracle sweeps
+
+**Measured effectiveness.** In xorn's rollout, the daily commit
+cadence (5–10 landings per day) is only possible because 500×100
+hunts run in parallel and fast unit-test loops (`test-unit-core.mjs`,
+7127 tests) run in seconds. If every commit required full-parity
+verification, xorn's throughput would drop by an order of magnitude.
+Cleaver's autoascend sweeps run in ~6 minutes with 10 parallel workers
+because they use short-budget matrices (5k step); the exhaustive
+15k-step audits run afterwards only on the candidates that passed
+the short sweep.
+
+**Verdict.** *Load-bearing.* Turning iteration speed into a
+per-decision choice — rather than a fixed property of the tool — is
+a habit that compounded across all three ports.
+
+---
+
+### 4. Metatooling: worktree isolation, watchdog, and hooks
+
+**What it is.** Machinery that shapes how agents work rather than what
+they work on: worktree-per-sweep discipline, watchdog agents, autostash
+verification, subprocess isolation.
+
+**Infrastructure built.**
+- `--isolate --workers=8 --dump-dir` flag on `measure-autoascend.mjs`
+  — spawn workers against a pinned worktree snapshot
+- `scripts/install-hooks.sh` — git hooks that enforce agent identity
+  trailers, block `--no-verify`, run pre-commit checks
+- Autostash-verify discipline: after `git pull --rebase --autostash`,
+  always `git status` and re-run tests — memory `feedback_autostash_verify.md`
+  documents the rule after an incident where conflict markers landed
+  in a commit
+- Watchdog agents (imported from menace: `analysis-infrastructure.md`)
+- `scripts/commit.sh` structured commit formatter with Co-Authored-By
+  agent trailers
+
+**Measured effectiveness.** `feedback_no_worktree_edits_during_sweep.md`
+records the cost: mid-sweep edits split load-time between old and new
+code across seeds, voiding the whole 130-seed matrix (matrix61 was
+re-run at ~1.5h cost). After the rule was codified, that class of
+error stopped. Watchdog agents in menace turned one-task agents into
+overnight workers; teleport preserved the pattern.
+
+**Verdict.** *Compounded.* Metatooling is invisible when it works —
+the successful runs never mention it — but visible when it doesn't.
+
+---
+
+### 5. Static analysis: the structural axis (skeleton-diff, spine-diff)
+
+**What it is.** Compare the *shape* of each C function to its JS
+port: counts of `if`, `switch`, `case`, loops, returns, calls,
+RNG calls. Catches dormant bugs that no recorded session yet exercises
+but that will diverge on first hit.
+
+**Infrastructure built** (all under `tools/skeleton-diff/`):
+- `skeleton-diff.mjs` — regex-based function pairer, 23 modes
+- `spine-diff.mjs --fn <name>` — per-function C-vs-JS spine alignment
+- `ts-spine-diff.mjs` — tree-sitter AST variant
+- `scan-array-parity.mjs`, `cross-file-sweep.mjs`, `preflight.mjs`
+
+**Measured effectiveness.** Issue #575 helper-extraction campaign
+(cleaver, June 11): 31 commits, matchedFindings 89→47. Single Jun 14
+session: 114→12 (102 closed). scan-semantic v0.9 tightening (xorn
+commit `94818d6e0`): 844→266 findings (−68%) via cond-shape
+canonicalization. By July 9 (xorn `b0412c016`) semantic findings and
+unmatched suppressions both hit zero for the first time.
+
+**Verdict.** *Load-bearing.* A canonical false-positive catalog
+(`code_analysis_tools.md`) makes it usable — hoisted locals,
+optional-chaining guards, cross-file relocations, expanded C macros,
+`#if 0` C functions, platform-only helpers are all named as
+non-actionable, so the alarm rate is manageable.
+
+**Failed variant.** Comment audits: `comment_audit_pattern.md` records
+that ~50% of "port gap" audits based on comments were false positives.
+The implementation was often in a different file. Static analysis is
+audit *hints*, not verdicts.
+
+---
+
+### 6. Static analysis: the semantic axis (scan-* and check-*)
+
+**What it is.** ~30 semantic scanners under `tools/skeleton-diff/scan-*.mjs`
+and ~30 runtime sanity checks under `scripts/check-*.mjs`. Each targets
+a specific bug class: RNG order, argument order, missing imports, state
+mutation routing, direct botl writes, escape closure detection.
+
+**Infrastructure built.**
+- `scan-semantic.mjs`, `scan-rng-order.mjs`, `scan-callers.mjs`,
+  `scan-state-writes.mjs`, `scan-cmd-loops.mjs`, `scan-msg-case.mjs`,
+  `scan-struct-assign.mjs`, ~24 more
+- `check-async.mjs` — the **async coloring analyzer**, one of the
+  earliest and most consequential static tools; enforces that awaits
+  land only in async contexts
+- `check-rng-order.mjs`, `check-rng-arg-order.mjs`, `check-rng-loop-cond.mjs`
+- `check-missing-imports.mjs`, `check-reexports-from-const.mjs`,
+  `check-keylog-faithful.mjs`
+
+**Measured effectiveness.** `check-async.mjs` is the tool that made
+the async flip possible. When agent:monk's June 12 async flip (commits
+`806ebb8`→`3c8edb4`) migrated the prompt bridge from sync-polling to
+`await`, `check-async` was what caught the cascade: 2,747 async heads
+had to be added and 22,120 `await` insertions had to propagate. A
+long-inert conformance check finally fired: it had been checking
+strings *after* `stripCommentsAndStrings` since inception. The flip
+dropped PRNG parity 24.75% → 21.94% before rebounding — an accepted
+cost.
+
+**Verdict.** *Load-bearing.* The scanner-plus-suppression discipline
+scales because suppressions are named and retired: when a suppression
+catches 0 findings, retire it (`spine_suppression_decay.md`).
+
+---
+
+### 7. Testing: PES (PRNG / Events / Screen) three-channel parity
+
+**What it is.** A recorded C session is a triple: the sequence of
+PRNG calls, the sequence of game events, the sequence of terminal
+screens. A JS replay matches iff all three channels match, cell by
+cell, call by call.
+
+**Infrastructure built.**
+- `scripts/pes-report.mjs` — ANSI-colored three-channel report, ~40
+  modes (`--all`, `--diagnose`, `--cached`)
+- `oracle/results.jsonl` (29 MB), `oracle/history.jsonl` (1.1 MB) —
+  historical dashboard
+- `oracle/pes-diagnoses.json` — cached AI diagnostic summaries
+- `scripts/first-divergence.mjs`, `divergence-context.mjs`,
+  `screen-diff.mjs`, `compare-display-events.mjs`,
+  `compare-display-rng.mjs`
+- 38 curated parity sessions in `test/comparison/sessions/`
+- 99 keyplans, 78 divergence-repro directories
+
+**Measured effectiveness.** PES PASS rate is the single most-cited
+number in every campaign. Maud's early observation that RNG 19/19 and
+Events 19/19 both hit 100% while Screen sat at 11/19 (day 3–4) reframed
+the priority list: infrastructure wasn't the blocker, vision/display was.
+By July 11, xorn's fixed suite: 307/307 sessions, 3.8 M RNG events,
+100% on RNG / Events / Screen / Cursor.
+
+**Verdict.** *Foundational.* PES is teleport's version of the Chapter 1
+lesson "make agent work verifiable."
+
+---
+
+### 8. Testing: PES parity history as git-log trailer
+
+**What it is.** Rather than a static log file, parity metrics live in
+git commit trailers: `Parity: MATCHED/TOTAL (PCT%) [session:m/t ...]`.
+`scripts/parity-history.mjs` reconstructs the timeline by parsing
+`git log`. The record is queryable, deduplicated, and revert-safe by
+design: reverts remove the trailer with the code.
+
+**Measured effectiveness.** By this construction, every parity delta
+in project history is correlated with the commit that caused it.
+Xorn's commits carry lines like `307/307 passing; RNG:3808565/3808565(100%)`
+verbatim. There is no separate log to maintain, no chance of the log
+drifting from reality.
+
+**Verdict.** *A quiet but load-bearing design decision.* The parity
+record is where the project's story is told, and it's woven into
+git rather than external.
+
+---
+
+### 9. Testing: the RTX / reversible-transaction oracle
+
+**What it is.** A transaction-scoped journal that records every effect
+of a command, so the command can be replayed or rolled back and
+compared against the original at the byte level. Depth-N replay
+oracles verify that rolling back and re-executing N commands
+reproduces identical screens and RNG state.
+
+**Infrastructure built** (all under `js/rtx/` and `docs/`):
+- `journal.js`, `journal_install.js`, `rng_snapshot.js`,
+  `input_transcript.js`, `effects_sink.js`, `raw_clone.js`,
+  `visual_snapshot.js`, `proxy_profile.js`, `screen_history.js`,
+  `rollback_control.js`
+- Specs: `docs/REVERSIBLE_TRANSACTIONS.md`, `docs/MULTIPLAYER_RTX.md`
+- Tools: `scripts/rtx-oracle.mjs`, `rtx-replay-oracle.mjs`,
+  `measure-rtx-journal-memory.mjs`, `measure-rtx-journal-overhead.mjs`,
+  `measure-transaction-diff.mjs`
+- Xorn: 234 rtx-oracle invocations, 10,270+ `RTX_*` log references in
+  the June rollout
+
+**Measured effectiveness.** RTX is what enables replay-based
+verification: rewind a session, adjust one parameter, re-play,
+compare. Issue #865 (visual-cache rollback, `75554d48`) collapsed a
+whole class of first-divergences (`_viz_rmin/_viz_rmax/active_buf`)
+into a single quiescent rollback path. Issue #861 (occupation
+continuation journaling, `58f96610`) closed a gap where continuations
+ran outside the command-exec bracket. Issue #862 (replay-N Luck
+restoration) restored `u.uluck/u.moreluck` before re-entering
+`moveloop_core`. All three closed with depth-5 oracle passing across
+seed variants.
+
+**Verdict.** *Load-bearing for a specific but critical class of
+correctness.* RTX is what makes multiplayer, rollback, and replay
+possible.
+
+---
+
+### 10. Testing: the frozen 44-session judge (monk-specific)
+
+**What it is.** Monk's parity mechanism. The `js/translated/` directory
+is a hand-curated snapshot the transpiler has drifted past. A
+`frozen/score.sh` judge scores this frozen snapshot against the 44
+sessions. Fresh translator output is verified independently.
+
+**Measured effectiveness.** Monk reached 24/44 PASS via patchFile
+convergence. seed0013-friday13 save/restore is fully matched
+(4804/4804 PRNG). seed0108 hit full PRNG match after the
+scalar-ptr-writeback fix. But this ceiling is *architectural*: the
+scored engine is the committed snapshot, so translator-only
+improvements are latent — invisible to the 44-session score until
+regen and re-curation happen together. Every `Latent` fix (d8a6da1
+circle_ptr, ff83690 string-demotion narrowing, 2245f3f glyphs) is
+verified but stranded.
+
+**Verdict.** *Failed as an approach, succeeded as a diagnostic.*
+The 24/44 ceiling made monk's architectural limits legible. See
+Section "What Failed" below.
+
+---
+
+### 11. Test-case generation: human effort (contest and hand-recorded sessions)
+
+**What it is.** Human players record real games. Their keystrokes,
+their choices, their pathing exercise code that random sessions
+don't reach.
+
+**Infrastructure built.**
+- `contest/` directory: rules, submission template, frozen JS + recorder
+  submodule
+- `teleport/contestant/teleport-contest/` — contestant worktree
+- `test/comparison/sessions/` includes hand-authored sessions such as
+  seed0007 (737 steps, ~39 commits to resolve, advancing PES 51/72 = 71%)
+- `docs/MIDGAME_HARNESS_DESIGN.md` — booting NAO player states for
+  divergence hunting from mid-game
+- `blog-contest.md` — public announcement drafted May 2026
+
+**Measured effectiveness.** seed0007 exposed chargen filter-menu paths,
+container loot accelerators, escape-prompt gating, and a stairway bug
+(`stairway_at` fix) that no auto-generated session had touched. The
+principle from `mp_demo_pipeline_2026_07_02.md`: *one deeply-exercised
+session beats many shallow ones.*
+
+**Verdict.** *A productivity multiplier when the amortization is right.*
+The contest also produces training data for future agents.
+
+---
+
+### 12. Test-case generation: autoascend as fuzzer
+
+**What it is.** The autoascend agent — an automatic NetHack player,
+itself a nontrivial engineering artifact — is used *as a random-input
+generator* against the parity harness. 13 roles × random 4-digit seeds
+× 5-15k steps gives 65+ deterministic test cases per matrix. Where a
+recorded session exercises one path deeply, the autoascend fleet
+exercises 65 paths broadly.
+
+**Infrastructure built.**
+- The autoascend agent itself: `autoascend/` — 179 KB agent state
+  machine, 546 KB `LESSONS.md`, 33 knowledge subdirs, strategy /
+  planning / combat / exploration layers, 27 state-tracking files
+- `autoascend-parity-sweep.mjs` — sweep across seed families
+- `autoascend-divergence-hunt.mjs` — targeted hunts
+- `autoascend-run-report.mjs`, `autoascend-final-state-report.mjs`,
+  `autoascend-replay-viz.mjs`
+- `aa-hunt/` — harvested results, 100+ role×seed keylogs+sessions
+- `aa-sweep-launch.mjs`, `aa-matrix-diff.mjs`, `aa-wear-probe.mjs`
+
+**Measured effectiveness.** Autoascend qua fuzzer is why teleport can
+maintain 500×100 hunts with sub-5% actionable divergence rates. The
+fleet campaign (88 matrices m1–m88) both improved the autoascend agent
+and drove parity fixes. Cleaver's baseline at m87:
+**59 deaths / 130 sessions / 0 hard stops / 43 depth-4+ / 49 median
+depth**. The fleet doubles as fuzzer and as measurement instrument
+for whether the port is behaviorally correct at 15k-step horizons.
+
+**Verdict.** *Signature technique.* Building a competent auto-player
+was a project inside a project, but it paid back many times over as
+a coverage engine.
+
+---
+
+### 13. Test-case generation: adversarial search
+
+**What it is.** Beyond random seeds, actively search the input space
+for divergence-prone regions. 13 dedicated `adversarial-*.mjs` scripts
+implement four strategies (index probing, session mutation, sweep grid,
+seed scouting).
+
+**Infrastructure built.**
+- `adversarial-campaign.mjs`, `adversarial-seed-scout.mjs`,
+  `adversarial-index-probe.mjs` (+ `-fast`, `-tiered`, `-fast-tiered`),
+  `adversarial-session-mutate.mjs`, `adversarial-session-scout.mjs`,
+  `adversarial-session-search.mjs`, `adversarial-sweep-grid.mjs`,
+  `adversarial-probe-and-curate.mjs`, `curate-adversarial-candidates.mjs`
+
+**Measured effectiveness.** Adversarial probing surfaces
+divergence-prone seeds that random 500×100 hunts miss. The tiered
+variants (`-tiered`) balance breadth and depth; the curation step
+selects durable regressions rather than one-off flakes.
+
+**Verdict.** *A backstop.* Autoascend fuzzing covers the mass;
+adversarial probing covers the tail.
+
+---
+
+### 14. Test-case generation: 500×100 divergence hunts
+
+**What it is.** Cheap random exploration: 500 sessions × 100 turns
+per session, randomized seed and RC file, with an actionable-failure
+stop policy. When the tail lengthens (first-failure depth grows from
+7 to 479 across recent hunts), the port has genuinely improved.
+
+**Infrastructure built.**
+- `autoascend-divergence-hunt.mjs` — main runner
+- `midgame-divergence-hunt.mjs` — from mid-game snapshots
+- `rerecord.py` (verify capture truncation isn't confused for real divergence)
+- 40 NAO midgame/lategame scenarios × 69 RC files as input corpus
+
+**Measured effectiveness.** By July 11, xorn's recent hunts show a
+lengthening tail — first-failure depths of 7, 32, 51, 112, 479 across
+one week. The 4.4% actionable rate on a Jul 7 sample (22 of 500)
+compares to menace-era rates that were much higher (Chapter 1 cites
+"98.8% at final state" for 563 sessions; teleport pushes toward
+similar rates on much longer horizons).
+
+**Verdict.** *The steady-state measurement.* When the hunt tail
+becomes long enough to run overnight without finding an actionable
+regression, the port is done.
+
+---
+
+### 15. Code generation: translator + hand-porting hybrid (teleport)
+
+**What it is.** A C-to-JS transpiler produces first-pass ports for the
+mechanical majority of code. Then humans (or agents) hand-port
+specific TUs where the machine output is either wrong or unreadable —
+particularly at async boundaries. The result is not purely readable
+and not purely mechanical; it is *maintainable*.
+
+**Infrastructure built.**
+- `scripts/batch-translate.mjs` — batch C-function translation via LLM
+- `scripts/translate-prompt.md`, `docs/CONVENTIONS.md`,
+  `docs/TRANSLATE_PIPELINE.md`
+- `scripts/dedup-stubs.mjs`, `dedup-functions.mjs`,
+  `standardize-imports.mjs`, `resolve-imports.mjs`, `auto-import.mjs`,
+  `instrument_stubs.mjs`
+- Python data generators (`gen_constants.py`, `gen_allopt.py`,
+  `gen_objects.py`, `gen_monsters.py`, `gen_artifacts.py`,
+  `gen_symbols.py`, `gen_epitaphs.py`, `gen_roles.py`,
+  `gen_role_skills.py`, `gen_themeroom_meta.py`)
+- Lua-to-JS transpilers (`lua_to_js.py`, `lualevel_to_js.py`,
+  `postprocess_levels.py`)
+
+**Measured effectiveness.** The hybrid ported ~450 KLoC of C to JS
+across ~172 JS modules in `js/`. Batch pipeline works up to ~1,000-line
+C files; larger files need subagent-per-file hand-porting.
+
+**Verdict.** *The working baseline.* Teleport's whole thesis.
+
+---
+
+### 16. Code generation: readable transpiler first (monk)
+
+**What it is.** The counter-experiment. A single-TU translator (`tools/c2js/build.mjs`)
+lowers C to idiomatic JavaScript with an explicit lowering catalog: char-array
+vs string, scalar-ptr as `{value}` box, pointer-arithmetic as index model.
+No CODEMATCH hand-porting except via patchFiles that get re-applied on regen.
+
+**Infrastructure built** (on monk port).
+- The translator itself with lowering-bug taxonomy of 7 classes:
+  - **#11** char-buffer walker writes (`*ptr++=c`) — OPEN, 77 TODO stubs
+  - **#13** `&scalar @ genericptr_t` — CLOSED (`afeb335`+`86c7cee`)
+  - **#14** char-element compound-assign (`buf[i]+=N`) — CLOSED (`ca728f7`)
+  - **#15** pointer arithmetic — MOSTLY LANDED (`d8a6da1`)
+  - **#16** await-coloring indirect callbacks — PARTIAL, 7 sites landed
+  - **#172** postfix `*ptr++` read — CLOSED (`0d048b4`, `b5d7366`)
+  - **#18** char* OUT-param demotion — **REVERTED** (unit tests
+    passed, full-build regressed 20→8 PASS)
+- Frozen 44-session judge (`frozen/score.sh`)
+- PatchFile discipline via `build-engine.mjs` (`NH_EMIT_ASYNC=1
+  BUILD_ENGINE_SOFT=1`)
+- Recorder probe library (see Section 18)
+
+**Measured effectiveness.** Monk reached 24/44 PASS. Individual
+translator classes were closed methodically. Scalar-ptr-writeback
+found exactly 3 instances and closed all 3.
+
+**Verdict.** *Architecturally limited.* See Section "What Failed"
+below. The ceiling is not tuning — it is the cross-TU async coloring
+problem, which single-TU translation is structurally incapable of
+resolving.
+
+---
+
+### 17. Multi-agent collaboration and worktree isolation
+
+**What it is.** Named agents with specialized niches, each writing
+into its own git worktree and its own auto-memory dir. Cross-agent
+knowledge flows through the shared repo (commits, docs, memory
+citations), never through direct message-passing.
+
+**Infrastructure built.**
+- Agent identity per worktree: `maud/`, `cleaver/`, `xorn/`, `golem/`,
+  `contestant/`, `monk/` (on quadro)
+- Worktree pinning: `/tmp/aa-vNN-tree` — matrix runs against a hash-pinned
+  worktree, immune to mid-sweep commits
+- Agent identity trailers: `Co-Authored-By: agent:xorn` in commit messages
+- Auto-memory dirs (per-agent under `~/.claude/projects/`) rsync'd to
+  `agent-logs/`
+
+**Measured effectiveness.** Specialization is real: xorn is the RTX
+and 500×100 specialist; cleaver runs the autoascend fleet; monk owns
+the transpiler counter-experiment; maud does main-tree porting; golem
+(Gemini) does infrastructure. Cross-citation is measurable: when
+cleaver cites monk's `feedback_firstdiv_vs_total_p.md` in her memory,
+the lesson has crossed agents.
+
+**Verdict.** *Compounded.* Different-model agents are worth the
+coordination cost because their blind spots differ.
+
+**Failed variant.** naga and contestant went dormant — 1–2 jsonl
+files each, then silence. Not every attempted agent role survived
+selection.
+
+---
+
+### 18. Recorder-probe forensics (monk's signature)
+
+**What it is.** Instrument the C recorder itself. Add probes
+(`UMOVE2`, `DOGM`, `DGOAL`, `RUNCHK`, `place_monster.call`,
+`tty_nhgetch`, `dochug`, `m_move`) to log arbitrary C-side state
+inline with the RNG trace. Correlate JS probes by `game.moves`
+(not RNG-call-index — a critical trap).
+
+**Infrastructure built** (monk port, `nethack-c/recorder/src/`).
+- Env-gated probes so the binary is harmless when not requested
+- `KEEP_RNG_LOG=/tmp/X.rnglog node scripts/record-session.mjs ...`
+- The probe library itself is durable across sessions; kept as
+  untracked C source
+
+**Measured effectiveness.** Seed0015 root confirmed end-to-end:
+`game.stairs` nulled incorrectly on `ins_chkpt` checkpoint saves
+(C frees only on FREEING mode 4; JS did unconditionally) →
+`On_stairs(hero)=false` → pet dog `appr=0` → inventory-dogfood
+`obj_resists` diff. Fixed via mode gating; **+129 P / +14 S**
+(div 8386→8537 = 99.7%). Set-mon-data write-through +13842 P on
+seed0108 → full PRNG.
+
+**Verdict.** *A genuine methodological innovation.* Monk's project
+is architecturally limited, but this technique alone is worth
+harvesting for teleport.
+
+**Failed variant.** Re-record faithfulness (`feedback_rerecord_not_canonical_faithful.md`):
+the local recorder binary can diverge from `sessions/*.session.json`
+because trap-effect eval-order is C-unspecified. Rule: always diff
+JS-replay vs *canonical* session JSON, never vs re-record.
+
+---
+
+### 19. Internet resources: NAO xlogfile, RC files, and top-player gameplays
+
+**What it is.** The external observational data the project pulled in.
+NAO (nethack.alt.org) publishes 3.58 M game histories, top players'
+`.nethackrc` configuration files, and full YAAP dumplogs.
+
+**Infrastructure built.**
+- `research/nao-rcfiles/` — 108 collected top-player RC files
+- Human-baseline analysis: `HUMAN_BASELINES.md` — 3.58 M human games
+  → 15k-turn reach 3.7% (autoascend fleet: 12%); but humans reach
+  Dlvl 11–12 in-band vs fleet's Dlvl 3
+- 239 dumplogs analyzed for ID-rate baselines
+
+**Measured effectiveness.** NAO data reframed the whole autoascend
+campaign. The fleet was over-surviving early but under-pacing depth;
+without external data this wouldn't have been visible. Phase 3
+architecture (pre-emptive gates, non-reactive planning) is grounded
+in the human depth distribution as the target.
+
+**Verdict.** *A late but load-bearing addition.* Ports without
+external ground truth measure themselves against themselves.
+
+---
+
+### 20. Estimation engine and oracle calibration
+
+**What it is.** Offline calibration of agent estimators (prayer
+cooldown, hunger bands) against oracle ground truth. Instrument the
+engine to emit true values under `NETHACK_ORACLE=1`, then fit
+estimators to residuals.
+
+**Infrastructure built.**
+- `scripts/oracle-emitter.mjs` (fairness-boundary gated under `dev/**`)
+- `scripts/annotate-estimates.mjs`, `tune-hunger-band-mid.mjs`
+- Fairness boundary enforced by lint + `HASH_EXCLUDE_FILES`
+
+**Measured effectiveness.** HUNGER_BANDS midpoints refit from 966K
+records: Satiated `1500→1055`, Normal `575→489`. Prayer estimator
+audit: emits `baseCooldown=500` constant but oracle truth mean is
+`44.9` — over-conservative by 11×. SAFE_TO_PRAY_LYCANTHROPY_TURNS
+`800→1300` (invalid rate `22.24%→1.05%`).
+
+**Verdict.** *Emerging.* First concrete tuning landed July 8; further
+estimators (uluck, ualign, pet_hungrytime) not yet wired.
+
+---
+
+## The Effectiveness Scorecard
+
+| Technique | Infra cost | Measured impact | Verdict |
+|---|---|---|---|
+| Documentation as memory | Ongoing (546 KB LORE + memory dirs) | Prevents zero-carry-over sycophancy | Compounded |
+| Pre-registration | ~50 LoC discipline | ≥3 revert wars prevented; Phase 2 exhaustion legible | Load-bearing |
+| Iteration speed as knob | `pes-fast`+`pes-report` pair; ~200 LoC | 5–10 commits/day (xorn); 6-min sweeps | Load-bearing |
+| Metatooling / worktree | `--isolate` + hooks | Matrix rerun cost 0; drift bugs eliminated | Compounded |
+| Skeleton-diff structural | ~2 KLoC tool | matchedFindings 89→47, 114→12, 844→266→0 | Load-bearing |
+| Semantic scanners + `check-async` | ~30 scan + ~30 check scripts | Made the async flip possible | Load-bearing |
+| PES three-channel | Harness + 38 sessions | 307/307 at 100%, 3.8 M RNG events | Foundational |
+| PES history in git trailers | ~120 LoC parser | Parity delta correlated to every commit | Quiet win |
+| RTX oracle | ~10 modules + ~5 tools | #865/#861/#862 closed; multiplayer possible | Load-bearing |
+| Frozen judge (monk) | `frozen/score.sh` | 24/44 ceiling made legible | Diagnostic |
+| Human recordings | Contest + hand sessions | seed0007 alone: +51/72 PES steps | Multiplier |
+| Autoascend as fuzzer | The whole `autoascend/` | 500×100 hunts at <5% actionable | Signature |
+| Adversarial search | 13 scripts | Tail coverage | Backstop |
+| 500×100 hunts | ~500 LoC runner | First-failure depth 7→479 (lengthening tail) | Steady-state |
+| Translator + hand-port hybrid | Batch pipeline + generators | ~450 KLoC ported | Working baseline |
+| Readable transpiler first (monk) | Full translator | 24/44 ceiling | Failed as approach |
+| Multi-agent collab | Agent identity + worktrees | Blind spots differ across models | Compounded |
+| Recorder-probe forensics | C probes + rebuild | +13,842 P on seed0108; +406 P on seed0015 | Genuine innovation |
+| NAO xlogfile / RC files | 108 files curated | Reframed autoascend fleet metric | Late but load-bearing |
+| Estimation engine | Oracle emitter + fitters | HUNGER_BANDS, prayer cooldown refit | Emerging |
+
+---
+
+## What Failed
+
+**The readable-transpiler-first thesis.** Monk hit an architectural
+ceiling that has three sharp edges.
+
+*First, cross-TU async coloring is unavoidable and single-TU
+translation cannot resolve it.* The async closure — the set of
+functions that transitively call `pline` → `win_nhgetch` — spans 100+
+files. A single TU's translator computes local async-ness but cannot
+know if the function it emits is called from a non-migrated TU. Full-tree
+regen with `NH_EMIT_ASYNC=1` reorders PRNG because await insertion
+changes control flow, breaking seed8000 at call 516. The fix requires
+re-recording all sessions against the new async baseline — a multi-day
+effort each time.
+
+*Second, patchFile discipline turns hand-fixes into maintenance
+debt.* Every hand-fix (`botl.js do_statusline1`, `glyphs.js fix_glyphname`,
+`version.js` whole-file) is an anchor in the frozen snapshot. When the
+translator advances and the anchor disappears, the patchFile silently
+no-ops (whole-file patches must use `return JSON.parse("<double-src-encoded>")`;
+literal strings fail without error). The frozen mechanism preserves
+hand-fixes indefinitely but prevents translator improvements from
+naturally superseding them. Six or more patchFiles are currently
+"drifted."
+
+*Third, the frozen scored engine decouples the judge from the
+translator.* Every translator-only advance is *latent* — verified by
+self-test but invisible to the 44-session score until regen and
+re-curation happen together. `d8a6da1` (circle_ptr array-offset-alias),
+`ff83690` (string-demotion narrowing), `2245f3f` (glyphs char-deref
+both directions) are all verified fixes stranded outside the scored
+engine. Landing them means re-convergence, a multi-week rework.
+
+The lesson is stated cleanly in monk's memory: *readable output alone
+is not enough. Real C codebases require either full-tree analysis at
+compile time (giving up readability for correctness) or hybrid
+hand-porting at the cross-TU boundaries (teleport's approach).*
+The two-line takeaway: **a translator that emits correct JS one file
+at a time cannot solve async coloring, and async coloring is the
+membrane where real C codebases refuse to be translated.**
+
+**Phase 2 reactive playbooks.** Cleaver's autoascend Phase 2 (retreat
++ hunt-attrition) hit a firm 104-death floor across 12 configs
+(v22–v33). Retreat adds +2 deaths alone; hunt cancels those +2 but
+adds no independent gain; identifyCampaign flips 12 sessions
+(6 saves + 6 losses) with 11,580 tick-owned actions but nets 0. The
+ceiling is architecture-limited: reactive playbooks cannot see the
+damage window before it opens. Phase 3 needs pre-emptive gates,
+non-reactive planning, or learning-based priors.
+
+**The strategic depth arc.** Nine tasks (hero_plan, resource_plan,
+threat_predictor, armor-hunt, descent gates) landed as code but
+produced no measurable fleet effect at 5–8k step scale: 0/12 weapons
+helped, 1/12 armor landed (Tourist regression), descent gate regressed.
+Reverted. Lesson: *static tilt-policies are too subtle to observably
+shift behavior at short horizons; require 15k+ step measurement, or
+roll back entirely.* The modules are preserved as infrastructure but
+default-off.
+
+**String-vs-buffer OUT-param demotion (monk #18).** Attempted to
+narrow the `char*` param classification. Unit tests passed (test 69
+`mycopy` returned `[hello]` where it had returned `[    ]`). Full
+build regressed 20→8 PASS — a 12-session net loss. The classification
+is load-bearing for many exercised display functions. Documented in
+`build-tree.mjs:244-251` as a strategic trap. Don't retry without a
+full-build-scored campaign that accepts it may net-negative.
+
+**The capture-js-trace multi-segment mirage.** `scripts/capture-js-trace.mjs`
+runs each session segment without threading storage across them, so
+segment-1's save is never seen by segment-2's restore, and segment 2
+re-runs newgame. This produces false "div at getbones rn2(3)"
+verdicts. The judge (`frozen/score.sh` in monk; `ps_test_runner.js` in
+teleport) does thread storage correctly. Rule (`project_saverestore_prng_complete.md`):
+always test multi-segment save/restore via the judge, never via
+capture-js-trace.
+
+**Iron parity reverts (menace era).** Chapter 1's "Remove Complexity
+to Expose Real Bugs" documented `replay_core.js` growing 41 → 1,475
+→ 160 lines over six weeks. Teleport inherited the lesson: honest
+tests only, no compensating hacks. The equivalent teleport-era episode
+is Phase 2 above.
+
+---
+
+## The Current Position
+
+As of the writing of this chapter:
+
+- **307/307** curated parity sessions passing on teleport, at 100%
+  across all four channels (RNG / Events / Screen / Cursor)
+- **7,127** unit tests passing, 0 failing
+- **500×100** random hunts finding first-failure at depths 7 to 479
+  across recent runs — a lengthening tail
+- **59/130/0/43/49** autoascend fleet baseline (deaths / sessions /
+  hard-stops / depth-4+ / median depth) at matrix m87
+- **24/44** frozen-judge PASS on monk (architectural ceiling reached)
+- **2.0 GB** in xorn's active Codex rollout across 26 days, 2,255
+  commits, 186 issues closed
+- **Zero** scan-semantic findings, zero unmatched suppressions
+  (xorn `b0412c016`, July 9)
+
+The remaining work is a mixture: **Phase 3 pre-emptive gates** for
+the autoascend fleet, **estimation engine calibration** expansion
+to more parameters, **translator advances** that are stranded latent
+on monk and would need re-convergence to land, and **500×100 hunt
+tail** work — chasing rare divergences that only surface after
+hundreds of clean sessions.
+
+Whether monk's stranded latent fixes eventually motivate a full
+re-convergence, or whether monk becomes a preserved counter-example
+that informs future ports without further work on itself, is not yet
+decided.
+
+---
+
+## The Meta-Lesson
+
+Chapter 1 named seven takeaways. Chapter 2 has one, discovered by
+running the same problem twice with three different premises:
+
+> **The techniques compound only when they're named, measured,
+> and cited across agents.** Everything in this catalogue that
+> compounded — pre-registration, PES, iteration-speed knobs,
+> autoascend-as-fuzzer, recorder-probe forensics, agent memory —
+> compounded because it had a name, a measurement, and a paper
+> trail. Everything that stagnated — the strategic depth arc,
+> Phase 2 reactive playbooks, the readable-transpiler thesis —
+> either lacked a measurement, or had a measurement its authors
+> didn't want to face.
+
+Menace showed that *measurement makes agent work visible*. Teleport
+showed that *measurement compounds when techniques are catalogued
+and re-used*. Monk showed that *no amount of local excellence
+compensates for an architectural bet that resists measurement*.
+
+Whether these observations generalize beyond NetHack ports is a
+question for the next attempt.
+
+---
+
+## Appendix: Data Sources (Chapter 2 — Teleport + Monk)
+
+### Agent conversation logs
+
+| Source | Size | Contents |
+|--------|------|----------|
+| `agent-logs/teleport-maud/` | 46 jsonl, 2.4 GB + 38 memory files | Main teleport agent (Claude Opus 4.7+, active) |
+| `agent-logs/teleport-cleaver/` | 16 jsonl, 2.4 GB + 210 memory files | Autoascend campaign lead (Claude Opus 4.7+, active) |
+| `agent-logs/teleport-monk/` | 2 jsonl, 947 MB + 169 memory files | Monk-port forensics (Claude Opus 4.7+, active) |
+| `agent-logs/teleport-golem/` | 45 chat dirs, 1.8 GB | Golem (Gemini) chats |
+| `agent-logs/teleport-contestant/` | 1 jsonl, 708 KB | Contest tree (dormant since May 3) |
+| `agent-logs/teleport-naga/` | 1 jsonl, 66 MB + 2 memory files | Dormant since Apr 7 |
+| `agent-logs/quadro-codex-sessions/2026/06/02/` | 1 rollout, 2.0 GB (active) | Xorn's active RTX rollout, June 2 → present |
+| `agent-logs/quadro-codex-sessions/2026/05/03/` | 1 rollout, 456 MB | Xorn second rollout (May 3 – June 2) |
+| `agent-logs/quadro-codex-sessions/2026/03/29/` | 1 rollout, 1.7 GB | Xorn original rollout (Mar 29 – May 3) |
+
+### Codebase sources
+
+| Source | Contents |
+|--------|----------|
+| `teleport/maud/docs/*` (~40 docs) | Design docs, architecture, audit records, per-subsystem specs |
+| `teleport/maud/tools/skeleton-diff/*` (~30 scanners) | Structural + semantic static analysis (spine-diff, scan-semantic, ~24 more) |
+| `teleport/maud/scripts/*` (~240 scripts) | Pipelines, harnesses, dashboards, ~30 check-* runtime sanity checkers |
+| `teleport/maud/autoascend/` (~500 files) | Auto-player; `LESSONS.md` 546 KB; strategy/planning/combat/exploration; 33 knowledge subdirs |
+| `teleport/maud/js/rtx/` (10 modules) + `docs/REVERSIBLE_TRANSACTIONS.md` | RTX engine + canonical spec |
+| `teleport/maud/js/` (~172 modules) | Ported gameplay code |
+| `teleport/maud/nethack-c/recorder/` (280 C files) | C recorder submodule with instrumentation probes |
+| `teleport/maud/oracle/results.jsonl` (29 MB), `history.jsonl` (1.1 MB), `pes-diagnoses.json` | Historical PES dashboard |
+| `teleport/maud/aa-hunt/` (100+ files) | Harvested autoascend hunt results |
+| `teleport/maud/multiplayer/{server,client}/*` (~27 modules) | Multiplayer infrastructure |
+| `teleport/maud/judge/{sandbox,frozen,play,scripts}/*` (~16 modules) | Contest judge sandbox |
+| `teleport/maud/sherpa/*` (~24 modules + 150+ keyplans) | Sherpa test harness |
+| `teleport/maud/contest/*` + `contestant/teleport-contest/*` | Contest infrastructure + template |
+
+### External data + git
+
+| Source | Contents |
+|--------|----------|
+| Git commit trailers `Parity: M/T (P%) [session:m/t ...]` on `teleport/maud` | Revert-safe parity timeline (parsed by `scripts/parity-history.mjs`) |
+| `teleport/maud/research/nao-rcfiles/` (108 files) | Top-player NAO `.nethackrc` configurations |
+| `teleport/maud/autoascend/HUMAN_BASELINES.md` + 239 NAO dumplogs | External human-baseline data (3.58M game histories from https://alt.org/nethack/xlogfile) |
+
+### Deep-dive analyses
+
+- **[analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md)** — Exhaustive per-technique catalogue: 32 techniques across 8 categories, with master table + per-entry problem/infra/effectiveness/outcome
+- [ROLLUP.md](ROLLUP.md) — Rollup 1 (May 1, 2026, day 33) + Rollup 2 (July 11, 2026, day 104) + monk introduction
+- [chapters.json](data/chapters.json) — Chapter index across all three ports (menace + teleport + monk)
+
