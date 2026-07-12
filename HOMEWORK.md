@@ -1,4 +1,4 @@
-# Homework: Fourteen Ports and Fourteen Extensions
+# Homework: Fifteen Ports and Fifteen Extensions
 
 *Companion to [LESSONS.md](LESSONS.md), which explains the principles
 these projects teach, and the [technique catalogue](data/analysis-techniques-catalogue.md),
@@ -18,8 +18,11 @@ culture. For every one of those projects, some community has already
 built the measuring instruments, the torture tests, the golden
 reference logs. You get to inherit them.
 
-The last five projects are modern and interactive: collaborative
-editing, terminals, vim, WebAssembly, browser layout. They are on the
+The last six projects are modern and interactive: collaborative
+editing, terminals, vim, WebAssembly, a game-playing agent engineered
+for exact replay, and finally an AI-assisted collaborative diagram
+editor, the one project on the list whose reference implementation
+does not exist. They are on the
 list because they pass the same test the old ones do, an exact,
 machine-checkable definition of correct, but with a difference that is
 itself the lesson: in modern interactive software, determinism is not
@@ -60,7 +63,8 @@ autograder, so none of the grading is a matter of opinion.
 | 11 | A terminal emulator | 2–3 weeks | vttest, esctest, and recorded real sessions |
 | 12 | Vim's editing engine | 3–5 weeks | headless vim itself + the VimGolf corpus |
 | 13 | A WebAssembly interpreter | 3–5 weeks | the official spec test suite |
-| 14 | A flexbox layout engine | 2–4 weeks | fixtures harvested from Chrome |
+| 14 | A deterministic autoagent | 3–5 weeks | replay: same seed, same game, byte for byte |
+| 15 | AI-assisted collaborative digram | 4–6 weeks | convergence + byte-identical rendering, AI recorded at the boundary |
 
 ---
 
@@ -575,24 +579,15 @@ concurrency patterns you never ran during development. (A
 CRDT-compatible implementation, verified against Automerge, is an
 acceptable alternative substrate; the oracle is the same.)
 
-**The extension.** I have a project called digram: a visual
-programming language for diagrams, where one diagram exists in three
-synchronized forms, a readable textual program, a direct-manipulation
-canvas, and publication-grade SVG. The pipeline is deterministic end
-to end, deliberately: the same source renders to byte-identical SVG on
-any machine. That purchase, made early, is what makes this extension
-possible. Build collaborative diagram editing: your verified
-collaboration core carrying edits to the digram source, so that
-several people manipulate one live diagram together. The oracle is
-inherited: when replicas converge, the sources are byte-identical, and
-because rendering is deterministic, every participant's rendered
-diagram is byte-identical too. Convergence you can see on screen. And
-there is honest research flavor at the top of this one: concurrent
-edits to a constraint program can conflict *semantically*, two people
-moving the same box through different constraints, in ways that
-textual merging cannot see. Detecting those conflicts and surfacing
-them to users, without ever breaking convergence, is a genuinely open
-problem, and you will be standing in the right place to work on it.
+**The extension.** Time travel for documents. Your protocol already
+records every operation, which means a document's entire history is a
+replayable session: build the scrubber that plays a document backward
+and forward like video, and the fork that branches a document at any
+past revision into a new live pad. The oracle is replay: reconstructing
+any historical revision from the operation log must reproduce the
+stored document byte for byte. Hold onto this project when it is done.
+The verified collaboration core you built here is a load-bearing part
+of project 15, where the collaborators stop all being human.
 
 ---
 
@@ -724,43 +719,119 @@ is bit-identical to the recorded one.
 
 ---
 
-## 14. A flexbox layout engine: ground truth farmed from the browser
+## 14. A deterministic autoagent: an automatic player you can replay
 
-Every web page is boxes arranged by the browser's layout engine, and
-flexbox is the workhorse algorithm. Here is the industrial fact that
-makes it a course project: when Meta needed React Native apps to lay
-out identically outside a browser, they reimplemented flexbox (the
-project is called Yoga), and they got their ground truth by a move you
-will recognize: a script renders test fixtures in Chrome and harvests
-the computed positions. Instrument the reference; farm the truth. An
-industry team independently ran the same play our project called
-recorder probes, at scale, and their harness is public.
+In project 7 you built a small automatic player as a test generator.
+This project takes the idea seriously, because the idea deserves it.
+When the machine-learning community ran a NetHack competition at
+NeurIPS, the winner was not a neural network. It was a symbolic Python
+program, hand-coded strategy, and the fact that it was legible code
+rather than opaque weights is what made it possible for our project to
+port it, extend it, and run it as a nightly fleet: hundreds of full
+games a night, used as a fuzzer against our own port. None of that
+works unless the agent itself is deterministic.
 
-The difficulty is that the flexbox specification is prose, and the
-corners (min-content sizing, percentages of indefinite sizes, negative
-margins, nested flex containers) are where prose runs out. Browsers
-agree on the broad middle and disagree at the edges, so you will meet
-the awk question again, this time on a live standard: when the
-references disagree, what is truth, and where do you write down your
-answer?
+Here is the principle: an agent is software too, and it deserves the
+same engineering discipline as the system it plays. The agent's policy
+must be a pure function of what it has observed plus a seed. A glance
+at the wall clock, one call to an unseeded random number, the
+iteration order of a hash map leaking into a tie-break: any of these
+means the same dungeon produces different games on different nights.
+Then a bug that appeared on Tuesday cannot be reproduced on Wednesday,
+and your fleet's numbers are weather, not measurements. Determinism is
+what turns an agent from a demo into an instrument.
 
-**The assignment.** A flexbox engine matching Chrome-harvested
-fixtures. Build the harvester yourself: drive headless Chrome,
-generate thousands of random flex trees, capture computed layouts.
-That corpus is your judge; a sealed sample of it is your held-out set;
-the relevant web-platform-tests are your cross-check against
-overfitting to one browser.
+The competence is hard too, and honestly so: surviving a roguelike
+requires real planning, pathfinding, resource management, retreat.
+That is why this project is worth weeks. But competence without
+replayability is worth almost nothing to an engineer, and the
+discipline is the part no one teaches.
 
-**The extension.** Put real text inside. Box arithmetic is half of
-layout; the other half is text measurement and line breaking, and you
-have met both halves in this course. Integrate a real measurement path
-(the browser's own font engine, reached through canvas, the pretext
-approach) and paragraph-level line breaking (Knuth-Plass, from the TeX
-project) inside your flex items. Two frozen oracles, one artifact: box
-positions matching the browser where the browser defines them, line
-breaks matching TeX where TeX defines them. Browser-exact boxes with
-TeX-quality paragraphs is a combination that does not exist today, and
-you would be the one to have built it.
+**The assignment.** A deterministic automatic player for your own
+project-7 Rogue port, or for a Game Boy game on your own project-2
+emulator. Two kinds of ground truth, both mechanical. First,
+determinism itself: the same seed must produce the byte-identical
+keystroke stream, run twice, on two machines, a week apart; record a
+whole fleet night and replay it exactly. Second, competence against
+pre-registered criteria: before each improvement, write down the
+acceptance numbers (median survival turns, depth reached across N
+seeds); after the run, read them. No post-hoc judgment. Our NetHack
+campaign ran eighty-eight numbered experiment matrices under exactly
+this discipline, and the pre-registration prevented at least three
+wars of reverts. Every game your agent plays becomes a session in
+your test corpus, which is the reason the project exists at all: a
+deterministic competent agent is a test factory.
+
+**The extension.** Turn the agent into the instrument it wants to be.
+Nightly sweeps of hundreds of seeds against your port, reporting
+first-failure depth; an estimation layer in the agent calibrated
+against oracle ground truth, with a mechanically enforced wall (a lint,
+not a promise) between the agent's strategy and any data only the
+oracle can see, because an agent that quietly reads the oracle makes
+every number beautiful and false. Or the forward-looking variant: let
+a large language model propose strategy *offline*, compiled into
+deterministic playbooks the agent executes, so the intelligence
+improves while the fleet stays exactly replayable. Nondeterminism
+quarantined at a recorded boundary: you will use the same move in
+project 15.
+
+---
+
+## 15. AI-assisted collaborative digram: the finale, with nothing to port
+
+I have a project called digram: a visual programming language for
+diagrams. One diagram exists in three synchronized forms, a readable
+textual program, a direct-manipulation canvas, and publication-grade
+SVG or PDF, with a constraint solver keeping them consistent. And the
+pipeline is deterministic end to end, on purpose: the same source
+renders to byte-identical SVG on any machine, in Node or in a browser,
+with even the text measurement running through one shared path. That
+purchase was made early, before it was needed, and this project is
+where it pays out.
+
+This is the last project because it is the only one with no reference
+implementation. You are not porting anything. You are composing
+verified parts into something that does not exist yet: Google-Docs
+style collaboration where one of the collaborators is an AI. The
+industry is bolting assistants onto editors at a furious pace this
+year, and almost none of the results can be verified in any serious
+sense. Yours will be, because every layer underneath was built like a
+port: judged, fuzzed, replayable.
+
+**The assignment.** Collaborative digram. Your project-10
+collaboration core carries edits to the digram source, so several
+people manipulate one live diagram: one dragging a box on the canvas,
+another typing in the textual form, because the three-forms
+architecture means participants can edit different projections of the
+same artifact. The oracle is inherited and, for once, visible:
+convergence means byte-identical source on every replica, and
+determinism means byte-identical rendered SVG on every screen.
+Convergence you can see. Fuzz it with concurrent structured edits and
+held-out seeds, as in project 10. And there is an honest research seam
+here: concurrent edits to a constraint program can conflict
+*semantically*, two people moving the same box through different
+constraints, in ways no textual merge can detect. Surfacing those
+conflicts to users without ever breaking convergence is a genuinely
+open problem, and you will be standing in the right place to work on
+it.
+
+**The extension.** Admit the machine. An AI agent joins the session as
+an ordinary participant, speaking the same operation protocol as
+everyone else: you drag a box, and it renames the labels, aligns the
+arrows, drafts a whole diagram from a sentence of description. Two
+disciplines separate this from a demo. First, because the agent's
+edits are ordinary operations, convergence cannot break by
+construction, and any edit that would make the constraint program
+unsolvable is rejected or repaired mechanically before broadcast.
+Second, the agent is the one nondeterministic component in a system
+you have made deterministic everywhere else, so you treat it the way
+WebAssembly treats imports and the way project 14 treats strategy:
+record its operations at the boundary. Every session, machine
+contributions included, replays bit for bit; every AI edit is
+attributable, reviewable, and scrubbable in the document's history
+using the time travel you built in project 10. AI in the loop,
+verifiability preserved. That sentence is the whole course, and this
+is the project where you get to say it about something you built.
 
 ---
 
@@ -779,8 +850,14 @@ decoder against the ITU conformance bitstreams repeats the FLAC/MP3
 lesson at industrial scale: decoding is specified exactly, encoding
 is left free, and the spec tells you which is which. A JavaScript
 interpreter measured against test262 is the heavyweight version of
-the Lua project. And NetHack itself remains the final boss: not
-homework, an expedition. The full account of what it takes is in
+the Lua project. A flexbox layout engine can be verified against
+fixtures harvested from an instrumented headless Chrome, which is
+exactly how Meta's Yoga project keeps React Native layout
+browser-identical (instrument the reference, farm the truth), with a
+worthy extension in placing canvas-measured, Knuth-Plass-broken text
+inside the boxes: browser-exact layout with TeX-quality paragraphs.
+And NetHack itself remains the final boss: not homework, an
+expedition. The full account of what it takes is in
 [REPORT.md](REPORT.md) and [LESSONS.md](LESSONS.md).
 
 ## Why every project is a port
@@ -797,3 +874,8 @@ choose an oracle you cannot sweet-talk, and build the machinery that
 makes their work checkable. That habit survives long after you stop
 porting other people's programs, because it is not really a fact
 about ports. It is what programming is turning into.
+
+Project 15 is the deliberate exception that proves it: nothing in it
+is a port, and nothing in it would be trustworthy without the
+verified layers underneath. Building the new thing on top of the
+checked things is the destination the fourteen ports were the road to.
