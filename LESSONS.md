@@ -1,6 +1,6 @@
 # Forty-Seven Generalizable Lessons
 
-**Companion to:** [data/analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md) (the 40 techniques, same numbering) and [REPORT.md](REPORT.md) Chapter 2.
+**Companion to:** [data/analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md) (the technique catalogue, same numbering), [REPORT.md](REPORT.md) Chapter 2, and [HOMEWORK.md](HOMEWORK.md) (exercises that teach these lessons on smaller substrates).
 
 This document inverts the catalogue. There, the NetHack-specific
 technique is the subject and its effectiveness is the evidence. Here,
