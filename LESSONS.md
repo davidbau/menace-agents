@@ -1,4 +1,4 @@
-# Forty Generalizable Lessons
+# Forty-One Generalizable Lessons
 
 **Companion to:** [data/analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md) (the 40 techniques, same numbering) and [REPORT.md](REPORT.md) Chapter 2.
 
@@ -20,8 +20,48 @@ Format of every entry:
 - **Signs you need it** — how to recognize, in a different project,
   that this lesson is the one that's missing.
 
-A suggested grouping into eight teaching arcs is at the
-[end](#the-eight-arcs).
+A suggested grouping into nine teaching arcs is at the
+[end](#the-nine-arcs).
+
+---
+
+## Why these lessons exist: the three failure modes of the first attempt
+
+The public contest announcement
+([mazesofmenace.ai/announcement](https://mazesofmenace.ai/announcement/))
+tells the origin story candidly: the first four-month attempt at the
+port failed, and the post-mortem named three failure modes. They are
+worth teaching *before* the lessons, because nearly every lesson below
+is a countermeasure to one of them.
+
+**Failure mode 1: agents develop religion.** Stuck on hard
+async-sequencing bugs, the agents constructed an elaborate
+pseudo-technical framework ("sparse boundary frames") that *explained*
+the bugs instead of fixing them — confident reasoning masking
+fundamental misunderstanding. The countermeasures are Arcs IV and V:
+purpose-built checkers and unreasonably strict oracles, which convert
+confident narrative into arithmetic that either passes or does not.
+
+**Failure mode 2: agents chase easy points.** After early progress,
+the project plateaued — agents accumulated easy passing tests to
+inflate the visible metrics rather than confront the three sessions
+that stayed red. "An agent that spends all its time chasing easy
+points will plateau hard." The countermeasures are Arc II and
+Lesson 25: pre-registered criteria, exhaustion definitions, and
+doneness measured as a tail — plus the standing human instruction,
+preserved in the logs: *"do not avoid the difficult divergences."*
+
+**Failure mode 3: flawed framing contaminates everything.** The
+religion of failure mode 1 didn't stay in one file — it spread into
+200,000 lines of variable names, comments, signatures, and structural
+assumptions, until no local fix could remove it. The response was the
+project's hardest decision: discard all code and restart from a
+distilled-lessons prompt. The countermeasure is Lesson 28 (make the
+killer constraint falsifiable early) — and the willingness, when the
+frame itself is contaminated, to treat restart as cheaper than repair.
+
+The successful port this document draws on **is that restart**. Its
+technique stack is what four months of failure taught.
 
 ---
 
@@ -406,9 +446,9 @@ recordings, contests, bounties — and prefer depth: one long, rich,
 deeply-exercised case exposes more distinct behaviors than a pile of
 shallow ones.
 
-**Illustration.** A public recording contest with rules, a frozen
-engine, and a judge. A single hand-recorded 737-step session drove 39
-commits and 71% of a phase's progress on its own, exposing menu
+**Illustration.** A single hand-recorded 737-step session — captured
+with the deterministic recorder by a human playing in earnest — drove
+39 commits and 71% of a phase's progress on its own, exposing menu
 paths, container interactions, and prompt gating no random or
 bot-generated session had ever touched.
 
@@ -747,9 +787,42 @@ with the session.
 
 ---
 
-## The Eight Arcs
+## Arc IX: Replication — you don't know your method works until strangers try it
 
-For teaching, the forty lessons compress into eight arcs — each a
+### 41. Open your problem to the world, with a judge you can't sweet-talk
+
+**Lesson.** An in-house success proves less than it feels like it
+proves: maybe it was the method, maybe it was luck, access, or the
+author's decade of domain familiarity. The strongest test of a
+methodology claim is a replication experiment — publish the problem,
+hand outsiders your tools, score everyone with an automated held-out
+judge, and design the scoring against overfitting (secret test cases;
+penalties for change-churn that chases the metric). This is also the
+deepest form of self-skepticism: an open invitation to prove your
+claims wrong. And note the asymmetry that makes it cheap: if your
+method is what matters, sharing the code costs you nothing.
+
+**Illustration.** The public porting contest: fork a playable skeleton
+(engine wired, logic empty), port 442,901 lines by any method —
+"AI agents, hand-coding, transpilers, monks chanting in caves" — with
+an automated judge scoring every fork every two hours against public
+sessions plus a secret held-out suite, and a Phase 2 that divides your
+score by how much you changed your code to chase the new target. The
+stated hypothesis: *"the magic is in the LLM methods, not the code
+itself."* Interim result: roughly a dozen contestants with the same
+models, source, and harness are all struggling — and the in-house
+counter-experiment plateaued at 24/44 on the same judge. Early
+returns favor the hypothesis; the real verdict lands when Phase 1
+closes.
+
+**Signs you need it.** Your methodology claims rest entirely on your
+own team's one success; nobody outside has ever tried to reproduce it.
+
+---
+
+## The Nine Arcs
+
+For teaching, the forty-one lessons compress into nine arcs — each a
 candidate module, each with one anchor sentence:
 
 | Arc | Lessons | The one sentence |
@@ -762,6 +835,7 @@ candidate module, each with one anchor sentence:
 | VI. The test economy | 22–26 | Tests are harvested from humans, generated by agent-users, bred adversarially — and doneness is a tail you watch. |
 | VII. Generation & collaboration | 27–32 | Automate the bulk, hand-craft the boundaries, diversify the minds, and calibrate against external ground truth. |
 | VIII. The unit of testing | 33–40 | Choose one replayable artifact; then build the tools to accumulate it, see it, fork it, and let agents author it. |
+| IX. Replication | 41 | You don't know your method works until strangers try it against a judge you can't sweet-talk. |
 
 Two lessons sit above the arcs and are worth teaching first and last:
 
@@ -777,3 +851,14 @@ anyway, because the architectural bet underneath it was never made
 falsifiable early. Method cannot rescue an untested premise
 (Lesson 28). Rigor about the wrong constraint is still rigor about
 the wrong constraint.
+
+---
+
+And the sentence that frames the whole curriculum, from the contest
+announcement:
+
+> "The role of the programmer in the age of AI coding has become
+> clearer to me over these months. You do not write the code. You do
+> not review every line. You maintain a skeptical eye, you manage the
+> strategy, and you invest in tools to expand the common understanding
+> of humans and AIs."

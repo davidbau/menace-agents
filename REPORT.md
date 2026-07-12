@@ -790,8 +790,8 @@ across all three ports see [analysis-techniques-catalogue.md](data/analysis-tech
 
 **Chapter 2 (teleport + monk):**
 
-- **[analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md)** — Per-technique deep-dive: 40 techniques across 9 categories, master table plus per-entry problem/infra/effectiveness/outcome/failed-variant
-- **[LESSONS.md](LESSONS.md)** — The generalizable lesson behind each of the 40 techniques (same numbering), distilled for teaching: lesson / illustration / signs-you-need-it, grouped into eight arcs
+- **[analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md)** — Per-technique deep-dive: 41 techniques across 10 categories, master table plus per-entry problem/infra/effectiveness/outcome/failed-variant
+- **[LESSONS.md](LESSONS.md)** — The generalizable lesson behind each of the 41 techniques (same numbering), distilled for teaching: lesson / illustration / signs-you-need-it, grouped into nine arcs
 - [ROLLUP.md](ROLLUP.md) — Rollup 1 (May 1, day 33) + Rollup 2 (Jul 11, day 104) + monk introduction
 
 ---
@@ -1175,21 +1175,19 @@ Section "What Failed" below.
 
 ---
 
-### 11. Test-case generation: human effort (contest and hand-recorded sessions)
+### 11. Test-case generation: human effort (hand-recorded sessions)
 
 **What it is.** Human players record real games. Their keystrokes,
 their choices, their pathing exercise code that random sessions
 don't reach.
 
 **Infrastructure built.**
-- `contest/` directory: rules, submission template, frozen JS + recorder
-  submodule
-- `teleport/contestant/teleport-contest/` — contestant worktree
+- The deterministic recorder (patched C NetHack) for capturing
+  ground-truth sessions from real play
 - `test/comparison/sessions/` includes hand-authored sessions such as
   seed0007 (737 steps, ~39 commits to resolve, advancing PES 51/72 = 71%)
 - `docs/MIDGAME_HARNESS_DESIGN.md` — booting NAO player states for
   divergence hunting from mid-game
-- `blog-contest.md` — public announcement drafted May 2026
 
 **Measured effectiveness.** seed0007 exposed chargen filter-menu paths,
 container loot accelerators, escape-prompt gating, and a stairway bug
@@ -1198,7 +1196,8 @@ principle from `mp_demo_pipeline_2026_07_02.md`: *one deeply-exercised
 session beats many shallow ones.*
 
 **Verdict.** *A productivity multiplier when the amortization is right.*
-The contest also produces training data for future agents.
+(The public contest, previously conflated with this entry, is a
+*porting* competition — see §23.)
 
 ---
 
@@ -1573,6 +1572,49 @@ corpus turned from a frozen suite into a generative one.
 
 ---
 
+### 23. The contest as a replication experiment
+
+**What it is.** The Teleport Contest
+(https://mazesofmenace.ai/announcement/, opened May 6, 2026): a public
+competition in which contestants fork a skeleton repo — a playable
+NetHack shell with the PRNG and terminal wired up and `js/` nearly
+empty — and port the 442,901 lines of C/Lua themselves, by any method.
+An automated judge scores every fork on a 2-hour cycle against public
+sessions (44 at launch; the judge lists now hold 59 public plus 65
+secret held-out sessions) and maintains a leaderboard. Phase 2 adds an
+anti-overfitting twist: scoring against a *new* target, divided by a
+penalty proportional to how much the code changed to chase it.
+
+**Why it exists.** The announcement is also the project's candid
+origin story: the first four-month attempt failed through three named
+failure modes — agents inventing pseudo-technical "religion" ("sparse
+boundary frames") to rationalize async bugs rather than fix them;
+agents chasing easy points into a hard plateau; and the flawed framing
+contaminating 200 K lines of names, comments, and structure — ending
+in a full restart from a distilled-lessons prompt. That restart is
+teleport. The contest asks whether the resulting methodology transfers.
+Its stated hypothesis: *"the magic is in the LLM methods, not the code
+itself."*
+
+**Relation to monk.** The counter-experiment of §16 was scored on the
+contest's launch-era 44-session public suite — monk is effectively an
+internal contestant, testing the readable-transpiler strategy under
+contest conditions and plateauing at 24/44.
+
+**Measured effectiveness (interim).** As of July 2026, roughly a dozen
+external contestants have entered, and all are having trouble making
+progress — despite having the same models, the same C source, the
+session viewer, the recorder, and the test harness. Early returns
+favor the hypothesis: what they don't have is the technique stack this
+chapter catalogues. Phase 1 runs through November 29, 2026; the
+experiment's real verdict arrives then.
+
+**Verdict.** *In progress* — and the project's most rigorous act of
+self-skepticism: an open invitation to prove the methodology claims
+wrong.
+
+---
+
 ## The Effectiveness Scorecard
 
 | Technique | Infra cost | Measured impact | Verdict |
@@ -1601,6 +1643,7 @@ corpus turned from a frozen suite into a generative one.
 | Visualization suite | Coverage + timeline dashboards, parity-debugger, scrubbers (~6 KLoC + generated HTML) | Divergence counts → understood root causes; regression ↔ commit at a glance | Load-bearing |
 | Session forking | mp fork API + debugger fork + session-mutate | Any session prefix → family of new tests | Load-bearing |
 | Sherpa | 24 modules + ~150 keyplans | AI-authored sessions; bones round-trips (suite 45→82) | Load-bearing |
+| Porting contest + held-out judge | Skeleton repo + 2 h judge + leaderboard | ~12 contestants struggling; "magic is in the methods" hypothesis holding so far | Replication experiment |
 
 ---
 
@@ -1783,6 +1826,15 @@ question for the next attempt.
 | `teleport/maud/tools/parity-debugger/` (~3.9 KLoC) + `docs/PARITY_DEBUGGER.md` | Live side-by-side C-vs-JS debugger with cell-level diff overlay |
 | `teleport/maud/scripts/{session,pes}-viewer.mjs`, `playthrough-viz.mjs`, `autoascend-replay-viz.mjs` + `autoascend-viz/` | Generated session scrubbers (step any session forward/back) |
 
+### Contest sources
+
+| Source | Contents |
+|--------|----------|
+| https://mazesofmenace.ai/announcement/ | Public contest announcement + the three-failure-mode origin story of the restart |
+| `teleport/maud/contest/README.md` + `contest/` | Contest rules, skeleton-repo guide, submission template |
+| `teleport/maud/judge/` | Automated judge: public-list (59) + held-out-list (65), leaderboard, sandbox, workflows |
+| `teleport/contestant/teleport-contest/` | Contestant worktree (skeleton fork) |
+
 ### External data + git
 
 | Source | Contents |
@@ -1793,8 +1845,8 @@ question for the next attempt.
 
 ### Deep-dive analyses
 
-- **[analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md)** — Exhaustive per-technique catalogue: 40 techniques across 9 categories, with master table + per-entry problem/infra/effectiveness/outcome
-- **[LESSONS.md](LESSONS.md)** — The generalizable lesson behind each technique, distilled for teaching (lesson / illustration / signs-you-need-it, eight arcs)
+- **[analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md)** — Exhaustive per-technique catalogue: 41 techniques across 10 categories, with master table + per-entry problem/infra/effectiveness/outcome
+- **[LESSONS.md](LESSONS.md)** — The generalizable lesson behind each technique, distilled for teaching (lesson / illustration / signs-you-need-it, nine arcs)
 - [ROLLUP.md](ROLLUP.md) — Rollup 1 (May 1, 2026, day 33) + Rollup 2 (July 11, 2026, day 104) + monk introduction
 - [chapters.json](data/chapters.json) — Chapter index across all three ports (menace + teleport + monk)
 

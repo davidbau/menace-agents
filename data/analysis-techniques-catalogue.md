@@ -11,9 +11,9 @@ reusable methodology, every measurement tool, every documentation artifact
 that made a measurable difference on any of the three ports. Where evidence
 supports it, effectiveness is quantified.
 
-The catalogue is organized as (1) a **master table** of 40 techniques with
+The catalogue is organized as (1) a **master table** of 41 techniques with
 columns for infrastructure cost, measured impact, verdict, and evidence
-citation; then (2) **per-technique deep-dives** grouped into 9 thematic
+citation; then (2) **per-technique deep-dives** grouped into 10 thematic
 categories.
 
 One theme runs through nearly every entry: **the session — a recorded
@@ -48,7 +48,7 @@ scrubbing it, loading it live, forking it, and authoring it.
 | 19 | PES history in git trailers | Testing | ~120 LoC parser | Parity delta ↔ commit correlation | Quiet win | menace |
 | 20 | RTX (reversible transactions) | Testing | 10 modules + 5 tools | #825/#827/#861/#862/#865 closed | Load-bearing | teleport (xorn) |
 | 21 | Frozen 44-session judge (monk) | Testing | frozen/score.sh | 24/44 ceiling made legible | Diagnostic | monk |
-| 22 | Human contest recordings | Test generation | Contest infra + submissions | seed0007: +51/72 PES steps | Multiplier | menace + teleport |
+| 22 | Hand-recorded deep human sessions | Test generation | Recorder + hand-authored sessions | seed0007: +51/72 PES steps | Multiplier | menace + teleport |
 | 23 | Autoascend agent as fuzzer | Test generation | Whole `autoascend/` (546 KB LESSONS.md) | 500×100 hunts <5% actionable | Signature | teleport |
 | 24 | Adversarial search (13 scripts) | Test generation | 13 adversarial-*.mjs | Tail coverage | Backstop | teleport |
 | 25 | 500×100 divergence hunts | Test generation | ~500 LoC runner | First-failure depth 7→479 | Steady state | teleport |
@@ -67,6 +67,7 @@ scrubbing it, loading it live, forking it, and authoring it.
 | 38 | Live game page as session loader | Visualization | `?replay=1` URL params + `session_loader` | Diverged sessions load in the real engine | Quiet win | teleport |
 | 39 | Session forking (resume + changed input) | Test generation | mp fork API + debugger fork + `session-mutate` | Any session → family of new tests | Load-bearing | teleport |
 | 40 | Sherpa (keyplan session builder for AI) | Agent tooling | `sherpa/` ~680 KB, 24 modules, 150+ keyplans | AI-authorable sessions; run-until verb; assertions | Load-bearing | teleport |
+| 41 | Public porting contest with held-out judge | External validation | Skeleton repo + judge (2 h cycle) + leaderboard | ~12 contestants struggling as of Jul 2026 — the methods, not the code, are the differentiator | Replication experiment (in progress) | teleport |
 
 ---
 
@@ -518,17 +519,16 @@ name the failure.
 
 ## Category 6: Test-Case Generation
 
-### 22. Human contest recordings
+### 22. Hand-recorded deep human sessions
 
 **Problem addressed.** Random or autoascend-generated sessions don't
 exercise the paths a real human takes.
 
 **Infrastructure.**
-- `contest/` — rules, submission template, frozen JS + recorder submodule
-- `teleport/contestant/teleport-contest/` — contestant worktree
+- The deterministic recorder (patched C NetHack) for capturing
+  ground-truth sessions from real play
 - `test/comparison/sessions/` includes seed0007 (737-step hand-recorded)
 - `docs/MIDGAME_HARNESS_DESIGN.md` — booting NAO player states
-- `blog-contest.md` — public announcement drafted May 2026
 
 **Measured effectiveness.** seed0007 alone: 737 steps, 39 commits, PES
 advance 51/72 steps (71%). Exposed chargen filter-menu paths, container
@@ -539,7 +539,10 @@ which random sessions had touched.
 session beats many shallow ones.*
 
 **Outcome.** A productivity multiplier when amortization is right.
-Contest data also serves as future agent training data.
+(An earlier draft of this entry conflated hand-recorded sessions with
+the public contest; the contest is a *porting* competition, catalogued
+separately as #41 — though its session viewer and recorder tooling are
+what make hand-recording available to outsiders too.)
 
 ---
 
@@ -1070,6 +1073,70 @@ scrubbers (#37) are how a human *reads* one.
 
 ---
 
+## Category 10: The Contest as Replication Experiment
+
+### 41. A public porting contest with an automated held-out judge
+
+**Problem addressed.** After a successful in-house result, the
+methodological claim is untested: did the port succeed because of the
+technique stack, or because of luck, model access, or the author's
+familiarity with the domain? The strongest test of a methodology claim
+is whether strangers can replicate the result with the same tools.
+
+**Infrastructure.**
+- **The Teleport Contest** — announced at
+  https://mazesofmenace.ai/announcement/ (opened May 6, 2026; Phase 1
+  freezes Nov 29, 2026; Phase 2 closes Dec 31, 2026)
+- `teleport-contest` skeleton repo — a playable NetHack shell with
+  PRNG and terminal wired up and `js/` nearly empty; contestants fork
+  it and port the 442,901 lines of C/Lua themselves, by any method:
+  "AI agents, hand-coding, transpilers, monks chanting in caves"
+- `judge/` — automated scoring of every fork on a 2-hour cycle:
+  44 public sessions at launch (now 59 public + 65 **secret held-out**
+  sessions per the judge lists), leaderboard, sandboxed execution,
+  no network access during scoring
+- Anti-overfitting design: held-out sessions catch suites-teaching-to-
+  the-test; **Phase 2 scores against a *new* target divided by a
+  penalty proportional to how much the code changed to chase it** —
+  rewarding solutions that generalize over solutions that overfit
+- Contestant tooling handed over: the session viewer with color-coded
+  screen/PRNG diff highlighting, recorder patches for making
+  deterministic recordings, analysis tools
+- The announcement doubles as the project's candid **origin story**:
+  the first four-month attempt failed via three named failure modes —
+  agents inventing pseudo-technical "religion" ("sparse boundary
+  frames") to rationalize async bugs; agents chasing easy points until
+  a hard plateau; and the flawed framing contaminating 200 K lines of
+  names, comments, and structure — leading to a full restart from a
+  distilled-lessons prompt. That restart is the teleport port this
+  catalogue documents.
+
+**The stated hypothesis** (contest README): *"the magic is in the LLM
+methods, not the code itself. If your method works, sharing the code
+costs you nothing. If it doesn't, no one was going to copy your code
+anyway."*
+
+**Relation to monk.** The in-house counter-experiment (#28) was scored
+against the contest's launch-era 44-session public suite
+(`frozen/score.sh`) — monk is effectively an internal contestant
+testing the readable-transpiler strategy under contest conditions,
+reaching 24/44.
+
+**Measured effectiveness (interim).** As of July 2026, roughly a dozen
+external contestants have entered, and all are having trouble making
+progress. Alongside monk's 24/44 ceiling, this is early external
+evidence *for* the hypothesis: access to the same models, the same C
+source, and the same test harness does not reproduce the result —
+the accumulated technique stack (this catalogue) appears to be the
+differentiator. The experiment is in progress; Phase 1 runs through
+November 2026.
+
+**Outcome.** In progress — but already the project's most rigorous
+piece of self-skepticism: it invites the world to prove the
+methodology claims wrong.
+
+---
+
 ## Cross-Cutting Scorecard: What Compounded, What Didn't
 
 ### Techniques that compounded across all three ports
@@ -1157,12 +1224,22 @@ what human recordings alone could produce.
 long enough that overnight hunts produce no actionable regressions,
 the port is done. This is teleport's currently-approaching endgame.
 
+**7. The methodology claim is being externally tested.** The contest
+(#41) is a live replication experiment: ~12 outside contestants with
+the same models, source, and harness are struggling to make progress,
+and the in-house counter-experiment plateaued at 24/44 on the same
+judge. Early returns favor the contest's own hypothesis — the magic
+is in the methods, not the code. Final evidence arrives with Phase 1's
+close in November 2026.
+
 ---
 
 ## References
 
 - [LESSONS.md](../LESSONS.md) — the generalizable lesson behind each technique (same numbering), for teaching
 - [REPORT.md](../REPORT.md) — Chapter 1 (menace) + Chapter 2 (teleport + monk)
+- https://mazesofmenace.ai/announcement/ — the public contest announcement, including the candid three-failure-mode origin story of the restart
+- `teleport/maud/contest/README.md` + `teleport/maud/judge/` — contest rules, judge, leaderboard, public/held-out session lists
 - [ROLLUP.md](../ROLLUP.md) — May 1 + July 11 rollups
 - [chapters.json](chapters.json) — chapter index (menace + teleport + monk)
 - [analysis-infrastructure.md](analysis-infrastructure.md) — menace-era infrastructure timeline
