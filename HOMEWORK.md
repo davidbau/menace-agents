@@ -1,4 +1,4 @@
-# Homework: Nine Ports and Nine Extensions
+# Homework: Fourteen Ports and Fourteen Extensions
 
 *Companion to [LESSONS.md](LESSONS.md), which explains the principles
 these projects teach, and the [technique catalogue](data/analysis-techniques-catalogue.md),
@@ -9,14 +9,24 @@ so exactly that a mechanical judge cannot tell your version from the
 original. Then each asks you to build something new on top of your
 copy, held to the same standard of quality.
 
-The projects look old fashioned. Chess programs, chip emulators, a
-text formatter from 1982. That is deliberate. Old programs are
-deterministic: they consult no network, no clock, no outside world, so
-they can be replayed and compared byte for byte. And old programs have
-accumulated something priceless: decades of test culture. For every
-project below, some community has already built the measuring
-instruments, the torture tests, the golden reference logs. You get to
-inherit them.
+The first nine projects look old fashioned. Chess programs, chip
+emulators, a text formatter from 1982. That is deliberate. Old
+programs are deterministic: they consult no network, no clock, no
+outside world, so they can be replayed and compared byte for byte. And
+old programs have accumulated something priceless: decades of test
+culture. For every one of those projects, some community has already
+built the measuring instruments, the torture tests, the golden
+reference logs. You get to inherit them.
+
+The last five projects are modern and interactive: collaborative
+editing, terminals, vim, WebAssembly, browser layout. They are on the
+list because they pass the same test the old ones do, an exact,
+machine-checkable definition of correct, but with a difference that is
+itself the lesson: in modern interactive software, determinism is not
+inherited. It must be purchased, with recorded sessions, captured
+inputs, and judges you sometimes have to harvest from the reference
+yourself. The old wing teaches you the method where determinism is
+free. The modern wing teaches you to buy it where it isn't.
 
 Why ports at all? Because a port is the one kind of project where an
 AI agent's work can be verified completely. There is a right answer
@@ -46,6 +56,11 @@ autograder, so none of the grading is a matter of opinion.
 | 7 | Rogue, with PRNG parity | 2–4 weeks | none. You build it. |
 | 8 | DOOM, demo-faithful | 4–8 weeks | 30 years of recorded speedruns |
 | 9 | TeX, passing TRIP | 6–12 weeks | Knuth's 1984 torture test |
+| 10 | A collaborative editor | 2–4 weeks | convergence fuzzing + a live Etherpad server |
+| 11 | A terminal emulator | 2–3 weeks | vttest, esctest, and recorded real sessions |
+| 12 | Vim's editing engine | 3–5 weeks | headless vim itself + the VimGolf corpus |
+| 13 | A WebAssembly interpreter | 3–5 weeks | the official spec test suite |
+| 14 | A flexbox layout engine | 2–4 weeks | fixtures harvested from Chrome |
 
 ---
 
@@ -525,6 +540,230 @@ agreement is claimed.
 
 ---
 
+## 10. A collaborative editor: correctness means convergence
+
+You have used Google Docs: several cursors moving at once, no save
+button, no conflicts, no locked files. Under the hood, every keystroke
+becomes a small operation broadcast to the other participants, and the
+hard problem is reconciling operations that happened concurrently, so
+that everyone's copy of the document ends up the same. Two families of
+algorithms do this: operational transformation, which rewrites
+concurrent operations against each other, and CRDTs, data structures
+designed so that merging cannot conflict. The classic open-source
+system is Etherpad, built in 2008 and open-sourced when Google
+acquired the team; its changeset protocol, called easysync, is
+documented, and a real Etherpad server is a download away.
+
+What makes this a course project is that the correctness property is
+exact and machine-checkable: **convergence**. After any pattern of
+concurrent edits, delivered in any order the protocol allows, every
+replica must hold the byte-identical document. And the field carries a
+famous warning that belongs in this course: several published,
+peer-reviewed collaborative-editing algorithms were later shown by
+mechanical checking to violate their own claimed properties. Confident,
+plausible, wrong, and undetected until somebody built the judge. Your
+fuzzer gets to rediscover why paper arguments are not oracles.
+
+**The assignment.** Implement easysync exactly: changesets that parse,
+compose, and transform byte-compatibly with the reference. Prove it
+two ways. First, interoperate: your client joins a pad on a stock
+Etherpad server, edits alongside a stock client, and never diverges.
+Second, fuzz for convergence: generate random concurrent edit
+histories, deliver them in many permitted orders, and assert that all
+replicas converge to identical bytes. Held out: fuzz seeds and
+concurrency patterns you never ran during development. (A
+CRDT-compatible implementation, verified against Automerge, is an
+acceptable alternative substrate; the oracle is the same.)
+
+**The extension.** I have a project called digram: a visual
+programming language for diagrams, where one diagram exists in three
+synchronized forms, a readable textual program, a direct-manipulation
+canvas, and publication-grade SVG. The pipeline is deterministic end
+to end, deliberately: the same source renders to byte-identical SVG on
+any machine. That purchase, made early, is what makes this extension
+possible. Build collaborative diagram editing: your verified
+collaboration core carrying edits to the digram source, so that
+several people manipulate one live diagram together. The oracle is
+inherited: when replicas converge, the sources are byte-identical, and
+because rendering is deterministic, every participant's rendered
+diagram is byte-identical too. Convergence you can see on screen. And
+there is honest research flavor at the top of this one: concurrent
+edits to a constraint program can conflict *semantically*, two people
+moving the same box through different constraints, in ways that
+textual merging cannot see. Detecting those conflicts and surfacing
+them to users, without ever breaking convergence, is a genuinely open
+problem, and you will be standing in the right place to work on it.
+
+---
+
+## 11. A terminal emulator: the instrument our project had to fight
+
+The terminal window you use every day is an emulator of a piece of
+1978 hardware, the DEC VT100. Every command-line program speaks to it
+in escape sequences: invisible byte codes that mean move the cursor
+here, switch to red, scroll this region. Get them right and vim and
+htop paint perfectly. Get one subtly wrong and the screen turns to
+garbage, but only for some programs, only sometimes. This is not an
+antique concern: xterm.js, a terminal emulator in JavaScript, sits
+under the terminal panel of VS Code, so you probably used one today.
+
+The difficulty is accretion: hundreds of sequences and modes layered
+over forty-five years, including famous traps like the last-column
+wrap rule, which defers wrapping in a way that bites essentially every
+implementer. And the ground truth exists twice over. vttest is a
+torture program from the 1980s, still maintained, that walks an
+emulator through the dark corners. esctest is a suite of per-sequence
+unit tests built for iTerm2. For a corpus, asciinema, the tool people
+use to record and share terminal sessions, has a public archive of
+thousands of real recordings, which are simply the raw output bytes.
+Replay those bytes into your terminal and into a trusted reference
+which you have instrumented to dump its cell grid (you build the
+ground-truth channel yourself, the same move as the DOOM project),
+and compare grids cell by cell: character, color, attributes, cursor.
+
+One personal note. Our NetHack project's first infrastructure
+investment was *removing* a terminal layer, because its timing and
+queuing destroyed the determinism of our recordings. In this project
+you build that layer itself, exactly, and you will come to understand
+from the inside why it was the thing that had to go.
+
+**The assignment.** A VT100/xterm-subset terminal that passes the
+vttest and esctest scenarios within your scoped subset, and renders
+grid-identical to the reference across an asciinema corpus. Held out:
+recordings you never replayed during development.
+
+**The extension.** The time-machine terminal. Because your replay is
+exact, your entire terminal history becomes a database: scrub any
+session backward and forward like video, search across time by screen
+contents, find the moment that error message was visible and step
+backward to what caused it. No mainstream terminal offers this.
+Alternatively, performance under a frozen oracle: a GPU-rendered
+terminal, cell-identical to the reference on the whole corpus, fast
+enough to brag about, with zero fidelity budget spent.
+
+---
+
+## 12. Vim's editing engine: verify what everyone else imitates
+
+Vim is the modal editor: in normal mode, keystrokes form a little
+language, where `d2w` deletes two words and `ci(` changes the text
+inside parentheses. Millions of programmers have it in their fingers,
+and because they do, every modern editor ships a "vim mode": VS Code's,
+CodeMirror's, IntelliJ's. Here is the open secret: all of them are
+approximations. Hand-written imitations, each famous among vim users
+for being almost right, with corners (registers, counts applied to odd
+operators, undo grouping) that quietly differ. None of them is
+verified against vim. The economics never allowed it. You know by now
+where this is going.
+
+The ground truth is free, because vim itself is replayable: it can run
+headless, read a keystroke script, and write out the resulting buffer.
+So an input file plus a keystroke sequence is a session, and the
+reference's exact answer costs one command to produce. Better still,
+there is a corpus of recorded expert play: VimGolf, a long-running
+game where players solve editing challenges in the fewest possible
+keystrokes. Thousands of challenges, each with an input file, a target
+output, and recorded solutions of absurd cleverness that exercise
+exactly the obscure command interactions an imitation gets wrong.
+DOOM has speedrun demos; vim has golf.
+
+**The assignment.** An engine for a scoped subset of vim (normal mode
+plus the basics of ex commands) that matches headless vim byte-exact,
+buffer and cursor position both, across the VimGolf corpus for your
+subset, plus adversarial random-keystream fuzzing run differentially
+against real vim. Keep a documented registry of the version-dependent
+corners you discover; there will be some, and deciding what counts as
+truth when the reference itself wobbles between versions is part of
+the assignment.
+
+**The extension.** Ship the exact vim mode: a drop-in replacement for
+the vim mode of CodeMirror or Monaco that is verified rather than
+imitative, with its corpus pass rate published as the feature. This is
+the MathJax lesson from our TeX study, replayed on an editor: an
+entire genre of almost-right imitations exists because exactness used
+to be unaffordable. It is not unaffordable anymore, and this is a
+genre-sized opportunity small enough to fit in a semester.
+
+---
+
+## 13. A WebAssembly interpreter: a spec that names its own freedom
+
+WebAssembly is the portable binary format that every browser runs; C,
+C++, and Rust compile to it, and it is the closest thing the modern
+web has to a machine. Unlike almost all modern infrastructure, it was
+*designed* deterministic: the specification commits to same module,
+same inputs, same results, on every platform. And where the designers
+could not deliver that (one place: the bit patterns inside
+floating-point NaN values), the spec says so, out loud, precisely. A
+standard that names its own nondeterminism is a rare document, and
+learning to read a spec for exactly where behavior is pinned and where
+it is free is one of the durable skills of this course.
+
+The judge comes with the standard: the official spec test suite,
+thousands of machine-runnable assertions maintained alongside the
+specification itself. Beyond it lies differential testing: run modules
+from the wild through your interpreter and through production engines
+(V8, wasmtime) and compare.
+
+**The assignment.** An interpreter passing the spec suite, then
+surviving differential fuzzing against two production engines. The
+graded subtlety is your comparator: it must canonicalize NaN bits
+exactly where the spec grants freedom, and nowhere else. An oracle
+that is too loose passes wrong programs; one that is too strict fails
+correct ones; encoding the spec's declared freedom into the judge,
+precisely, is the assignment inside the assignment.
+
+**The extension.** Time-travel debugging for WebAssembly. Here is the
+gift of the module boundary: all nondeterminism enters a WASM program
+through its imports. Record the import calls and replay is exact,
+which means reverse execution is buildable: run a wild module, capture
+the boundary, then step backward through the execution. The systems
+community spent years building this for native code. The WASM boundary
+makes it a term project, verified by the property that a replayed run
+is bit-identical to the recorded one.
+
+---
+
+## 14. A flexbox layout engine: ground truth farmed from the browser
+
+Every web page is boxes arranged by the browser's layout engine, and
+flexbox is the workhorse algorithm. Here is the industrial fact that
+makes it a course project: when Meta needed React Native apps to lay
+out identically outside a browser, they reimplemented flexbox (the
+project is called Yoga), and they got their ground truth by a move you
+will recognize: a script renders test fixtures in Chrome and harvests
+the computed positions. Instrument the reference; farm the truth. An
+industry team independently ran the same play our project called
+recorder probes, at scale, and their harness is public.
+
+The difficulty is that the flexbox specification is prose, and the
+corners (min-content sizing, percentages of indefinite sizes, negative
+margins, nested flex containers) are where prose runs out. Browsers
+agree on the broad middle and disagree at the edges, so you will meet
+the awk question again, this time on a live standard: when the
+references disagree, what is truth, and where do you write down your
+answer?
+
+**The assignment.** A flexbox engine matching Chrome-harvested
+fixtures. Build the harvester yourself: drive headless Chrome,
+generate thousands of random flex trees, capture computed layouts.
+That corpus is your judge; a sealed sample of it is your held-out set;
+the relevant web-platform-tests are your cross-check against
+overfitting to one browser.
+
+**The extension.** Put real text inside. Box arithmetic is half of
+layout; the other half is text measurement and line breaking, and you
+have met both halves in this course. Integrate a real measurement path
+(the browser's own font engine, reached through canvas, the pretext
+approach) and paragraph-level line breaking (Knuth-Plass, from the TeX
+project) inside your flex items. Two frozen oracles, one artifact: box
+positions matching the browser where the browser defines them, line
+breaks matching TeX where TeX defines them. Browser-exact boxes with
+TeX-quality paragraphs is a combination that does not exist today, and
+you would be the one to have built it.
+
+---
+
 ## Further directions
 
 Metafont, the font-drawing companion Knuth wrote alongside TeX, has
@@ -532,9 +771,17 @@ its own torture test, TRAP, and makes a natural second capstone. A
 SQL engine tested against sqllogictest, a corpus of millions of
 queries whose correct answers were agreed by running multiple
 independent database engines, teaches conformance testing when there
-is no single reference implementation. And NetHack itself remains the
-final boss: not homework, an expedition. The full account of what it
-takes is in [REPORT.md](REPORT.md) and [LESSONS.md](LESSONS.md).
+is no single reference implementation. A spreadsheet recalculation
+engine can be verified against headless LibreOffice, with a lovely
+self-referential extension: an incremental recalculator verified to
+match your own full recalculator on every edit. An H.264 video
+decoder against the ITU conformance bitstreams repeats the FLAC/MP3
+lesson at industrial scale: decoding is specified exactly, encoding
+is left free, and the spec tells you which is which. A JavaScript
+interpreter measured against test262 is the heavyweight version of
+the Lua project. And NetHack itself remains the final boss: not
+homework, an expedition. The full account of what it takes is in
+[REPORT.md](REPORT.md) and [LESSONS.md](LESSONS.md).
 
 ## Why every project is a port
 
