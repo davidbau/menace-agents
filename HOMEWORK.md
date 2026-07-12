@@ -1,356 +1,552 @@
-# Homework: Verified-Exact Porting Exercises
+# Homework: Nine Ports and Nine Extensions
 
-**Companion to:** [LESSONS.md](LESSONS.md) (the 47 lessons these exercises
-teach) and [data/analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md)
-(the full-scale techniques the exercises practice in miniature).
+*Companion to [LESSONS.md](LESSONS.md), which explains the principles
+these projects teach, and the [technique catalogue](data/analysis-techniques-catalogue.md),
+which documents the full-scale project the exercises imitate.*
 
-Each project below was chosen by the same checklist:
+Each of these projects asks you to rebuild a famous piece of software
+so exactly that a mechanical judge cannot tell your version from the
+original. Then each asks you to build something new on top of your
+copy, held to the same standard of quality.
 
-- a **deterministic reference implementation** exists (or determinism is
-  cheaply achievable) — Lesson 0;
-- a **frozen judge already exists** — someone else paid to build a
-  conformance test, golden trace, or torture input;
-- a **real-world corpus** exists for held-out testing — Lesson 46;
-- the port crosses an **instructive semantic gap** — Lesson 43;
-- the judge doubles as an **autograder**, so the exercise scales to any
-  class size.
+The projects look old fashioned. Chess programs, chip emulators, a
+text formatter from 1982. That is deliberate. Old programs are
+deterministic: they consult no network, no clock, no outside world, so
+they can be replayed and compared byte for byte. And old programs have
+accumulated something priceless: decades of test culture. For every
+project below, some community has already built the measuring
+instruments, the torture tests, the golden reference logs. You get to
+inherit them.
 
-## The two tracks
+Why ports at all? Because a port is the one kind of project where an
+AI agent's work can be verified completely. There is a right answer
+for every byte. You will spend almost none of your time writing code.
+You will spend it building the machinery that determines whether the
+code your agents wrote is true: recorders, comparators, checkers, test
+generators, visualizations. That machinery, not the port, is the
+skill this course teaches. The second track of each project, the
+extension, is where you learn that the same machinery lets you build
+new things at a level of fidelity that used to be unaffordable.
 
-Every project has two assignments built on the same substrate:
+Every project passes the same checklist: a deterministic reference
+exists, a frozen judge already exists (or, in one deliberate case, you
+must build it), a real-world corpus exists for held-out testing, and
+the port crosses some gap between languages that makes the work
+instructive rather than mechanical. The judge doubles as an
+autograder, so none of the grading is a matter of opinion.
 
-**Track A — the port.** Reimplement the reference so that a mechanical
-judge cannot tell the two apart. Nothing is a matter of opinion: the
-deliverable passes or it does not. Track A teaches the verification
-stack — the oracle, the E channel, the checkers, the corpus, the
-divergence hunt. The artifact is almost beside the point; the *method
-artifacts* (instrumentation, static checks, generated tests, legibility
-tools) are what get graded alongside the pass rate.
-
-**Track B — the extension.** Build something that did not exist before,
-at the same standard of fidelity Track A demanded. The constraint is
-the lesson: high-quality extension means *the frozen oracle still
-passes* while the new capability is added, or it means *becoming the
-reference* — publishing new verified ground truth that others can
-port against. Track A consumes ground truth; Track B produces it.
-
-A note on training-data contamination: several of these substrates have
-existing ports in every model's training data. For homework this is
-fine — students are graded on demonstrating the method, not on the
-novelty of the artifact. For *benchmarks* it matters; see the notes on
-each project.
-
-## The ladder
-
-| # | Project | Scale | Frozen judge | Emphasized pillar |
-|---|---------|-------|--------------|-------------------|
-| 1 | Chess movegen + perft | weekend | perft tables | Oracles, volume |
-| 2 | CPU emulator (CHIP-8 → 6502/GB) | 1–2 weeks | Harte JSON tests, nestest.log, Blargg ROMs | Time (E channel) |
-| 3 | FLAC decoder | 1–2 weeks | bit-exact PCM vs libFLAC | Determinism, economy |
-| 4 | Git plumbing | 2–3 weeks | hash equality (self-judging) | Substrate |
-| 5 | awk, byte-exact | 2–3 weeks | one-true-awk + POSIX + script corpus | Structure |
-| 6 | Lua interpreter | 2–4 weeks | PUC official test suite | Structure (semantic gap) |
-| 7 | Rogue with PRNG parity | 2–4 weeks | **none — students build it** | The whole stack |
-| 8 | DOOM, demo-sync faithful | 4–8 weeks | DSDA demo corpus | Mass, determinism |
-| 9 | TeX passing TRIP (capstone) | 6–12 weeks | TRIP / etrip / arXiv | Everything |
+| # | Project | Scale | The judge |
+|---|---------|-------|-----------|
+| 1 | Chess move generation | a weekend | published perft tables |
+| 2 | A CPU emulator | 1–2 weeks | golden state traces, test ROMs |
+| 3 | A FLAC audio decoder | 1–2 weeks | byte-identical output vs. the reference |
+| 4 | Git, from scratch | 2–3 weeks | hash equality (the math is the judge) |
+| 5 | The awk language | 2–3 weeks | byte-exact runs of 50 years of scripts |
+| 6 | The Lua language | 2–4 weeks | the official test suite |
+| 7 | Rogue, with PRNG parity | 2–4 weeks | none. You build it. |
+| 8 | DOOM, demo-faithful | 4–8 weeks | 30 years of recorded speedruns |
+| 9 | TeX, passing TRIP | 6–12 weeks | Knuth's 1984 torture test |
 
 ---
 
-## 1. Chess move generation + perft
+## 1. Chess move generation, verified by counting
 
-**Reference & ground truth.** `perft(n)` — the exact count of legal
-move sequences from a position to depth n. Published tables exist for
-the start position and standard trap positions (Kiwipete and friends:
-en-passant pins, underpromotion, castling through check). A one-count
-divergence at depth 6 means a bug; bisecting it by dividing perft per
-move is divergence-hunting in miniature.
+Chess is easy to describe and surprisingly hard to implement exactly.
+The pawn moves one square forward, except when it moves two, except
+when it captures diagonally, except when it captures a pawn that isn't
+on the square it's capturing (en passant), except when any of those
+moves is illegal because it would expose your own king. A move
+generator is a function that takes a chess position and lists every
+legal move. Every chess program has one at its core, and almost every
+first attempt at one is wrong in ways that take weeks to notice.
 
-**Track A.** A legal move generator whose perft matches the published
-tables on all standard positions, plus Chess960 castling. Judge is a
-30-line script. Millions of recorded games (PGN archives) are the
-imported-competence corpus: replay them and assert every played move
-is generated and legal.
+The chess programming community solved the verification problem
+decades ago with something called perft, short for performance test.
+Perft(n) counts every sequence of legal moves from a position, n moves
+deep. From the starting position there are 20 first moves, 400
+two-move sequences, 8,902 three-move sequences, and at depth six,
+exactly 119,060,324. Not approximately. Exactly. These numbers are
+published, cross-checked by generations of chess programmers, along
+with counts for trap positions with names like Kiwipete that were
+constructed to contain every nasty interaction at once: en passant
+captures that expose the king, castling through attacked squares,
+promotions on the seventh rank.
 
-**Track B.** Two options. (a) Write a fast bitboard generator and
-*cross-verify it against your own slow, obviously-correct one* over
-millions of random positions — the dual-implementation oracle, plus
-optimization under a frozen judge. (b) Become the reference: compute
-and publish verified perft tables for a variant that lacks them,
-with the verification methodology documented.
+This is the purest possible introduction to working against an exact
+oracle. One number summarizes a hundred million execution paths. If
+your generator misses one en passant pin somewhere in that tree, the
+count is wrong, and the count cannot be argued with. When it is wrong,
+you learn the bisection discipline: perft can be split per move, so a
+wrong count at depth six can be narrowed, move by move, to the exact
+position where your program and the truth disagree. You will use this
+skill in every project that follows.
 
-**Teaches.** Lessons 17 (strict oracle), 25 (doneness), 44 (imported
-corpus). **Watch out for:** the temptation to debug by staring;
-force the bisection discipline from day one.
+**The assignment.** Build a move generator that matches the published
+perft tables for the standard positions and the trap positions,
+including Chess960 castling. Then import competence: take a database
+of a few million recorded master games and replay all of them,
+asserting that every move actually played appears in your generated
+move list. Real games exercise corners that random testing never
+reaches.
 
----
-
-## 2. CPU emulator (CHIP-8, then 6502 or Game Boy)
-
-**Reference & ground truth.** The emulator scene independently invented
-the whole methodology, and left it lying around: Tom Harte's
-ProcessorTests are per-instruction JSON records of complete before/after
-CPU state — a pre-built E channel with thousands of cases per opcode;
-NES's `nestest.log` is a golden instruction-by-instruction trace to
-diff — a session; Blargg's and Mooneye's test ROMs are adversarial
-torture inputs. Every real cartridge is a held-out test.
-
-**Track A.** CHIP-8 as the two-day warm-up, then a 6502 or Game Boy
-CPU passing the Harte tests instruction-by-instruction, then
-`nestest.log` line-for-line, then the Blargg ROMs. Tiering matters:
-functional accuracy first, cycle accuracy as the stretch goal — the
-loose/exact regime distinction made concrete.
-
-**Track B.** (a) A time-travel debugger: snapshot ring + rollback +
-scrubber over the running emulator — RTX in miniature, with the
-determinism Track A verified making it possible. (b) Become the
-reference: publish Harte-style JSON ground truth for a chip that lacks
-coverage, generated from instrumented hardware or a verified emulator,
-with the instrumentation method documented (Lesson 31: instrument the
-reference).
-
-**Teaches.** Lessons 42 (E channel — you are handed one; notice how it
-feels), 0 (determinism), 20 (reversibility). **Watch out for:**
-passing Harte tests while failing nestest — integration order bugs
-that per-instruction tests can't see; that gap *is* the lecture.
+**The extension.** Your first generator should be written to be
+obviously correct, which means it will be slow. Serious chess programs
+use bitboards: the board represented as 64-bit integers, one bit per
+square, with moves generated by bit arithmetic at a hundred times the
+speed. Write the fast version, and verify it against your own slow
+version over millions of random positions. Two implementations,
+written differently, agreeing everywhere: this is the
+dual-implementation oracle, and it is how you make a program fast
+without losing your grip on whether it is still right. Alternatively,
+become the reference: pick a chess variant that lacks published perft
+tables, compute them, document your verification method, and publish.
+Every future implementer of that variant will test against you.
 
 ---
 
-## 3. FLAC decoder
+## 2. A CPU emulator: running 1989 software, bit for bit
 
-**Reference & ground truth.** Lossless means the decode side is
-bit-exact *by definition*: every FLAC file must decode to
-byte-identical PCM against libFLAC. Unbounded corpus — any music
-collection, plus files you generate yourself from WAV with chosen
-encoder settings.
+A CPU executes instructions: load this number, add these registers,
+jump if the result was zero. An emulator is a program that pretends to
+be a particular chip, faithfully enough that software written for the
+real silicon runs unmodified. Emulation is how software history
+survives. Every time you see an old game running in a browser, an
+emulator is underneath, and its quality is measured by a brutal
+standard: the original cartridge ROM, byte for byte the same bits
+that shipped in 1989, either runs correctly or it does not.
 
-**Track A.** A decoder producing byte-identical PCM over a large
-corpus, including the adversarial corners (odd bit depths, unusual
-block sizes, mid-stream metadata). Held-out: files encoded with
-settings the student never saw.
+Why is this hard? A chip like the 6502 (the processor in the Apple II,
+the Commodore 64, and the NES) has a few hundred instruction variants,
+and each one has exact semantics: not just what it computes but which
+status flags it sets, in what order, in how many cycles. The flags are
+single bits recording things like whether the last addition carried or
+came out zero, and real programs branch on them constantly. Get one
+flag subtly wrong in one instruction and some game, somewhere,
+misbehaves in a way that looks like anything but a flag bug.
 
-**Track B.** Make it an order of magnitude faster — SIMD, workers,
-WebGPU, whatever — **without changing one output bit**. Optimization
-under a frozen oracle is a skill in itself, and this is its cleanest
-possible exercise. Companion lecture: the MP3 conformance spec defines
-correctness with an RMS *tolerance* — the loose regime written into a
-standard — and comparing the two specs teaches students to ask where
-behavior is exactly specified and where it is free.
+Here is what makes this project a gift: the emulator community
+independently invented the same verification methodology our NetHack
+project used, and left the instruments lying around. Tom Harte's
+ProcessorTests are JSON files containing, for every instruction,
+thousands of test cases, each recording the complete CPU state before
+and after: an intermediate-event channel, prebuilt. The NES community
+maintains nestest.log, a golden log of a real test program's
+execution, one line per instruction with every register value, so you
+can diff your emulator's trace against truth line by line. And
+programmers like Blargg wrote test ROMs: programs that run on the
+emulated machine itself, probe its behavior, and print pass or fail on
+its screen. Torture tests, golden traces, held-out real cartridges.
+The whole stack is waiting for you.
 
-**Teaches.** Lessons 0, 8 (fast/exhaustive variants of the verify
-loop). **Watch out for:** floating-point in the decode path; the
-format is integer all the way down, and reaching for floats is the
-classic self-inflicted nondeterminism.
+**The assignment.** Warm up with CHIP-8, a toy virtual machine from
+the 1970s with about 35 instructions; it takes a weekend and teaches
+the shape. Then build a 6502 or Game Boy CPU. Pass the Harte tests
+instruction by instruction, then match nestest.log line for line, then
+pass the Blargg ROMs. Notice the day your emulator passes every
+per-instruction test and still fails the golden log. The bugs that
+live between instructions, in the integration, are the reason
+single-unit testing is never enough, and it is better to learn that
+here than on a million-line project.
 
----
-
-## 4. Git plumbing, byte-exact
-
-**Reference & ground truth.** Content addressing makes the system
-*self-judging*: if your `commit` produces the same SHA as real git's,
-every byte beneath it matched — object formats, canonical sorting,
-timestamps controlled. No harness needed; the hash is the judge. Any
-repository on Earth is a test case.
-
-**Track A.** `init` / `hash-object` / `add` / `commit` / `log` /
-`checkout`, producing hash-identical objects and valid packs; verify
-by round-tripping real repositories and cross-checking with
-`git fsck` and `git cat-file`. Determinism discipline is the hidden
-curriculum: author dates, committer identity, and index ordering must
-be pinned before anything matches (Lesson 0 in a new costume).
-
-**Track B.** Wire-protocol interoperability: clone from and push to
-real git servers, byte-verified — your objects, their server, no
-translation layer. Alternative: a new storage backend (e.g., SQLite)
-that is bit-compatible at every interface — same hashes, same wire
-format — demonstrating that exact compatibility and internal
-innovation are independent axes.
-
-**Teaches.** Lessons 0, 33 (choose an artifact that verifies itself).
-**Watch out for:** "it works on repos I created" — real-world
-repositories are the held-out set, and they are full of history your
-generator never produces.
-
----
-
-## 5. awk, byte-exact
-
-**Reference & ground truth.** The one-true-awk (bwk) and gawk, POSIX
-semantics, and fifty years of real awk scripts in the wild as corpus.
-Byte-exact includes stdout, stderr, exit codes, and error messages.
-
-**Track A.** An awk whose output is byte-identical to the reference
-across a curated corpus of real scripts plus a generated adversarial
-set (numeric/string coercion edges, uninitialized variables, getline
-in all its forms, locale pitfalls). Differential testing against *two*
-references (bwk awk and gawk) teaches an honest subtlety: references
-disagree, and the student must decide what the oracle is — spec,
-implementation, or intersection.
-
-**Track B.** An awk-to-JavaScript compiler, differentially verified
-against the student's own interpreter over the whole corpus: every
-script compiled must produce byte-identical output to the same script
-interpreted. New artifact, and the oracle is self-referential — Track
-A becomes the judge for Track B.
-
-**Teaches.** Lessons 43 (the compiler *is* applied static analysis),
-24 (adversarial generation), 46 (what do you do when references
-disagree?). **Watch out for:** locale and floating-point formatting;
-`printf %g` will consume a weekend if the student lets it.
+**The extension.** Your emulator is deterministic; you proved it.
+Determinism buys you time travel. Keep a ring of state snapshots and
+you can rewind a running game like video: scrub backwards, step
+forward one instruction at a time, fork an alternate timeline from any
+point. Build that debugger. It is a small version of the reversible
+execution engine our project spent months on, and once you have used
+one you will not want to debug any other way. Or become the
+reference: find a processor that lacks Harte-style test coverage,
+instrument real hardware or a trusted emulator to record
+before-and-after state for every instruction, and publish the JSON.
+That contribution outlives the course.
 
 ---
 
-## 6. Lua interpreter
+## 3. A FLAC decoder: compression with a perfect answer key
 
-**Reference & ground truth.** PUC-Rio's reference implementation
-(~30K lines of clean C) ships with the official test suite. Bit-exact
-here means: values, error *messages*, integer/float arithmetic
-semantics, string formatting, iteration order where defined.
+Audio compression comes in two kinds. Lossy formats like MP3 shrink
+music by throwing away detail your ear probably won't miss. Lossless
+formats keep every bit: FLAC, the standard lossless format used by
+archives, libraries, and everyone who cares, is like zip for music.
+Compress a recording, decompress it, and you must get back the exact
+original samples. Not close. Exact.
 
-**Track A.** A Lua 5.4 in JS/TS passing the official suite. The
-pedagogical core is **coroutines**: Lua has stackful coroutines,
-JavaScript does not, and the student faces a genuine cross-cutting
-semantic gap — the same *shape* of problem as C-blocking-IO-to-async
-that dominated the NetHack port. The student who tries to test their
-way through it will suffer instructively; the student who confronts
-the gap architecturally (CPS transform, generator lowering, or an
-explicit stack machine) and writes the checker for their invariant
-will not. Assign the postmortem: which were you?
+That definition makes FLAC a jewel for this course, because the test
+is absolute and the corpus is infinite. Decode any FLAC file with your
+decoder and with the reference implementation, and the outputs must
+match byte for byte. Any music collection is a test suite. There is
+no judgment call anywhere.
 
-**Track B.** Serializable VM state: snapshot a running Lua program —
-including live coroutines — to bytes, restore it elsewhere, resume
-identically. The reference implementation cannot do this. Verify by
-record/replay: a snapshotted-and-restored run must produce output
-identical to an uninterrupted one. A genuinely new capability, held to
-an exact-equivalence standard.
+The difficulty is all in the exactness. FLAC works by linear
+prediction: it predicts each audio sample from the samples before it
+and stores only the prediction error, using a variable-length integer
+code. The arithmetic is integer arithmetic, specified to the bit, and
+the temptation you must resist is floating point. The moment a float
+sneaks into your decode path, your output will be almost right, which
+in this course is a synonym for wrong. This project is where the
+discipline of exact arithmetic gets into your hands.
 
-**Teaches.** Lessons 43 and 28 (test the killer constraint *first* —
-require a coroutine design memo in week one, before any porting).
-**Watch out for:** deferring coroutines to the end. That is the
-monk mistake, and it should cost the grade the memo was designed to
-protect.
+**The assignment.** A decoder that produces byte-identical output
+across a large corpus: normal files, plus adversarial ones you encode
+yourself with strange block sizes, odd bit depths, and every encoder
+setting. The held-out set is files encoded with settings you never
+tested against.
 
----
-
-## 7. Rogue with PRNG parity — build the harness yourself
-
-**Reference & ground truth.** Original Rogue (~15K lines of 1980s C),
-seeded PRNG. **Deliberately, no pre-built judge exists.** Every other
-project hands students a frozen judge; this one makes them build the
-entire verification stack — because that skill, not any particular
-port, is the course.
-
-**Track A.** In order: (1) make the C reference deterministic and
-recordable — patch it to log PRNG calls and screens directly, no
-terminal middleware (the NOMUX exercise; Lesson 0); (2) define the
-session artifact (Lesson 33); (3) build the comparator with PRNG,
-event, and screen channels (Lessons 17, 42); (4) port the game to
-parity on a session corpus; (5) run seeded divergence hunts and report
-first-failure depth (Lesson 25). Grade the harness as heavily as the
-port.
-
-**Track B.** A mini-autoascend: an automatic Rogue player competent
-enough to fuzz deep game states, with a fairness boundary separating
-its strategy from oracle data (Lesson 46), plus wizard-style state
-injection for depth. Students rediscover why building the player is a
-project inside the project — and why it pays.
-
-**Teaches.** The entire stack, in miniature, in the order the real
-project learned it. This is the midterm. **Watch out for:** students
-porting game code before the recorder is trustworthy; enforce the
-sequencing.
+**The extension.** Make it ten times faster without changing one
+output bit. Vectorize, parallelize across workers, move it to the
+GPU, restructure however you like: the frozen judge is that every
+file still decodes identically. Optimizing under an exact oracle is
+its own skill, and this is its cleanest exercise: total freedom on
+one axis, zero freedom on the other. As a closing seminar, read the
+MP3 conformance spec, which defines a correct decoder as one within a
+numerical tolerance of the reference. Some standards demand exactness
+and some price it out. Learning to spot which kind of spec you are
+holding is worth a lecture on its own.
 
 ---
 
-## 8. DOOM, demo-sync faithful
+## 4. Git, from scratch, judged by mathematics
 
-**Reference & ground truth.** DOOM's demo files replay recorded input
-tick-by-tick, and desync unless the engine reproduces the original's
-behavior exactly — PRNG calls, movement arithmetic, monster AI, all of
-it. The community has curated this for decades: Chocolate Doom exists
-precisely to preserve vanilla behavior, and the DSDA archive holds
-tens of thousands of expert speedrun demos — recorded competence,
-free, each one a session (the NAO xlogfile of this substrate).
+You use git every day. This project is about discovering that
+underneath the commands, git is a small, beautiful database with one
+central idea: everything is stored under the fingerprint of its own
+content. Every file, every directory listing, every commit is hashed,
+and the hash is its name. Two objects with the same name are the same
+bytes, guaranteed by the mathematics of the hash function.
 
-**Track A.** A JS DOOM that plays a corpus of DSDA demos without
-desync, verified by per-tic state traces harvested from an
-instrumented Chocolate Doom (Lesson 31: students must instrument the
-reference to get their E channel — it is not handed to them this
-time). Held-out: demos from map/category combinations never seen
-during development.
+That idea does something remarkable for us: it makes the system
+self-judging. If your from-scratch git commits a directory tree and
+produces the same 40-character commit hash as real git, then every
+byte of every object underneath agreed: file contents, directory
+structure, timestamps, author, message, formats, everything. There is
+no test harness to build. The hash is the judge, and it cannot be
+sweet-talked.
 
-**Track B.** Rollback netcode built on the determinism Track A proved:
-peer-to-peer play with prediction and rollback, verified by the
-property that a rolled-back-and-replayed timeline is bit-identical to
-a never-interrupted one. Alternative with real users waiting for it:
-desync *diagnosis* tooling for the speedrun community — given a demo
-that desyncs on a modern port, localize the first divergent tick and
-the responsible subsystem, with a scrubber.
+The difficulty is precision across a wide surface. Git's object
+formats are exact: headers, compression, the canonical sort order of
+directory entries (which is not quite alphabetical, and the difference
+will cost you an afternoon). And matching hashes forces the
+determinism discipline on you immediately: commit timestamps,
+timezone offsets, author identity all feed the hash, so your test
+setup must pin every one of them. In our terminology, you cannot even
+begin until you have bought determinism, and this project makes you
+buy it in the first hour.
 
-**Teaches.** Lessons 44 (the corpus is already collected — notice how
-much that is worth), 31, 20. **Watch out for:** undefined behavior in
-the original C (uninitialized reads that historical binaries resolved
-consistently); this is where "faithful to what, exactly?" stops being
-philosophical.
+**The assignment.** Implement init, hash-object, add, commit, log, and
+checkout, producing hash-identical objects on real repositories. Take
+repositories from the wild, replay their content through your
+implementation, and verify with git's own consistency checkers. Wild
+repositories are the held-out set; they contain history your own test
+repos never will.
+
+**The extension.** Interoperate over the wire. Git has a network
+protocol; implement enough of it that your client can clone a
+repository from a real server, and push back, byte-verified on both
+ends. Interop with a server you do not control, against an
+implementation you did not write, is a different and more honest
+standard than passing your own tests. Alternatively, keep the outside
+bit-identical and change the inside: store objects in SQLite instead
+of files, with every hash and every wire byte unchanged. Exact
+compatibility on the surface and innovation underneath are independent
+axes. Proving that with your own hands is the point.
 
 ---
 
-## 9. TeX passing TRIP — the capstone
+## 5. awk: porting a whole language in three weeks
 
-**Reference & ground truth.** `tex.web`, the most thoroughly
-documented program in existence, and TRIP, the 1984 ancestor of this
-whole methodology: a single adversarial session exercising nearly
-every line, judged on an internal-trace channel (`trip.log`, tracing
-on — an E channel) and an output channel (`trip.dvi` via `dvitype`),
-with an explicit tolerance list. Passing TRIP has gated use of the
-name "TeX" for forty years. Human baseline on the record: NTS took
-funded years to get there, and its successor never did.
+awk is a tiny programming language from 1977, named for its authors
+Aho, Weinberger, and Kernighan, designed for one job: processing text
+a line at a time, split into columns. It is still everywhere. Fifty
+years of shell scripts, build systems, and one-liners depend on it,
+which means fifty years of real programs exist to test against.
 
-**Track A.** A from-scratch TeX in a modern language passing TRIP —
-which, as far as the record shows, has never been done in JavaScript,
-Rust, or Python. Then e-TeX's `etrip`, then load a frozen LaTeX format
-and hold a sealed sample of DVI-era arXiv papers as the held-out
-corpus (every paper compiles to ground-truth DVI bytes under canonical
-TeX). Optional experiment worth publishing on its own: port once with
-Knuth's literate prose available, once with it stripped, and measure
-whether the world's best program documentation actually helps agents.
+The excitement here is scope: this is a complete programming language,
+with variables, functions, regular expressions, and arrays, and it is
+small enough to port completely in weeks. Byte-exact for a language
+implementation means something stricter than you might expect: not
+just correct results but identical output formatting, identical error
+messages, identical exit codes. The devil lives in the corners: awk's
+rules for when a value is a string and when it is a number, what an
+uninitialized variable equals, the exact rounding of `printf %g`.
 
-**Track B.** Three shapes, ascending ambition. (a) A Knuth-Plass
-paragraph-breaking library for the web, verified to choose the *same
-breakpoints* as TeX on a corpus — TeX-fidelity paragraphs as an
-embeddable component. (b) The exact math core: port `mlist_to_hlist`
-with scaled-point arithmetic and TFM metrics, emit SVG, verify glyph
-placements against DVI ground truth over a million arXiv formulas —
-TeX-exact math native to the web, the thing MathJax's architecture
-cannot become. (c) Modern fonts: HarfBuzz shaping alongside TRIP
-conformance in compatibility mode — the XeTeX path, walked with a
-verification stack.
+And this project teaches one honest lesson none of the others do. Run
+the classic awk and GNU awk on the same corner cases and you will
+discover that the references disagree with each other. Now what is
+your ground truth? The spec, one implementation, or the behaviors they
+share? You will have to decide, document the decision, and defend it.
+Real verification work always contains this moment, and it is better
+to meet it on a small language than a large one.
 
-**Teaches.** Everything, plus the history: the student ends the course
-by extending a verification tradition Knuth started before they were
-born. **Watch out for:** TRIP overfitting — it is one public test and
-Knuth himself warned that passing it proves conformance, not
-correctness; the sealed arXiv sample is not optional (Lesson 46).
+**The assignment.** An awk that is byte-exact against the reference on
+a curated corpus of real scripts from the wild, plus a generated
+adversarial set aimed at the coercion rules, the getline variants, and
+the formatting edge cases. Differential-test against both references
+and maintain an explicit, documented list of every place they
+disagree and what you chose.
+
+**The extension.** Write a compiler: awk source in, JavaScript out,
+running much faster than your interpreter. The judge is one you built
+yourself. Every script in the corpus, compiled and run, must produce
+byte-identical output to the same script interpreted. Your Track A
+interpreter becomes the oracle for your Track B compiler. When the
+two disagree, one of them is wrong, and finding out which one is the
+best debugging education I know.
+
+---
+
+## 6. Lua: the port with a trap in the middle
+
+Lua is a small, elegant scripting language from PUC-Rio in Brazil,
+and you have probably run it without knowing: it is the embedded
+language inside World of Warcraft, Roblox, Redis, and Neovim. The
+reference implementation is about thirty thousand lines of unusually
+clean C, and it ships with an official test suite that checks
+everything down to the text of error messages. A real language, used
+by millions of people, small enough to port completely. That is a
+rare combination.
+
+But I am assigning Lua for one specific reason, and I will tell you
+the trap in advance because knowing about it will not save you from
+it. Lua has coroutines: functions that can pause themselves in the
+middle, even deep inside nested calls, and be resumed later. C can
+implement that by saving the machine stack. JavaScript cannot pause a
+call stack; the language forbids it. So somewhere in your port, a
+capability the source language takes for granted must be rebuilt on
+top of a target language that lacks it, and the problem cuts across
+every function in the interpreter. You cannot fix it locally. You
+cannot test your way out of it. You must confront it as architecture:
+transform the interpreter so every call can suspend, or lower
+coroutines onto JavaScript generators, or build an explicit stack
+machine. Each choice ripples through everything.
+
+This is the same shape of problem that dominated our NetHack port,
+where C's blocking input had to become JavaScript's async, and it is
+the shape that killed our second experimental port, which deferred
+the question and hit an architectural ceiling it could never climb
+out of. The gap between language semantics is where porting projects
+die, and the deaths are always scheduled early and discovered late.
+
+**The assignment.** A Lua 5.4 passing the official suite, error
+messages and all. But the first deliverable, due in week one before
+any porting begins, is a design memo on coroutines: which strategy,
+why, and a working prototype of one coroutine pausing inside three
+nested calls. Test the killer constraint first. The memo is graded
+pass/fail, and starting the port without it fails the project. I am
+not being dramatic; I am pricing the lesson at its historical cost.
+
+**The extension.** Give Lua something the reference cannot do:
+serialize a running program. Snapshot the entire state of the VM,
+live coroutines included, to bytes; restore it in a fresh process,
+possibly on a different machine; resume exactly where it left off.
+This is genuinely useful (it is how durable workflow engines and game
+saves want to work) and it has an exact standard of correctness: a
+program that is snapshotted, restored, and resumed must produce
+output byte-identical to the same program run without interruption.
+New capability, frozen oracle. That combination is the theme of this
+whole course.
+
+---
+
+## 7. Rogue: this time, nobody hands you the judge
+
+Rogue is the 1980 game that named the roguelike genre: descend a
+randomly generated dungeon, drawn in ASCII, and die. It is about
+fifteen thousand lines of old C, and its dungeons are generated from a
+seeded random number generator, which means the game is secretly
+deterministic: same seed, same dungeon, same monsters, and given the
+same keystrokes, the same game, every time.
+
+Every previous project handed you a judge that some community spent
+decades building: perft tables, processor tests, torture inputs. This
+project hands you nothing, on purpose, because building the judge is
+the curriculum. This is the project that is a miniature of the real
+one. In our first NetHack-family port, agents brought Rogue to near
+total parity in days once the verification machinery existed. The
+machinery was the hard part. Now it is your turn to learn why.
+
+**The assignment**, in strict order, and the order is the lesson:
+
+1. Make the reference deterministic and observable. Patch the C so it
+   records its random-number calls and screen output directly from
+   inside the program, with no terminal emulator or timing machinery
+   between the game and the log. If you capture through a terminal
+   layer you will get misaligned frames, and misaligned ground truth
+   converts engineering into guesswork. This step looks like plumbing.
+   It is the foundation of everything.
+2. Define your session artifact: seed, keystrokes, and the recorded
+   truth, in one replayable file. Every later tool consumes this one
+   format.
+3. Build the comparator with three channels: random-number stream,
+   game events, final screens. The middle channel, the events, is the
+   one beginners skip and experts consider the point: it catches
+   divergences near their causes instead of thousands of steps later.
+4. Now, and only now, port the game, driving your session corpus to
+   parity.
+5. Run divergence hunts across hundreds of fresh seeds and report
+   first-failure depth: how deep into a session the first mismatch
+   appears. Watch that number grow as your port converges. That
+   number is what done looks like.
+
+The harness is graded as heavily as the port, because the harness is
+what you will still know how to build ten years from now.
+
+**The extension.** Build a player. An automatic Rogue player that can
+survive and descend is a test generator of a kind money cannot buy:
+it reaches game states that random keystrokes never touch, and every
+game it plays becomes a session in your corpus. Keep a strict wall
+between the player's strategy and any information it could only get
+from your oracle instrumentation, and enforce the wall mechanically.
+An automated player that quietly reads the oracle is the fastest way
+to make all your numbers beautiful and false.
+
+---
+
+## 8. DOOM: judged by thirty years of recorded speedruns
+
+DOOM, from 1993, has a feature that makes it perfect for us: demos.
+The game records your inputs, thirty-five times a second, into a small
+file, and can replay them later. Nothing else is recorded, only the
+inputs, so a replay stays correct only if the engine recomputes every
+tick of the game identically: every monster's movement, every pseudo-
+random damage roll, every collision, in exactly the original order. If
+your engine computes one thing differently, the replayed player walks
+into a wall while the recorded inputs keep going, and the whole replay
+dissolves into nonsense. The community's word for this is desync, and
+their intolerance for it built us a judge of terrifying thoroughness:
+the Doom Speed Demo Archive holds tens of thousands of expert
+recorded runs, and a faithful engine must play all of them, from 1994
+to now, without desyncing once.
+
+Notice what this gives you compared to the earlier projects: the
+corpus of expert play, which in Rogue you had to generate with your
+own bot, already exists here, curated by thirty years of speedrunners.
+Recorded human competence, free. And the culture of exactness exists
+too: a project called Chocolate Doom preserves the original engine's
+behavior deliberately, bugs included, precisely so there is a living
+reference.
+
+The hard parts are the original's fixed-point arithmetic, its
+256-entry random number table, monster behavior full of decades-old
+quirks, and, most instructively, places where the original C does
+things the C standard calls undefined but the 1993 binary resolved
+one consistent way. Faithful to what, exactly, the standard or the
+binary? You will develop opinions.
+
+**The assignment.** A JavaScript DOOM that plays a corpus of archive
+demos without desync. For ground truth beyond pass/fail, instrument
+the reference: modify Chocolate Doom to log a fingerprint of game
+state every tick, then diff your engine's fingerprints against it, so
+a desync is localized to the exact tick and subsystem where reality
+diverged rather than discovered minutes later as a ghost walking into
+a wall. Held out: demos from map and category combinations you never
+tested during development.
+
+**The extension.** Rollback netplay. Modern online fighting games hide
+network delay with a trick that only works on a deterministic engine:
+predict the remote player's inputs, and when the real inputs arrive
+and differ, rewind the game a few ticks and replay with corrections,
+faster than perception. You have proven your engine deterministic, so
+you have earned the trick. The correctness standard is exact: a
+timeline that was rolled back and replayed must end bit-identical to
+one that never was. Or serve the community that gave you your test
+corpus: build the desync diagnosis tool speedrunners lack, one that
+takes a demo that desyncs on a modern engine and reports the first
+divergent tick and the subsystem responsible. They will actually use
+it.
+
+---
+
+## 9. TeX: the capstone, and a forty-year-old torture test
+
+TeX is the typesetting program Donald Knuth wrote in 1982 because he
+could not stand how the second edition of his book looked. It is
+still, today, the program that typesets essentially all of
+mathematics and physics. It is about twenty-five thousand lines, and
+it is the most thoroughly documented program ever written: Knuth
+published the entire annotated source code as a book you can buy.
+
+Knuth also did something in 1984 that this whole course has secretly
+been about: he built a verification tradition for ports of his
+program. It is called the TRIP test. TRIP is a single input file of
+concentrated malice, designed not to look like a document but to
+march through every dark alley of the program: error recovery,
+boundary values, the strangest corners of the macro language. A port
+must reproduce TeX's outputs on TRIP, and not only the final output:
+it must match the trace log, in which TeX prints its internal
+workings, box by box, so the test constrains how the program computed,
+not just what came out. Knuth then attached the strongest incentive in
+software: you may only call your program TeX if it passes. Every
+serious TeX port for forty years has been judged this way. When you
+take this project on, you are joining that tradition, and here is the
+striking fact: no from-scratch TeX in JavaScript, Rust, or Python has
+ever passed TRIP. The one hand reimplementation that ever passed, a
+Java system called NTS, took a funded team years around the turn of
+the millennium, and the project that tried to succeed it never got
+there. That is the human baseline you are being measured against.
+
+Why is it hard? TeX is a macro language of unusual depth, an
+arbitrary-precision paragraph optimizer, a hyphenation engine, and a
+compulsively exact arithmetic discipline: Knuth did all the
+typesetting math in fixed-point integers specifically so that every
+computer ever built would compute identical documents. Determinism
+was designed in, in 1982, for exactly the reasons this course keeps
+repeating.
+
+**The assignment.** A from-scratch TeX passing TRIP, matching Knuth's
+master log and output files through the standard comparison tools.
+Then the e-TeX extension and its own torture test. Then load a frozen
+LaTeX (LaTeX, the system most people actually use, is not a separate
+program: it is a large macro library that runs on top of TeX, so a
+faithful engine gets it nearly free) and face the held-out corpus: a
+sealed sample of real arXiv papers, each of which compiles under
+canonical TeX to exact ground-truth output. And one optional
+experiment I would genuinely like to see published: since Knuth's
+source is a book of prose explaining the code, run the port twice,
+once with the prose available to your agents and once with it
+stripped, and measure whether the finest documentation in the history
+of programming actually helps.
+
+**The extension.** Three options, in ascending ambition. First:
+extract TeX's paragraph-breaking algorithm, the one that chooses line
+breaks by optimizing over the whole paragraph while browsers still
+mostly decide line by line, and package it as a web library, verified
+to choose the same break points as real TeX across a corpus.
+Typography of TeX's quality, native to the web, as a component.
+Second: extract the mathematics engine. What MathJax approximates at
+great and honorable effort, you make exact: port TeX's math layout
+with its fixed-point arithmetic and font metrics, render to SVG, and
+verify glyph positions against ground truth over a million arXiv
+formulas. Third: modern fonts, the path the XeTeX project took,
+grafting contemporary font shaping onto the engine while keeping TRIP
+conformance in compatibility mode. Each option is a real contribution
+to a forty-year ecosystem, and each is held to the standard the
+ecosystem already speaks: exact agreement with the reference where
+agreement is claimed.
 
 ---
 
 ## Further directions
 
-- **Metafont + TRAP** — TeX's sibling has its own torture test; a
-  natural second capstone or paired-team project.
-- **SQL engine vs. sqllogictest** — millions of queries with ground
-  truth agreed across multiple engines; conformance-corpus testing
-  without a single reference implementation. Post-capstone scale.
-- **NetHack** — the final boss. Not homework; independent study. The
-  full account of what it takes is in [REPORT.md](REPORT.md) and
-  [LESSONS.md](LESSONS.md), and the contest remains open.
+Metafont, the font-drawing companion Knuth wrote alongside TeX, has
+its own torture test, TRAP, and makes a natural second capstone. A
+SQL engine tested against sqllogictest, a corpus of millions of
+queries whose correct answers were agreed by running multiple
+independent database engines, teaches conformance testing when there
+is no single reference implementation. And NetHack itself remains the
+final boss: not homework, an expedition. The full account of what it
+takes is in [REPORT.md](REPORT.md) and [LESSONS.md](LESSONS.md).
 
-## A note on why every project is a *port*
+## Why every project is a port
 
-The exercises all take the same shape — reproduce a reference exactly,
-then extend it without breaking the oracle — because that shape is the
-one that makes agent work verifiable end to end (Lesson 17) while
-still demanding every pillar: determinism, instrumentation, formal
-checking, test volume, and human orientation. Students who internalize
-the shape can transfer it to work that is not a port at all: the
-transferable object is the verification stack and the habit of
-choosing an oracle you cannot sweet-talk, not the porting itself.
+Because a port is where agent work can be verified end to end. There
+is a right answer for every byte, so nothing rests on my judgment or
+your persuasion, and every one of the disciplines this course cares
+about gets exercised for real: determinism, instrumentation, static
+checking, test generation at scale, and the tools that keep you
+oriented inside a codebase you did not write and will never fully
+read. The ports are the training weights. The transferable strength
+is the habit they build: before you let agents loose on a problem,
+choose an oracle you cannot sweet-talk, and build the machinery that
+makes their work checkable. That habit survives long after you stop
+porting other people's programs, because it is not really a fact
+about ports. It is what programming is turning into.
