@@ -791,7 +791,7 @@ across all three ports see [analysis-techniques-catalogue.md](data/analysis-tech
 **Chapter 2 (teleport + monk):**
 
 - **[analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md)** — Per-technique deep-dive: 41 techniques across 10 categories, master table plus per-entry problem/infra/effectiveness/outcome/failed-variant
-- **[LESSONS.md](LESSONS.md)** — The generalizable lesson behind each of the 41 techniques (same numbering), distilled for teaching: lesson / illustration / signs-you-need-it, grouped into nine arcs
+- **[LESSONS.md](LESSONS.md)** — 47 generalizable lessons (0–46) distilled for teaching: the 41 techniques (same numbering) plus the first principle (determinism/NOMUX) and the four-modes-of-knowing distillations, each as lesson / illustration / signs-you-need-it, with a substrate → four modes → immune system architecture
 - [ROLLUP.md](ROLLUP.md) — Rollup 1 (May 1, day 33) + Rollup 2 (Jul 11, day 104) + monk introduction
 
 ---
@@ -1846,7 +1846,7 @@ question for the next attempt.
 ### Deep-dive analyses
 
 - **[analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md)** — Exhaustive per-technique catalogue: 41 techniques across 10 categories, with master table + per-entry problem/infra/effectiveness/outcome
-- **[LESSONS.md](LESSONS.md)** — The generalizable lesson behind each technique, distilled for teaching (lesson / illustration / signs-you-need-it, nine arcs)
+- **[LESSONS.md](LESSONS.md)** — 47 generalizable lessons distilled for teaching (lesson / illustration / signs-you-need-it; substrate → four modes → immune system)
 - [ROLLUP.md](ROLLUP.md) — Rollup 1 (May 1, 2026, day 33) + Rollup 2 (July 11, 2026, day 104) + monk introduction
 - [chapters.json](data/chapters.json) — Chapter index across all three ports (menace + teleport + monk)
 

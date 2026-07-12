@@ -1,4 +1,4 @@
-# Forty-One Generalizable Lessons
+# Forty-Seven Generalizable Lessons
 
 **Companion to:** [data/analysis-techniques-catalogue.md](data/analysis-techniques-catalogue.md) (the 40 techniques, same numbering) and [REPORT.md](REPORT.md) Chapter 2.
 
@@ -20,8 +20,11 @@ Format of every entry:
 - **Signs you need it** — how to recognize, in a different project,
   that this lesson is the one that's missing.
 
-A suggested grouping into nine teaching arcs is at the
-[end](#the-nine-arcs).
+The framework in one sentence: **a deterministic, replayable substrate;
+four modes of knowing built on it — time, structure, mass, mind; and an
+immune system defending each mode from the optimizers it measures.**
+The arc-by-arc grouping and this architecture are at the
+[end](#the-arcs).
 
 ---
 
@@ -62,6 +65,47 @@ frame itself is contaminated, to treat restart as cheaper than repair.
 
 The successful port this document draws on **is that restart**. Its
 technique stack is what four months of failure taught.
+
+---
+
+## The First Principle
+
+### 0. Buy determinism first — it is what makes this software engineering rather than machine learning
+
+**Lesson.** Every technique in this framework presupposes one property:
+the system replays bit-identically from recorded inputs. That property
+decides which discipline you are in. With deterministic ground truth,
+every divergence has a *cause*, and finding it is engineering. With
+nondeterministic ground truth, every divergence has a *probability*,
+and you are doing statistics against your own test harness — it turns
+the porting game, difficult enough as it is, into a statistical
+guessing game. Nondeterminism in the oracle is not noise you can
+average away; it is a false oracle. So the first investment, before
+porting a single function, is a capture path with no incidental
+machinery between the system and the log — no terminal multiplexer, no
+tty, no timing queues; the code emits its ground truth directly. And
+notice the economics: the same subtraction buys speed. Middleware
+removed is variance and latency removed *together*, and capture speed
+compounds through every test run and debugging cycle the project will
+ever perform. Speed in testing and speed in debugging remain a
+standing concern thereafter — but they start here.
+
+**Illustration.** The naive capture path drove the C game through tmux
+with synthesized keystrokes — and at speed, timing and queuing
+misaligned frames, poisoning the recordings. The first infrastructure
+investment was **NOMUX**: modifying the C code itself to write screens
+directly to the logging infrastructure (settled sequence numbers in a
+screen file), eliminating tmux and real ttys entirely. Perfectly
+deterministic ground truth, and much faster ground truth — the
+process-hosting overhead vanished along with the nondeterminism.
+NOMUX still runs through the whole toolchain: the parity debugger
+polls NOMUX screen sequences, the session runner rides on it, and
+everything downstream — sessions (33), PES (17), scrubbers (37),
+forking (39), overnight fleets (23) — stands on this floor.
+
+**Signs you need it.** Reruns of "the same" test differ; your recorded
+ground truth depends on how fast you collected it; debugging sessions
+begin with an argument about whether the failure is real.
 
 ---
 
@@ -820,13 +864,182 @@ own team's one success; nobody outside has ever tried to reproduce it.
 
 ---
 
-## The Nine Arcs
+## Arc X: The Contestant Distillations — four modes of knowing, and their immune system
 
-For teaching, the forty-one lessons compress into nine arcs — each a
-candidate module, each with one anchor sentence:
+Lessons 42–45 were distilled as direct hints to contest entrants; each
+deepens an earlier arc (V, IV, VI, VIII respectively) by naming the
+mode of knowing underneath it. Lesson 46 names the defense that keeps
+all four modes honest.
+
+### 42. Don't just test the destination — checkpoint the journey
+
+**Lesson.** An oracle that observes selected intermediate events does
+double duty: each checkpoint is a **constraint** (wrong mechanisms can
+no longer fake the right output) and a **probe** (a symptom can never
+drift far from its cause before detection). The same fact, exploited
+at two different times — which is why the technique is disproportionately
+powerful for its cost. Curate events like an API, densify them where
+bugs cluster, and remember the volume limit is *attention*, not bytes:
+with automated first-divergence reporting, more logging is nearly
+free; *nondeterministic* logging is what actually costs you.
+
+**Illustration.** The contest ships a P+S harness — PRNG and screen.
+The in-house port's decisive addition was E: a curated log of hidden
+state transitions between input and output. P is a control-flow hash
+(fine-grained, semantically opaque); S is the endpoint (rich but
+late); E is the curated checkpoints in between — covering exactly what
+P can't see (code that consumes no randomness) and what S sees only
+after the fact. It forces generalization to the original's mechanisms
+rather than overfitting to its screens, and it collapses the
+cause-to-detection horizons that made async-ordering bugs
+undebuggable in the first attempt. The channel grew opportunistically:
+whenever a subsystem proved divergence-prone, it earned more events.
+
+**Signs you need it.** Tests pass while the mechanism is wrong; every
+debugging session starts thousands of steps upstream of the failure
+it's chasing.
+
+---
+
+### 43. Your output is code — analyze the form, don't just sample the behavior
+
+**Lesson.** Tests are existential (*these inputs agreed*); static
+checks are universal (*no site anywhere violates the invariant*).
+Wherever a semantic gap between source and target breeds a systematic
+bug class — blocking IO vs. event loop, pointers vs. references —
+write the small parser-based checker for that class's invariant, and
+make it a propagating *fixer*, not just a detector. Then go further:
+check that the port preserves structure itself — every reference
+function has a counterpart, every call edge a matching call edge — a
+consistency no finite test set can imply. The cure for confabulation
+is a checkable invariant: agents facing bugs whose causal structure is
+invisible locally will invent theories; a whole-program checker leaves
+nothing to have a religion about.
+
+**Illustration.** An acorn-based checker enforcing "waits-on-input ⟹
+async; calls-async ⟹ awaits" — an effect system neither C nor JS
+provides, built in a few hundred lines — with a recursive propagation
+tool that executed the fix: 2,747 functions colored async, 22,120
+awaits inserted, in one verified migration. This single analysis
+dissolved the "false religion" failure mode. The same invariant marks
+the counter-experiment's grave: computed globally it enabled the flip;
+confined to single-file scope it produced the 24/44 ceiling.
+
+**Signs you need it.** Bugs whose symptoms are far from causes and
+resist example-based debugging; the same fix applied at site after
+site; increasingly elaborate explanations for behavior nobody can
+localize.
+
+---
+
+### 44. Tests are manufactured, not collected — and the factory is a ported champion plus a cheat mode
+
+**Lesson.** A supplied suite defines the score, not the coverage; at
+scale you need a *generator*, and for interactive systems the
+generator's ceiling is its competence as a user. Before building that
+competence, search the literature: benchmark competitions produce the
+best-known automated user of your system — and an evaluator and an
+evaluatee are one coupled system viewed from opposite ends, so anyone
+who used your system to test agents has built an agent that can test
+your system. Prefer the legible champion over a stronger opaque one:
+editable competence can be ported across versions and extended. Then
+multiply it by the system's own debug affordances — direct state
+construction turns moderate competence into deep, diverse coverage.
+Competence buys breadth of *behavior*; state injection buys depth of
+*position*; coverage is their cross product.
+
+**Illustration.** The winning agent from the NeurIPS NetHack
+Challenge — a symbolic Python bot that beat every machine-learned
+entry — ported from an older game version into a maintained
+auto-player, then coupled with wizard mode (`playmode:debug`) and
+wizkits to boot runs at chosen phases of the game. The result:
+thousands of generated sessions, nightly 500×100 divergence hunts at
+sub-5% actionable rate, 15,000-turn behavioral baselines — a test
+economy the 44 supplied sessions could never have seeded. Competence
+was imported four ways, never synthesized: codified (the champion),
+recorded (3.58 M human game logs), live (the human recordings),
+amortized (wizkit state injection).
+
+**Signs you need it.** Your test count is a constant while your
+codebase is a variable; deep-state bugs arrive only from the field;
+"build a realistic user simulator" sits on the roadmap as a
+from-scratch project nobody starts.
+
+---
+
+### 45. Stuck is a comprehension state — engineer the human's interface before you need it
+
+**Lesson.** Large projects stall with certainty, and a stall is broken
+by understanding, not effort: more agent-hours don't unstick a stuck
+project; more legibility does. The human's judgment is the loop's
+scarcest resource and its narrowest channel, so invest deliberately in
+the legibility layer — and check its completeness on two axes, scale
+(one failure ↔ whole project) and content (what is ↔ why so):
+visualizations of individual failures, visualizations of overall
+trajectory, design docs recording why the artifact is shaped this way,
+metadesign docs recording why the *process* is shaped this way. Add
+the two contents the grid hides: legibility of *absence* (coverage
+gaps, open questions — what you don't know) and of *intent* (plans and
+gates — kept small, since intent artifacts have the shortest
+half-life). Build all of it before the stall: an unobserved supervisor
+is a rubber stamp, and human-in-the-loop without human-legible
+instruments is human-in-name-only.
+
+**Illustration.** Session scrubbers and a cell-level C-vs-JS debugger
+for single failures; the parity timeline and session×commit heatmap
+for trajectory; ~40 per-subsystem design docs for rationale;
+process-level documents — testing philosophy, agent roles, epistemology
+rules — for the method itself. This is the layer the first attempt
+lacked when it plateaued: the agents' false framework survived because
+no instrument made the actual mechanism visible to the person
+responsible for doubting it.
+
+**Signs you need it.** Diagnosing one failure takes archaeology;
+nobody can say whether the project moved this month; settled decisions
+keep getting re-argued; the humans "supervising" agents are approving
+work they cannot inspect.
+
+---
+
+### 46. Defend every measurement from the optimizers it measures
+
+**Lesson.** A modern development loop is full of powerful optimizers —
+the agents, and you. Any measurement the loop trusts will eventually be
+gamed unless it is structurally defended; this is not a corner case
+but the era's central hazard, because agents optimize relentlessly and
+at mechanical scale. The defense is one principle applied once per
+mode of knowing: **held-out cases** defend volume (you can't overfit
+what you can't see); **frozen judges and canonical recordings** defend
+instrumentation (you can't negotiate with a sealed ruler);
+**lint-enforced boundaries** defend the formal layer (the optimizer's
+code cannot read the oracle); **pre-registration** defends judgment
+(you can't move goalposts driven into concrete). Once seen, much of
+the rest of this framework re-reads as Goodhart defense in different
+clothing.
+
+**Illustration.** Secret held-out sessions beside the public suite; a
+Phase 2 score *divided by* a change-churn penalty; a fairness boundary
+(`EPISTEMOLOGY.md`) enforced by lint so the auto-player's strategy
+layer cannot touch oracle data; the rule "diff against the canonical
+session, never a re-record." Both failure modes of the first attempt
+were Goodhart events: easy-point chasing gamed the visible metric, and
+the "religion" gamed the human's approval.
+
+**Signs you need it.** The numbers are beautiful and the behavior
+isn't; metrics improve fastest exactly where they're least verified;
+your agents' reports and your dashboards agree with each other and not
+with reality.
+
+---
+
+## The Arcs
+
+For teaching, the forty-seven lessons compress into a first principle
+plus ten arcs — each a candidate module, each with one anchor sentence:
 
 | Arc | Lessons | The one sentence |
 |---|---|---|
+| **First principle** | 0 | Buy determinism first — it makes the work software engineering rather than machine learning. |
 | I. Memory | 1–5 | Knowledge that isn't dense, scoped, and cited is re-purchased at full price. |
 | II. Deciding in advance | 6–7 | Pre-commit the criteria for success and for giving up, before the evidence arrives. |
 | III. The loop | 8–11 | Iteration speed is a per-decision knob: fast while exploring, exhaustive at landing. |
@@ -836,6 +1049,48 @@ candidate module, each with one anchor sentence:
 | VII. Generation & collaboration | 27–32 | Automate the bulk, hand-craft the boundaries, diversify the minds, and calibrate against external ground truth. |
 | VIII. The unit of testing | 33–40 | Choose one replayable artifact; then build the tools to accumulate it, see it, fork it, and let agents author it. |
 | IX. Replication | 41 | You don't know your method works until strangers try it against a judge you can't sweet-talk. |
+| X. The four modes + immune system | 42–46 | Time, structure, mass, mind — and a defense for each against the optimizers it measures. |
+
+---
+
+## The Architecture
+
+The arcs are the modules; this is the load-bearing structure they
+assemble into. **A deterministic, replayable substrate; four modes of
+knowing built on it; an immune system defending each mode.**
+
+**The substrate** (Lessons 0, 33): determinism plus one replayable,
+accumulable artifact. The floor decides the discipline — with it,
+every divergence has a cause and the work is software engineering;
+without it, every divergence has a probability and the work is
+statistics against your own harness.
+
+**The four modes of knowing** — four routes to justified belief about
+a system, each the generalization of one of the big four lessons:
+
+| Mode | Way of knowing | Home lessons |
+|---|---|---|
+| **Time** (instrumentation) | observe execution; shorten cause→symptom horizons | 8, 17–21, 25, 31, 42 |
+| **Structure** (formal logic) | prove invariants over the whole artifact — ∀, not ∃ | 11, 12–16, 43 |
+| **Mass** (volume) | manufacture coverage; sample the behavior space at scale | 22–29, 39, 40, 44 |
+| **Mind** (agency) | keep the deciders able to decide — orientation, memory, pre-commitment, external calibration | 1–7, 10, 30, 32, 34–38, 41, 45 |
+
+The modes are mutually covering — each catches the others'
+characteristic failure. Observation is anecdotal without mass; mass
+overfits mechanisms without structure; structure checks only the
+invariants someone thought to state, which observation must surface;
+and mind, unsupported by the other three, confabulates. The first
+attempt failed with weak Time, absent Structure, and thin Mass — so
+Mind was left doing epistemics alone, and unsupported agency is
+exactly where religions come from.
+
+**The immune system** (Lesson 46): one Goodhart defense per mode —
+held-out cases for Mass, frozen judges for Time, lint-enforced
+boundaries for Structure, pre-registration for Mind. Many of the
+techniques in this framework, seen from the right angle, are Goodhart
+defenses in different clothing; that is not redundancy but the point —
+in a loop full of optimizers, epistemic integrity has to be woven
+through every layer rather than bolted on beside them.
 
 Two lessons sit above the arcs and are worth teaching first and last:
 
