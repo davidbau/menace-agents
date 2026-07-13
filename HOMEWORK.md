@@ -48,6 +48,11 @@ the port crosses some gap between languages that makes the work
 instructive rather than mechanical. The judge doubles as an
 autograder, so none of the grading is a matter of opinion.
 
+There is also a third track, described after the projects: for most of
+the artifacts on this list, though not all, the natural next rung is
+to make the session collaborative, and then to admit an AI
+collaborator, without giving up one bit of verifiability.
+
 | # | Project | Scale | The judge |
 |---|---------|-------|-----------|
 | 1 | Chess move generation | a weekend | published perft tables |
@@ -832,6 +837,124 @@ attributable, reviewable, and scrubbable in the document's history
 using the time travel you built in project 10. AI in the loop,
 verifiability preserved. That sentence is the whole course, and this
 is the project where you get to say it about something you built.
+
+---
+
+## Track C: the collaboration ladder
+
+Projects 10 and 15 are not really about editors and diagrams. They are
+two rungs of a ladder that most of the projects on this list can
+climb. Every artifact you have made deterministic and replayable has a
+session: a log of operations someone performed on state. Rung one is
+to share the session: several humans operating the same state at once,
+with convergence as the oracle, every replica byte-identical. Rung two
+is to admit a machine: an AI participant whose operations enter the
+same log as everyone else's, recorded at the boundary, so the session
+still replays bit for bit and every machine contribution is
+attributable. The judges stack. Determinism built the session,
+convergence fuzzing checks the sharing, and boundary recording makes
+the AI auditable. Nothing about the verification has to be given up at
+either rung, and that is the point of climbing.
+
+The ladder does not apply everywhere, and the refusals teach the rule.
+FLAC and awk are pure transforms, input to output; there is no session
+for anyone to inhabit, so there is nothing to share. Git refuses for
+the opposite reason, and it makes the best discussion question in the
+course: git already *is* collaborative editing. So what is the
+difference between git and Google Docs? The merge is deferred and
+human-mediated in one, continuous and algorithmic in the other. Same
+problem, two points on a latency spectrum. Once a student can say that
+clearly, they understand both systems.
+
+Where the ladder does apply, here is the climb:
+
+**Chess (project 1).** A shared analysis board: several people
+exploring a variation tree together. This exists (Lichess calls them
+studies), so the motivation is what yours has that theirs cannot
+claim: a verified move generator underneath and a convergence oracle
+on top, so two people deep in a variation never see different boards.
+The machine rung is an engine whose hints and annotations enter the
+same operation log, so an analysis session replays move by move,
+including what the machine suggested and when.
+
+**The CPU emulator (project 2).** Pair debugging on one recorded
+execution: two people scrubbing the same deterministic run, in the
+same timeline, together. The tool-assisted speedrun community
+collaborates on frame-perfect runs today by mailing files around; a
+shared TAS editor with a convergence oracle is the tool they do not
+have. The machine rung is an agent that explores the game overnight
+and leaves annotated savestates behind, every action a recorded input,
+so the whole exploration replays.
+
+**Rogue (project 7).** Our own project climbed both rungs of this one:
+a shared dungeon running on the deterministic engine, and an AI helper
+that could drive or advise. You own every layer already, which is the
+motivation: this is the cheapest place on the list to feel the whole
+ladder under your own hands.
+
+**DOOM (project 8).** The extension already is rung one; rollback
+netplay is collaboration. Rung two is bots: deathmatch AI whose inputs
+enter the demo stream like any player's, so that a match with machine
+players is itself a demo that replays. DOOM had famous bots in the
+nineties. None of them were replay-faithful. Yours would be the first.
+
+**TeX (project 9).** The strongest commercial motivation on the list.
+Collaborative LaTeX editing is Overleaf, used by essentially every
+research group on earth, and Overleaf renders your document on a
+server: it promises nothing about what each collaborator sees. Your
+client-side exact TeX plus the project-10 core gives something new
+under the sun: byte-identical preview on every collaborator's screen,
+verified. The machine rung is a writing assistant whose edits to the
+source are boundary-recorded, which means an AI co-author whose every
+contribution is attributable in the document history. Academia is
+currently anxious about exactly this, as a policy problem. You would
+be solving it as a structural property.
+
+**The terminal (project 11).** Shared terminals are how people pair
+program (tmux sharing, tmate), and every existing option is laggy and
+approximate. Yours replicates the exact cell grid under a convergence
+oracle. The machine rung is self-referential in the best way: an AI
+agent working in the shared terminal is an agent like the ones that
+built every project in this course, and boundary recording makes the
+whole human-plus-AI working session a replayable, auditable artifact.
+This is an idealized version of the tooling this course itself was
+built with, and the students will know it.
+
+**Vim (project 12).** Today, vim inside a collaborative editor is
+doubly approximate: an imitation vim on top of an unverified sync
+layer. You have an exact vim and a verified collaboration core;
+compose them, and pair editing with true vim semantics stops being an
+approximation stacked on an approximation. The machine rung: a copilot
+whose edits are ordinary operations in the log, so reviewing what the
+machine changed is scrubbing a timeline, not trusting a diff.
+
+**WebAssembly (project 13).** Shared time-travel debugging: two
+engineers scrubbing one recorded execution with synchronized cursors.
+For native code this product exists (Pernosco) and took a world-class
+team to build; the WASM import boundary shrinks it to a student
+project. The machine rung is a triage agent inside the debugger, its
+navigation and hypotheses recorded as part of the session. Our own
+parity debugger embedded exactly this: an AI pane whose investigation
+of a divergence became part of the record of the divergence.
+
+**The autoagent (project 14).** Here the ladder inverts, which is why
+it is worth climbing. Rung one is not many humans on one artifact but
+a human and the agent sharing one game session: the agent advises, the
+human drives, both streams in one recorded log, so team play replays
+exactly. Rung two is graduation day: hand the agent the controls and
+become the advisor yourself, and then measure, against pre-registered
+criteria, which configuration of the team is actually stronger. The
+answer is allowed to be humbling.
+
+(Lua could join the ladder through its snapshot extension, as a
+collaborative deterministic notebook, but that is a pivot into a
+different product; I leave it as an open door rather than an
+assignment.)
+
+The ladder is the course's real endgame, stated once: every verified
+session becomes shareable, every shared session can admit a recorded
+machine participant, and verification survives each rung. Projects 10
+and 15 are not special. They are just the two that walk it first.
 
 ---
 
