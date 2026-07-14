@@ -124,53 +124,68 @@ the smallest possible scale: the visible world exactly right, the
 hidden world quietly wrong, and the error parked precisely where the
 scoring function cannot reach.
 
-## The newt in the dark
+## The grid bug
 
 Hit points are numbers, and numbers must be talked about. Positions
-can be drawn. Session seed0012 is ordinary play, a monk crossing the
-early dungeon with an escort, and near the end of the session, in a
-part of the level the pair has walked away from, the two worlds
-disagree about where a newt is standing. First, what the hero and the
-judge see, byte-identical in both engines. Note the newt (the `:` in
-the lit room, upper right): both worlds agree about that one.
+can be drawn. To draw one, I ran a small experiment: I took the exact
+keystrokes of a public session, changed nothing but the dungeon seed,
+and recorded fresh ground truth from the original C program. A
+held-out session, one seed away from the exam, that no engine had
+ever seen. Then I ran both engines through it and compared their
+hidden worlds against C's, keystroke by keystroke.
+
+Here is the hero's situation, forty keystrokes in: a tourist standing
+in his starting room with his kitten, the rest of the level dark.
 
 ```
-  `<·│      ┌─────┐    ########
-  ····#     │·····│        ┌──·────┐
-  ───┘#     │·····│        │·······│
-  ### #     │·····│    ####····:···│
-    # #     │·····│    #   │·······│
-    ###     │······#####   └───────┘
-     ###    └───·─┘
-      ##        #####
-      ###           ###      @@
-      ########        ##      ##
-       #     #####     #       #┌──┐
-       ###       ## #  ##      #│$·│
-         #┌───────a─a───·┐      │··│
-         #│··············│      └──┘
-         #│··············│
+1. THE HERO'S VIEW:
+
+    ┌───┐
+    │·@f│
+    │··F│
+    │···│
+    │···│
+    │···
+    └───┘
 ```
 
-Now the same map with the latent state revealed. There is a second
-newt, down in the dark corridors southwest of the hero, and here is
+Fifty-eight columns to the east, out in that darkness, lives a grid
+bug, the little `x` that is NetHack's joke monster: it can only step
+north, south, east, or west, because it lives on a grid. Here is
 where each world believes it to be:
 
 ```
-      IN C:                                IN THE PERFECT-SCORING ENGINE:
+2. IN C'S WORLD — AND IN OWEN'S ENGINE, SQUARE FOR SQUARE:
 
-      ###           ###      @@            ###           ###      @@
-      ########        #:      ##           ########        ##      ##
-       #     #####     #       #┌──┐        #     #####     #:      #┌──┐
-       ###       ## #  ##      #│$·│        ###       ## #  ##      #│$·│
+    ┌───┐
+    │·@f│
+    │··F│
+    │···│                                                       x   ◄
+    │···│
+    │···
+    └───┘
+
+3. IN THE PERFECT-SCORING ENGINE:
+
+    ┌───┐
+    │·@f│
+    │··F│
+    │···│                                                    x      ◄
+    │···│
+    │···
+    └───┘
 ```
 
-One diagonal step apart, in the dark, a few squares from a hero who
-is looking the other way. The visible newt is in its place in both
-worlds; the newt in the dark is not. The screens match, the session
-scores perfect, and the difference will sit there, latent, until some
-future trajectory walks down that corridor. That is this whole essay
-in one map.
+Three squares apart, and it stays that way for sixty consecutive
+keystrokes while the hero putters around his room on the other side
+of the world. At this boundary Owen's engine has consumed exactly the
+random draws C has, and holds the bug on exactly C's square; it keeps
+holding it, square for square, even when C's bug finally scuttles off
+to a new corner and Owen's follows it move for move. The
+perfect-scoring engine's bug sits parked at its wrong post the whole
+time. The top engine on the leaderboard has a grid bug: an off-by-one
+in the grid, in the dark, on ground it never memorized. The
+fourth-place engine, on the same fresh ground, is exact.
 
 It is worth understanding how an engine gets into this condition,
 because nobody hardcoded anything.
