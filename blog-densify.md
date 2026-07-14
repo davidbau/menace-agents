@@ -58,7 +58,11 @@ on the spot too — and Owen's engine *fails* this session. The judge
 docks it three screens of cosmetic display misses, 57 of 60, while
 the engine that scores perfectly does neither of the two things that
 actually happened. The exam and the truth have parted company: the
-failing engine keeps the truer world. The perfect-scoring engine
+failing engine keeps the truer world. (I checked how rare this is: I
+swept every keystroke of all forty-four public sessions for any
+moment where the failing engine holds a monster fact the
+perfect-scoring engine has wrong. In the entire public corpus there
+is exactly one. This zombie is it.) The perfect-scoring engine
 does neither: its zombie lingers on the books, hit points intact,
 officially alive behind its own obituary, and its pony never grows at
 all. No screen shows a monster's hit points, so no channel the judge
