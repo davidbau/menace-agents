@@ -82,6 +82,72 @@ Except for two differences: Owen's number is the same on both columns,
 memorized hills. And Owen is holding an instrument the others don't
 have.
 
+## The knight at Delphi
+
+Before the instruments, meet the session, because everything that
+follows happens inside one recorded game. seed4500 is a coverage
+expedition: a knight in debug mode touring the dungeon to exercise
+its machinery, 1,813 keystrokes long. He kills a kobold on level one,
+promotes himself to experience level 15, and teleports down to
+dungeon level 5, which in this game holds the Oracle of Delphi,
+peaceful in her chamber, ringed by centaur statues. There he gets
+into real trouble: a cobra and an earth elemental at once.
+
+```
+You hit it.  The earth elemental hits!  The cobra bites!
+
+                                 ┌───────────┐
+                                 │C@········C│
+                                 │·ES··C·····│
+                                 │···┌─ ─┐  ··
+                                 │···│       │
+                                 │··C│
+                                 │···│
+                                 │···└
+                                 │·····
+                                 │C······
+                                 └────────
+
+Wizard the Knight              St:18/01 Dx:9 Co:12 In:7 Wi:14 Ch:17 Lawful
+Dlvl:5 $:0 HP:54(80) Pw:128(128) AC:3 Xp:15/160000 T:57
+```
+
+The `@` is our knight, the `S` is the cobra, the `E` is the elemental,
+and the `C`s are the Oracle's statues. He kills the elemental, takes
+venom and bites, and at 27 of 80 hit points he does the traditional
+thing: he kneels and prays to Lugh. While he prays, helpless, the
+cobra slithers under one of the statues to hide.
+
+```
+You see the cobra slither under a statue.  You finish your prayer.--More--
+
+                                 ┌───────────┐
+                                 │C·········C│
+                                 │·····C·····│
+                                 │···┌─ ─┐  ··
+                                 │···│       │
+                                 │··C│
+                                 │··S│       │
+                                 │···└───┘  ·│
+                                 │·····C·····│
+                                 │C@········C│
+                                 └───────────┘
+
+Wizard the Knight              St:18/01 Dx:9 Co:12 In:7 Wi:14 Ch:17 Lawful
+Dlvl:5 $:0 HP:27(80) Pw:128(128) AC:3 Xp:15/160078 T:69
+```
+
+Lugh is pleased. The knight teleports on, down through level 10 and
+level 20, until the status line reads Dlvl 27 and the game says: You
+hear groans and moans everywhere. He has entered Gehennom, and the
+game is generating hell. Hold that thought; there is a golem down
+there we will need later.
+
+Keep these three scenes: the cobra fight, the prayer, the descent
+into hell. Both of the engines in this story replay all 1,813
+keystrokes of this expedition. One of them scores every byte
+perfectly. Watch what each one actually knows.
+
 ## The instrument: logging latent state
 
 Owen Lockwood's entry is in fourth place, and it contains the best
@@ -107,7 +173,8 @@ which entity, which field, both values, and the C source locations
 active at that moment.
 
 Run against his own engine on seed4500, after suppressing one known
-issue, it prints this:
+issue, it prints this — and note where we are: this is the cobra from
+the fight at Delphi, five steps before it first bites:
 
 ```
   ── FIRST DIVERGENCE ──
@@ -151,18 +218,24 @@ verified to leave the engine's judged output byte-identical.)
 Two findings, on the session where this engine scores
 108,275 out of 108,275.
 
-At step 292, after the knight rests and confirms a prompt, the C hero
-is helpless for three turns. xeophon's hero is not. The two engines
-even disagree about when a monster's turn happens relative to the
-keyboard: C draws 18 randoms in that step, xeophon draws 19, taking
-one draw before asking for input that C takes after. The global
-stream is identical, which is why the judge is satisfied; the
+The first is the prayer. At step 292 the knight is on his knees
+before Lugh, at 27 of 80 hit points, and the C engine knows what
+kneeling means: the hero is helpless, `multi = -3`, three turns
+during which the world moves and he cannot. xeophon's hero is not
+helpless. His engine produces the same random numbers, but it does
+not know the knight is praying. And the cobra's move, the famous
+slither under the Oracle's statue, lands on opposite sides of a
+keystroke: C draws 18 randoms in that step and takes the snake's
+move after the next key, xeophon draws 19 and takes it before. The
+global stream is identical, which is why the judge is satisfied; the
 attribution of the draws to moments, and the hero's incapacitation,
 differ. The engine produces the right numbers while disagreeing with
-the original about what is happening.
+the original about what is happening in the game.
 
-Then at step 322, deep in a level-generation step where both engines
-make the same 3,147 draws, the oracle prints:
+The second finding is waiting in hell. At step 322 the knight has
+descended to Gehennom, the game murmurs that you hear groans and
+moans everywhere, and both engines generate the new level with the
+same 3,147 draws. Then the oracle prints:
 
 ```
   MON stone golem#903 (m_id 903) . mhp :   C=100   JS=18
