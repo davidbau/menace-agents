@@ -272,6 +272,43 @@ chargen," dormant since, stranded on obsolete fixtures.
    Goodhart-resistant gates. [HINTS.md](HINTS.md) targets, nearly
    one-for-one, the failure modes this field actually exhibits.
 
+## Addendum (2026-07-14): the twin experiment
+
+To quantify the overfit directly, a **twin session** was recorded:
+seed4500-knight-coverage's exact recipe (same rc, datetime, and 1,813
+keystrokes) with the seed changed to 4501, freshly recorded from the
+contest's C recorder (1,814 boundaries, 99,040 RNG calls of new
+ground truth). All five substantive engines were scored on both:
+
+| Entry | Exam seed4500 (public) | Twin seed4501 (fresh) |
+|---|---|---|
+| xeophon | PASS 108,275/108,275 | FAIL at 8,043/99,040 (8.1%) |
+| Hoimar | PASS perfect | FAIL at 7,496/99,040 (7.6%) |
+| kevinjosethomas | PASS perfect | FAIL at 450/99,040 (0.5%) |
+| lockwo | FAIL at 8,226/108,275 (7.6%) | FAIL at 7,260/99,040 (7.3%) |
+| serteal | PASS perfect | **PASS 99,040/99,040** |
+
+Key findings: (1) serteal passed a session that did not exist that
+morning — generalization made physical; (2) one seed off the public
+hill, the perfect-scoring engines converge to the same score as
+lockwo's honest 4/44 engine (~7.5%), i.e. the leaderboard's
+8,400-point spread evaporates on fresh ground; (3) lockwo's engine is
+the only one with no exam/twin gap.
+
+Additionally, lockwo's state oracle was run against xeophon's engine
+(a 76-line NHJSDUMP adapter added, verified byte-identical judged
+output). On the **byte-perfect exam session itself**, two latent
+divergences: step 292, hero helplessness (`multi` C=-3 vs JS=0, with
+one monster draw attributed to the opposite side of an input
+boundary — global stream identical, boundary attribution not), and
+step 322, `stone golem#903 mhp: C=100 JS=18` — a monster at a fifth
+of its correct hit points inside a 100%-scoring session (golem HP is
+assigned, not rolled, so no channel the judge has can see it). On the
+twin, xeophon's first state divergence is step 264, mid-melee
+(hero uhp 76 vs 71; 66 draws vs C's 77; hitum/dmgval/gethungry).
+The free-variable interpretation and full narrative are in
+[blog-densify.md](blog-densify.md).
+
 ## Implications for the contest (operator's notes)
 
 - **serteal's NOMUX buffer fix should be harvested upstream** (the
