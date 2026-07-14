@@ -289,6 +289,37 @@ the NOMUX exercise).
 Knowledge from observation; the timescales pillar. Lessons 42, 17–21,
 31, 25, 8–9.
 
+- **On time travel and logging** (the chapter's opening theory).
+  Reproducibility is necessary but not enough. In a complex system, by
+  the time a problem becomes apparent its causes are long past:
+  debugging is a backward problem in a forward-running universe, and
+  computation destroys its own history as it runs — state overwritten,
+  causes evaporating the moment they finish causing. The discipline is
+  deciding in advance which history to save from destruction. Four
+  escalating capabilities, each making questions about the past
+  cheaper: reproducibility makes the past *revisitable* (O(t) per
+  question, and blind); logging makes it *queryable* (a log is an
+  index into time — every logged fact is a question pre-answered);
+  snapshots and reversible execution make it *navigable* (scrub, jump,
+  step backward); forking makes it *branchable* (counterfactuals as an
+  engineering operation). And on a deterministic substrate a log is a
+  *certificate*, not a diary: log and replay cross-validate — logging
+  without determinism is testimony; with it, evidence.
+- **The aggregate dimension.** One run's log answers the causal
+  question (why did this happen?); logs across many runs answer the
+  statistical ones (what usually happens, what changed, where do
+  failures cluster) — patterns invisible in any single trace:
+  first-failure-depth distributions, divergence clustering, the
+  session×commit heatmap. The chapter-2 echo: a deterministic system
+  generates uniquely clean data about itself, every point replayable,
+  so you reason statistically about the tower without importing
+  statistical failure into it. Aggregate log analysis is where Time
+  hands off to Mass.
+- **The same move at four timescales:** record selected state against
+  time, then query and aggregate — within a run (the E channel),
+  across a run (RTX, the scrubbers), across a fleet (nightly hunt
+  reports), across the project (parity trailers; the timeline
+  dashboard as the project's own E channel).
 - The E channel as the central move: don't just test the destination,
   checkpoint the journey. Each observed intermediate event is
   simultaneously a **constraint** (wrong mechanisms can't fake the
