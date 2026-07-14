@@ -52,8 +52,13 @@ describe shortly:
 Two things happen in NetHack when a pet makes a kill, and neither of
 them touches the screen. The corpse's owner is removed from the
 monster ledger, and the pet grows from the experience: the pony's
-maximum hit points rise from 7 to 8. C does both on the spot. Owen's
-fourth-place engine does both on the spot. The perfect-scoring engine
+maximum hit points rise from 7 to 8. C does both on the spot. And
+here is the detail I find most instructive: Owen's engine does both
+on the spot too — and Owen's engine *fails* this session. The judge
+docks it three screens of cosmetic display misses, 57 of 60, while
+the engine that scores perfectly does neither of the two things that
+actually happened. The exam and the truth have parted company: the
+failing engine keeps the truer world. The perfect-scoring engine
 does neither: its zombie lingers on the books, hit points intact,
 officially alive behind its own obituary, and its pony never grows at
 all. No screen shows a monster's hit points, so no channel the judge
