@@ -122,8 +122,58 @@ much later, in some other fight, as an unexplainable desync.
 That is what overfitting looks like in a deterministic program, at
 the smallest possible scale: the visible world exactly right, the
 hidden world quietly wrong, and the error parked precisely where the
-scoring function cannot reach. It is worth understanding how an
-engine gets into this condition, because nobody hardcoded anything.
+scoring function cannot reach.
+
+## The newt in the dark
+
+Hit points are numbers, and numbers must be talked about. Positions
+can be drawn. Session seed0012 is ordinary play, a monk crossing the
+early dungeon with an escort, and near the end of the session, in a
+part of the level the pair has walked away from, the two worlds
+disagree about where a newt is standing. First, what the hero and the
+judge see, byte-identical in both engines. Note the newt (the `:` in
+the lit room, upper right): both worlds agree about that one.
+
+```
+  `<·│      ┌─────┐    ########
+  ····#     │·····│        ┌──·────┐
+  ───┘#     │·····│        │·······│
+  ### #     │·····│    ####····:···│
+    # #     │·····│    #   │·······│
+    ###     │······#####   └───────┘
+     ###    └───·─┘
+      ##        #####
+      ###           ###      @@
+      ########        ##      ##
+       #     #####     #       #┌──┐
+       ###       ## #  ##      #│$·│
+         #┌───────a─a───·┐      │··│
+         #│··············│      └──┘
+         #│··············│
+```
+
+Now the same map with the latent state revealed. There is a second
+newt, down in the dark corridors southwest of the hero, and here is
+where each world believes it to be:
+
+```
+      IN C:                                IN THE PERFECT-SCORING ENGINE:
+
+      ###           ###      @@            ###           ###      @@
+      ########        #:      ##           ########        ##      ##
+       #     #####     #       #┌──┐        #     #####     #:      #┌──┐
+       ###       ## #  ##      #│$·│        ###       ## #  ##      #│$·│
+```
+
+One diagonal step apart, in the dark, a few squares from a hero who
+is looking the other way. The visible newt is in its place in both
+worlds; the newt in the dark is not. The screens match, the session
+scores perfect, and the difference will sit there, latent, until some
+future trajectory walks down that corridor. That is this whole essay
+in one map.
+
+It is worth understanding how an engine gets into this condition,
+because nobody hardcoded anything.
 
 ## How a perfect score goes hollow
 
