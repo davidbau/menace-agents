@@ -116,11 +116,13 @@ standalone by a skeptic.
   the same exponential that limits bridges. Different levers (data,
   scale, optimization vs. abstraction, composition, invariants),
   different capabilities (the unformalizable vs. the exact).
-- **The hybrid architecture.** Real systems contain both, with a
-  standard division: statistical components supply inputs to
-  deterministic cores; deterministic scaffolds constrain, check, and
-  feed the statistical parts. Perception into a planner; a language
-  model calling typed tools.
+- **The hybrid architecture.** Real systems contain both, composed in
+  both directions: statistical components supply inputs to
+  deterministic cores (perception into a planner); deterministic
+  scaffolds constrain, check, and feed the statistical parts (a
+  language model calling typed tools); and, increasingly, statistical
+  components sit *on top*, steering deterministic substrates — an LLM
+  agent driving compilers, shells, and test suites is exactly this.
 - **Choosing the boundary: when to build a component deterministic.**
   The choice is the engineer's, driven by named properties.
   - *Demands on behavior:* very high quality (required error rates
@@ -149,10 +151,23 @@ standalone by a skeptic.
   - *The mirror list,* briefly: statistical is right when no formal
     spec can exist (perception, language, taste), when errors degrade
     gracefully, when data is cheaper than rules, when requirements
-    drift faster than code. The asymmetry: a deterministic scaffold
-    can wrap and check a statistical component, not the reverse —
-    which is why hybrids put determinism at the interfaces and
-    statistics at the perceptions.
+    drift faster than code.
+  - *The real asymmetry.* Composition runs both ways — statistical
+    components learn, model, steer, and manipulate deterministic
+    systems, and an LLM coding assistant is precisely a statistical
+    machine operating a deterministic substrate. What is asymmetric is
+    the direction guarantees flow. A deterministic gate can convert a
+    statistical output into a certainty: the generated code passes the
+    suite, or it does not. A statistical assessor can only convert a
+    deterministic system's behavior into a judgment — confidence,
+    never proof. **Judgment composes both ways; certification flows
+    one way.** So the architectural rule is not "determinism on the
+    outside" but: wherever a property must *hold* rather than be
+    *likely*, a deterministic gate must stand between the statistical
+    component and the consequence. (This is the whole book's stack in
+    one sentence: agents steer from above; the gates certify from
+    below; the first attempt failed as statistical steering without
+    deterministic gating.)
 - **The landing: software speaks the language of accountability.** In
   a deterministic system, "why did this happen?" has an answer: a
   finite, walkable chain — this output, because this rule, applied to
