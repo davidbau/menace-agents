@@ -194,6 +194,17 @@ step, RNG index, entity, field, C-vs-JS values, and C callsite, plus a
 campaign map across all 44 sessions. Their last commit finished the
 oracle; they stopped the same day, before it could pay.
 
+Notably, this is an independent reinvention of teleport's `^mapstate`
+channel (per-turn canonical state snapshot, C-patched and JS-mirrored,
+first-state-divergence reporting) — convergent evolution of the
+state-oracle technique under contest conditions. Design differences
+cut both ways: lockwo aligns per keystroke where mapstate aligns per
+gameplay turn (catching travel/prayer turns that arrive without
+keystrokes), and lockwo pays full-dump cost on every run where
+mapstate is tiered — an always-on FNV-1a hash per turn for fleet-scale
+detection, with the field-level dump (hashed over exactly the dumped
+text, so hashes are verifiable from dumps) reserved for attribution.
+
 **chanting-monks (dormant since Jun 20).** The only true transpiler in
 monk's sense: `tools/c2js` emits `js/translated/*` running on a
 hand-built C runtime shim — including a **Lua interpreter in JS** so
