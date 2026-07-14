@@ -19,6 +19,13 @@ chapter on what software is, a foundations chapter that draws the
 determinism boundary and introduces the model problem, four technique
 chapters (Time, Structure, Mass, Mind), and a conclusion.
 
+**First-draft strategy.** The book's initial draft is
+[HINTS.md](HINTS.md): the same material compressed into advice for
+the mazesofmenace.ai contest participants, one hint per chapter,
+published to the audience that needs it most and will stress-test
+every claim. What the contestants do with the hints becomes evidence
+for the conclusion chapter.
+
 **Conventions held throughout:**
 - Every chapter opens with a concrete scene from the case study, not a
   generality.
