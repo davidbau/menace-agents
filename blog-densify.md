@@ -120,20 +120,117 @@ The golem is simply hollow. The first time any trajectory actually
 fights it, it will die five times too early and everything downstream
 will desync.
 
-This is also why my wandering-monster example was so hard to find,
-and the reason is a small theorem about this contest's design.
-Monster movement consumes random numbers, so under a judge that
-checks the PRNG stream, a monster cannot walk the wrong way without
-the stream betraying it almost immediately. The random-number channel
-pins everything that rolls dice. What it cannot pin is what never
-rolls: assigned hit points, dispositions, timers, bookkeeping. In an
-ordinary software project, where the tests check outputs only, the
-wandering unseen monster is everywhere. Here, the wrongness was
-squeezed into the only place it could still hide, and it chose the
-golem's chest cavity. (There is a second such find in the same
-session: during the knight's prayer, the C engine knows the hero is
-helpless for three turns, `multi = -3`. Florian's engine produces the
-same numbers while not knowing the knight is praying.)
+This is also why my wandering-monster example was hard to find, and
+the reason is nearly a theorem about this contest's design. Monster
+movement consumes random numbers, so under a judge that checks the
+PRNG stream, a monster usually cannot walk the wrong way without the
+stream betraying it. The random-number channel pins most of what
+rolls dice. What it cannot pin is what never rolls: assigned hit
+points, dispositions, timers, bookkeeping. In an ordinary software
+project, where the tests check outputs only, the wandering unseen
+monster is everywhere. Here the wrongness was squeezed into the
+places the stream cannot see, and it chose the golem's chest cavity.
+(A second find in the same session: during the knight's prayer, the C
+engine knows the hero is helpless for three turns, `multi = -3`.
+Florian's engine produces the same numbers while not knowing the
+knight is praying.)
+
+I said "nearly" a theorem, because there is one loophole, and once I
+understood it I went hunting through all forty-four sessions for what
+it might have let survive. What I found is the best illustration in
+this essay.
+
+## The garrison in the dark
+
+Here is how the dice actually move a monster. First the code builds a
+menu: it scans the neighboring squares in a fixed order and collects
+the legal ones into a list, legality decided by dozens of small rules
+about walls, doors, water, and who stands where. Then a roll picks
+from the menu. The judged channel records the roll, `rn2(8)=3`. It
+does not record the menu. So two engines can agree on every roll,
+argument and result, byte for byte, while disagreeing about what item
+number three *is*, because one engine's rules built the list with a
+different square in that slot. Same dice, different dish. If the
+menus differ in length the argument changes and the stream betrays it
+instantly; the surviving form of the bug is an equal-length menu with
+different contents. And the same trick applies before any monster
+takes a step, when a freshly generated level *places* its inhabitants:
+same rolls, different placement grid.
+
+Now watch it happen. Public session seed0360 is a grand tour: a
+sorcerer in debug mode teleporting level to level through the whole
+dungeon. Florian's engine scores it perfectly. On dungeon level 25,
+the Castle, the hero materializes at the western edge, and this,
+byte-identical in both engines, is everything he and the judge will
+ever see of that level:
+
+```
+1. WHAT THE HERO AND THE JUDGE SEE (byte-identical in both engines):
+
+    ·│·
+    ·@l 1    2
+
+      2 4
+
+    3
+
+      2
+```
+
+A pool of torchlight and four remembered map symbols. Now the same
+map with the latent state revealed. The Castle keeps a garrison, and
+at this boundary both engines have drawn exactly 22,810 random
+numbers:
+
+```
+2. THE SAME MAP, C'S HIDDEN GARRISON REVEALED
+   (S soldier, s sergeant, L lieutenant, C captain):
+
+    ·│·
+    ·@l 1    2S S
+    ·──
+                    S S    SSSsSSSSs        ◄
+      2 4          S   S   SSssSSSCS        ◄
+
+    3               L
+                   S   S   ssSSSLSSS        ◄
+      2             S S    SSSSSSsss        ◄
+
+              S S
+
+3. THE GARRISON AS THE PERFECT-SCORING ENGINE BELIEVES IT:
+
+    ·│·
+    ·@l 1    2S S
+    ·──
+                    S S    SSSsSSSSss       ◄
+      2 4          S   S   SSssSSSCSS       ◄
+
+    3               L
+                   S   S   sSSSLSSS         ◄
+      2             S S    SSSSSsss         ◄
+
+              S S
+```
+
+Look at the marked ranks. In the perfect-scoring engine, an entire
+rank of the Castle garrison stands one square west of where it stands
+in C; a sergeant and a soldier have traded places; the barracks
+formation is subtly, permanently wrong. The armies have differed
+since the moment the level was generated, they differ through both of
+the tour's visits to the Castle, the random streams agree to the
+draw throughout, and the hero never opens the barracks door. Nothing
+the judge measures can ever know. The soldiers sleep, drawing no
+dice, waiting for a fight that this session never brings, and if it
+ever came, everything after would unravel.
+
+One comic footnote from the same hunt, in the same engine, on another
+perfectly scored session: a kobold zombie is bitten by the hero's
+pony, and the screen, in both worlds, announces "The kobold zombie is
+destroyed!" C buries it on the spot. Florian's monster ledger keeps
+it on the books, hit points intact, officially alive, for a dozen
+more turns before it quietly vanishes. His engine reported the
+zombie's death; the zombie was never informed.
 
 ## How the perfect score was actually earned
 
@@ -263,16 +360,39 @@ like:
   ➜ FIX: m_id 111 moved to wrong cell — m_move/mfndpos at distfleeck (monmove.c:538)
 ```
 
-That is the cobra from the fight, standing two cells west of where it
-stands in C, caught at the boundary where it happened, while the
-random streams still agree perfectly, with the function to fix named
-at the end of the line. The FIX line comes from nine little rules
-mapping fields to subsystems, a thirty-line function, and the reason
-nine rules suffice is that the schema did the hard work: choose the
-right nineteen latent fields and they group themselves by the
-subsystem that writes them. It was Owen's oracle, pointed at
-Florian's engine with a 76-line adapter, that found the hollow golem
-and the unfelt prayer inside a perfect score.
+That is the menu loophole again, caught in the act, in the maker's
+own engine, and this time you can see it, because this cobra is the
+one from the fight at the Oracle of Delphi. Side by side, the same
+moment in the two worlds:
+
+```
+   THE ORACLE'S COURTYARD (C)     THE SAME MOMENT (OWEN'S ENGINE)
+
+      ┌───────────┐                  ┌───────────┐
+      │C···S·····C│                  │C·········C│    ◄
+      │·····C·····│                  │··S··C·····│    ◄
+      │··E┌─ ─┐                      │··E┌─ ─┐
+      │@··│                          │@··│
+      │··C│                          │··C│
+      │···│                          │···│
+```
+
+The snake is approaching the knight along a different path through
+the Oracle's statues, caught at the boundary where it happened, while
+the random streams still agree perfectly, with the function to fix
+named at the end of the report. The FIX line comes from nine little
+rules mapping fields to subsystems, a thirty-line function, and the
+reason nine rules suffice is that the schema did the hard work:
+choose the right nineteen latent fields and they group themselves by
+the subsystem that writes them. Note what is different about this
+failure and the garrison's. Both engines err the same way. But
+Owen's error prints itself, names its C function, and enters his
+work queue; the garrison's error sits under a perfect score,
+congratulated by every green light its owner installed. The
+instrument tells the truth about everyone, including its maker. It
+was this same oracle, pointed at Florian's engine with a 76-line
+adapter, that found the hollow golem, the unfelt prayer, and the
+garrison in the dark.
 
 ## Telemetry, the standard sermon, and the missing verse
 
@@ -301,7 +421,10 @@ begin the archaeology ten thousand events downstream of the cause.
 And monster positions are only the beginning. Almost any action in
 the game could be logged as a latent event: the moment a shopkeeper's
 ledger gains a debt, the tick when a lump of meat begins to rot, the
-instant a prayer sets `multi = -3`. Each such event is a fact the
+instant a prayer sets `multi = -3`. One of these sessions contains
+the message "The gnome picks up a blue gem" — and picking up a gem
+consumes no random number at all, so every unseen gnome pocketing an
+unseen gem is a world-change only a latent event log can witness. Each such event is a fact the
 screen does not show and a place where two implementations can
 disagree invisibly. Every one you log converts a class of silent
 divergence into a loud one.
