@@ -853,11 +853,14 @@ an automated judge scoring every fork every two hours against public
 sessions plus a secret held-out suite, and a Phase 2 that divides your
 score by how much you changed your code to chase the new target. The
 stated hypothesis: *"the magic is in the LLM methods, not the code
-itself."* Interim result: roughly a dozen contestants with the same
-models, source, and harness are all struggling — and the in-house
-counter-experiment plateaued at 24/44 on the same judge. Early
-returns favor the hypothesis; the real verdict lands when Phase 1
-closes.
+itself."* Interim result (July 2026): the field split exactly along
+methods lines — the one contestant who manufactured his own
+verification corpus nearly solved the held-out suite, three who
+optimized against the public fixtures aced public and collapsed on
+held-out, and the fastest genuine climber runs a cause-cited
+divergence-first loop. Early returns favor the hypothesis in refined
+form: the magic is specifically in the *verification* methods. The
+real verdict lands when Phase 1 closes.
 
 **Signs you need it.** Your methodology claims rest entirely on your
 own team's one success; nobody outside has ever tried to reproduce it.

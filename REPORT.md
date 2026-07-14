@@ -1601,13 +1601,19 @@ contest's launch-era 44-session public suite — monk is effectively an
 internal contestant, testing the readable-transpiler strategy under
 contest conditions and plateauing at 24/44.
 
-**Measured effectiveness (interim).** As of July 2026, roughly a dozen
-external contestants have entered, and all are having trouble making
-progress — despite having the same models, the same C source, the
-session viewer, the recorder, and the test harness. Early returns
-favor the hypothesis: what they don't have is the technique stack this
-chapter catalogues. Phase 1 runs through November 29, 2026; the
-experiment's real verdict arrives then.
+**Measured effectiveness (interim, updated 2026-07-14).** Thirteen
+entrants, and the field has split exactly along methods lines (full
+analysis: [CONTEST-FIELD-REPORT.md](CONTEST-FIELD-REPORT.md)): one
+compiler-based entry with a self-built fuzzing oracle reached 43/44
+held-out and now stalls only on the playability speed gate; three
+agentic entries aced the public suite and collapsed on held-out —
+overfitting by answer key, by laundering, and by fixture-bound
+discipline respectively, with the common omission that none ever
+generated fresh sessions from the C recorder in their own tree; the
+fastest genuine climber runs a cause-cited divergence-first agent
+loop. The hypothesis is holding in refined form: the differentiator
+is specifically the *verification* methods. Phase 1 runs through
+November 29, 2026; the experiment's real verdict arrives then.
 
 **Verdict.** *In progress* — and the project's most rigorous act of
 self-skepticism: an open invitation to prove the methodology claims

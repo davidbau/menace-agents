@@ -1122,14 +1122,21 @@ against the contest's launch-era 44-session public suite
 testing the readable-transpiler strategy under contest conditions,
 reaching 24/44.
 
-**Measured effectiveness (interim).** As of July 2026, roughly a dozen
-external contestants have entered, and all are having trouble making
-progress. Alongside monk's 24/44 ceiling, this is early external
-evidence *for* the hypothesis: access to the same models, the same C
-source, and the same test harness does not reproduce the result —
-the accumulated technique stack (this catalogue) appears to be the
-differentiator. The experiment is in progress; Phase 1 runs through
-November 2026.
+**Measured effectiveness (interim, updated 2026-07-14).** Thirteen
+entrants; the field split exactly along methods lines (full analysis:
+[CONTEST-FIELD-REPORT.md](../CONTEST-FIELD-REPORT.md)). One entry
+(serteal, an Emscripten wasm2js compile of the C engine plus a
+self-built trace-fuzzing oracle) reached 43/44 on the held-out suite —
+blocked only by the playability speed gate, the NTS story replaying.
+Three "agentic" entries aced the public suite and collapsed on
+held-out (2.4–15.4% RNG): a verbatim answer key, a laundered overfit,
+and a disciplined-but-fixture-bound grind — none ever generated fresh
+sessions from the C recorder they all shipped. One active entrant
+(richie3366) is climbing fast on a cause-cited divergence-first loop.
+The refined verdict: the differentiator is specifically *verification
+methods* — self-generated ground truth, state-level channels,
+Goodhart-resistant gates — not model, architecture, or commit volume.
+Phase 1 runs through November 2026.
 
 **Outcome.** In progress — but already the project's most rigorous
 piece of self-skepticism: it invites the world to prove the
@@ -1225,12 +1232,16 @@ long enough that overnight hunts produce no actionable regressions,
 the port is done. This is teleport's currently-approaching endgame.
 
 **7. The methodology claim is being externally tested.** The contest
-(#41) is a live replication experiment: ~12 outside contestants with
-the same models, source, and harness are struggling to make progress,
-and the in-house counter-experiment plateaued at 24/44 on the same
-judge. Early returns favor the contest's own hypothesis — the magic
-is in the methods, not the code. Final evidence arrives with Phase 1's
-close in November 2026.
+(#41) is a live replication experiment, and by July 14, 2026 the field
+had split precisely along methods lines: the one contestant who built
+his own verification apparatus (self-generated fuzz corpora) nearly
+solved the held-out suite; three who optimized against the public
+fixtures aced public and collapsed on held-out; the fastest genuine
+climber runs a cause-cited divergence-first loop. Early returns favor
+the contest's hypothesis in refined form — the magic is specifically
+in the *verification* methods. Final evidence arrives with Phase 1's
+close in November 2026. See
+[CONTEST-FIELD-REPORT.md](../CONTEST-FIELD-REPORT.md).
 
 ---
 
