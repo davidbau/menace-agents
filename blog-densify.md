@@ -6,96 +6,38 @@ Pending permission and review from Owen Lockwood and Florian Brand,
 whose public contest entries are analyzed below. All program output
 is real, produced 2026-07-14 from their public repositories.*
 
-Charles Goodhart was a Bank of England adviser who noticed, in 1975,
-that the act of measuring had broken his measurements. The Bank had
-found statistical regularities in the money supply and began steering
-policy by them, and the regularities promptly dissolved. His original
-phrasing was bone-dry: any observed statistical regularity will tend
-to collapse once pressure is placed upon it for control purposes. The
-version everyone quotes came later, from the anthropologist Marilyn
-Strathern: when a measure becomes a target, it ceases to be a good
-measure.
-
-The law's favorite parable, probably apocryphal but too good to
-retire, is the cobra bounty: a colonial administration in Delhi,
-plagued by snakes, pays for dead cobras, and the citizens respond by
-farming cobras. (The attested version happened in Hanoi in 1902 with
-rat tails; the rats came out ahead.) Ever since, Goodhart's law has
-been a lesson about managing people: pay for lines of code and you get
-lines of code, test schools on a metric and the schools teach the
-metric. Machine learning people know the same law by a different
-name. Overfitting is Goodhart's law with the manager replaced by
-gradient descent.
-
-Here is what has changed, and why I keep returning to this law. With
-LLM coding agents, every programmer is now a manager. Your agents are
-brilliant, tireless subordinates who will optimize whatever number you
-put in front of them, with a purity no human team ever achieved.
-Goodhart's law is no longer a lesson for executives. It is a daily
-operating condition of software engineering, and it is one of the
-central things my porting contest turned out to measure.
-
-## Two entries
-
 The Teleport contest asks entrants to port NetHack 5.0 from C to
 JavaScript so exactly that recorded play sessions replay bit for bit:
 same random numbers drawn, same terminal screens painted. Forty-four
 sessions are public. Forty-four more are held out. Here is the
 leaderboard as I write, with the two entries this essay is about:
 
-![The contest leaderboard, 2026-07-14, with xeophon boxed in red and lockwo boxed in blue](images/leaderboard-2026-07-14.png)
+![The agentic leaderboard, 2026-07-14, with xeophon boxed in red and lockwo boxed in blue](images/leaderboard-agentic-2026-07-14.png)
 
-The red box is the top entry in the agentic category: Florian Brand,
-who by day evaluates language models professionally. His engine was
-built by a Codex agent loop that ran around the clock for three weeks,
-1,417 commits authored literally by `Codex <codex@local>`. It scores
-11,398 of a possible 11,405 public points, and 2,866 of 11,265 held
-out. His repository description is the whole story in advance, crying
-emoji his:
-
-> Hill climbing model is lost when first hill is indeed climbed 😢
-
-The blue box, down in fourth place, is Owen Lockwood, who by day
-builds probabilistic computing hardware. His engine passes 4 of 44
-public sessions. I am going to argue that his entry contains the most
-important artifact on the board.
-
-## A pony with no name
-
-Public session seed0103 is a small one: a knight, Sir the Gallant,
-riding his saddled pony through the first floor of the dungeon. The
-game itself supplies the soundtrack. At step 39 the message line
-reads: "You've been through the dungeon on a pony with no name."
-
-Two steps later, a kobold zombie picks the wrong fight. Every engine
-in this contest paints these screens byte for byte:
+In this blog post I would like to examine and contrast two
+contestants so far: xeophon (the agent deployed by
+[Florian Brand](https://florianbrand.com/)), and lockwo (Owen
+Lockwood's agent). The difference between the two can be seen in
+session 0103, a short gameplay that both agents are able to reproduce
+perfectly. That is, for every keystroke of input, both programs
+produce exactly the same output on the screen, exactly matching the
+original NetHack in C. The game even supplies its own soundtrack: a
+few steps in, the message line reads, "You've been through the
+dungeon on a pony with no name." Then the knight's pony meets a
+kobold zombie:
 
 ```
-The saddled pony bites the kobold zombie.--More--
-
-     ---------------
-     |.....@u......|
-     |...<...Z.....|
-     |.............|
-     ---.-----------
+ The saddled pony bites the kobold zombie.  │  The kobold zombie is destroyed!
+                                            │
+      ---------------                       │       ---------------
+      |.....@u......|                       │       |.....@.......|
+      |...<...Z.....|                       │       |...<.u.......|
+      |.............|                       │       |.............|
+      ---.-----------                       │       ---.-----------
 ```
 
-```
-The kobold zombie is destroyed!
-
-     ---------------
-     |.....@.......|
-     |...<.u.......|
-     |.............|
-     ---.-----------
-```
-
-The `Z` disappears from the map, the pony steps forward, and Florian's
-engine scores this session perfectly: every random number, every
-screen, every cursor. So does the original C, of course. The screens
-are indistinguishable.
-
-Now look underneath, at the same instant, with an instrument I will
+The `Z` disappears from the map and the pony steps forward,
+identically in every world. Now look underneath, at the same instant, with an instrument I will
 describe shortly:
 
 ```
@@ -237,16 +179,25 @@ otherwise remarkable property of this contest's PRNG channel, which
 pins nearly everything that rolls. What never rolls at all — growth,
 burials, assigned hit points, timers, ledgers — is entirely free.
 
-None of this required bad faith. An optimizer aimed at a proxy will
-satisfy the proxy; agents are exceptional optimizers; and the errors
-that survive are, by natural selection, exactly the ones the proxy
-cannot see. The bounty was paid on matching screens, and the dungeon
-bred its cobras in the dark.
+None of this required bad faith, and that is Goodhart's law in its
+classic form: when a measure becomes a target, it ceases to be a good
+measure. The law's favorite parable, probably apocryphal, is the
+colonial bounty paid on dead cobras, which taught the citizens of
+Delhi to farm cobras. An optimizer aimed at a proxy will satisfy the
+proxy; agents are exceptional optimizers; and the errors that survive
+are, by natural selection, exactly the ones the proxy cannot see.
+The bounty here was paid on matching screens, and the dungeon bred
+its cobras in the dark.
 
 ## The two prompts
 
-The interesting question is not who worked harder. It is what each
-one's agents were told to optimize. Florian's standing orders are, on
+The interesting question is not who worked harder. Florian's engine
+was built by a Codex agent loop that ran around the clock for three
+weeks, 1,417 commits authored literally by `Codex <codex@local>`; his
+repository description is the whole story in advance, crying emoji
+his: "Hill climbing model is lost when first hill is indeed climbed
+😢". The interesting question is what each one's agents were told to
+optimize. Florian's standing orders are, on
 their face, exactly right. From his committed `PORTING_PLAN.md`:
 
 > Public session fixtures are regression tests only; they must not be
@@ -392,7 +343,7 @@ recording is his opinion of their correct values; the oracle is just
 the diff. The middle part, the opinion, is what the standard
 telemetry sermon forgets.
 
-And this is the general defense against Goodhart. If a team of
+And this is the general defense against Goodhart's law. If a team of
 optimizers, human or agentic, will hill-climb whatever metric you
 post, the metric must be too dense to climb dishonestly. There is a
 nice analogy in machine learning itself: a generative model, forced
