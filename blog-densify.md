@@ -97,13 +97,13 @@ unexplainable desync.
 That is what overfitting looks like in a deterministic program, at
 the smallest possible scale: the visible world exactly right, the
 hidden world quietly wrong, and the error parked precisely where the
-scoring function cannot reach.
+scoring function cannot reach. But it raises a puzzle: how did
+**xeophon** get the screen to look right without doing the combat?
 
 ## Right for the wrong reasons
 
-How does a program get the screen exactly right while getting the
-world wrong? I went into **xeophon**'s source to see, and the answer is
-a special case. In real NetHack the pony's kill is handled by the
+I went into **xeophon**'s source to see, and the answer is a special
+case. In real NetHack the pony's kill is handled by the
 same code that handles every monster killing every other monster;
 the growth comes from a general function called `grow_up`. In
 **xeophon**, when a pet's kill unfolds behind a `--More--`
