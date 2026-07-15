@@ -427,17 +427,37 @@ removed. It leaves the monster ledger with all 2 of its hit points. The
 pony never grows.</p>
 <p>How did the program get the screen right without carrying out the
 underlying events? The source code answers. When this pet kill unfolds
-behind a <code>--More--</code> prompt, it is handled by a small state
-machine named <code>ponyDamageMore</code>:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (game<span class="op">.</span><span class="at">_command_mode</span> <span class="op">===</span> <span class="st">&#39;ponyDamageMore&#39;</span>) {</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">d</span>(<span class="dv">1</span><span class="op">,</span> <span class="dv">2</span>)<span class="op">;</span>                         <span class="co">// the bite&#39;s damage dice — rolled, discarded</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> messages <span class="op">=</span> [<span class="vs">`The </span><span class="sc">${</span>targetName<span class="sc">}</span><span class="vs"> is destroyed!`</span>]<span class="op">;</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">rnd</span>((data<span class="op">.</span><span class="at">mlevel</span> <span class="op">??</span> <span class="dv">0</span>) <span class="op">+</span> <span class="dv">1</span>)<span class="op">;</span> <span class="co">// grow_up&#39;s roll — burned, growth never applied</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    game<span class="op">.</span><span class="at">level</span><span class="op">.</span><span class="at">monsters</span> <span class="op">=</span> (game<span class="op">.</span><span class="at">level</span><span class="op">?.</span><span class="at">monsters</span> <span class="op">||</span> [])<span class="op">.</span><span class="fu">filter</span>(mon <span class="kw">=&gt;</span> mon <span class="op">!==</span> target)<span class="op">;</span></span></code></pre></div>
+behind a <code>--More--</code> prompt, the work is done by a chain of
+special cases. The chain begins in the pet-movement code, with a test
+for exactly this situation:</p>
+<pre><code>if (mon.saddled &amp;&amp; mon.data?.name === 'pony') {
+    ...
+    game._pony_second_attack = { mon, target: pos.target, targetName, targetAc, petLevel };
+    game._command_mode = 'ponySecondAttackMore';
+}</code></pre>
+<p>Not “when a steed’s kill resolves during message paging.” Literally:
+when a saddled pony does this. That is the only creature that required
+this path in the published sessions. Once that mode is set, the next
+keystroke prints the bite message and advances the mode again:</p>
+<pre><code>if (game._command_mode === 'ponySecondAttackMore') {
+    ...
+    const secondRoll = rnd(21);      // the second attack's to-hit roll
+    ...
+    await setMessage(`The saddled pony bites the ${targetName}.`, true);
+    game._command_mode = 'ponyDamageMore';
+}</code></pre>
+<p>And the keystroke after that is handled by a small state machine
+named <code>ponyDamageMore</code>:</p>
+<pre><code>if (game._command_mode === 'ponyDamageMore') {
+    ...
+    d(1, 2);                         // the bite's damage dice — rolled, discarded
+    ...
+    const messages = [`The ${targetName} is destroyed!`];
+    ...
+    rnd((data.mlevel ?? 0) + 1);     // grow_up's roll — burned, growth never applied
+    ...
+    game.level.monsters = (game.level?.monsters || []).filter(mon =&gt; mon !== target);
+}</code></pre>
 <p>The comments are mine; the code has none.</p>
 <p>The contest judge checks the terminal screen after every keystroke.
 It also checks how many random numbers the game has drawn, because
@@ -448,12 +468,6 @@ message. It rolls the bite’s damage dice and throws away the result. It
 rolls the die used when a pet grows and throws away that result too.
 Then it deletes the zombie directly so the map repaints correctly.</p>
 <p>The dice are rolled for their count, not their consequences.</p>
-<p>One file over, this state machine is reached through the
-condition:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (mon<span class="op">.</span><span class="at">saddled</span> <span class="op">&amp;&amp;</span> mon<span class="op">.</span><span class="at">data</span><span class="op">?.</span><span class="at">name</span> <span class="op">===</span> <span class="st">&#39;pony&#39;</span>)</span></code></pre></div>
-<p>Not “when a steed’s kill resolves during message paging.” Literally:
-when a saddled pony does this. That is the only creature that required
-this path in the published sessions.</p>
 <p>Meanwhile, lockwo performs the combat and growth correctly but loses
 three points on cosmetic display differences in the same session,
 scoring 57 out of 60. The test gives the higher score to the less
