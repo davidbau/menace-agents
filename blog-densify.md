@@ -132,6 +132,19 @@ consumed and screens drawn, so the program grew organs that consume
 random numbers and draw screens, shaped around the individual
 animals in the exam.
 
+Where did this machine come from? I searched the repository's
+history for the commit that created it. The first nineteen commits
+are contest scaffolding; the twentieth, on May 20, is titled, in
+full, "Port current JS behavior state" — a bulk import of thousands
+of lines from work done outside version control — and
+`ponyDamageMore` arrives inside it, fully formed. No subsequent
+commit message among the 1,437 in the repository mentions a pony or
+a pet's second attack again. The title deserves a second reading:
+not port the behavior — port the behavior *state*. Whatever
+deliberation produced the pony machine happened off the books, and
+nothing on the record ever found a reason to revisit it, because
+nothing in the exam ever would.
+
 Now look at the same event in lockwo's engine — the one that fails
 this session. Owen's combat code lives in a file named `mhitm.js`,
 after `mhitm.c`, the C file it ports, and it begins by declaring its
@@ -195,6 +208,17 @@ to the C line it mirrors. That is why, on this session, the failing
 engine is the one holding the true world: its author spent the dice
 on the world, and took the three cosmetic screen misses as the price
 of not pretending.
+
+And `mhitm.js` has a birth certificate. The commit that creates it,
+on June 1, is titled "steed mount_steed (knight rides pony) +
+pet-melee/naming foundation -> 456," and its body reads like a lab
+notebook: "mhitm.js (new) + dogmove/monmove: monster/pet melee
+(mattackm) — advances seed0060's pet-attack RNG"; "rebuilt
+MMOVE_BY_PMIDX base-speed table by-name vs the recorder's monsters.h
+(119 wrong entries fixed)"; "Public screens 442 -> 456 (+14). No
+regressions." Two agents, two kinds of memory. One records what it
+did to the world it was building, in units of the world; the other
+records that a state had been reached, in units of the score.
 
 ## The grid bug
 
