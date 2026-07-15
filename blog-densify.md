@@ -34,51 +34,103 @@ kobold zombie:
       |...<...Z.....|                       │       |...<.u.......|
       |.............|                       │       |.............|
       ---.-----------                       │       ---.-----------
+                                            │
+  @  the knight     (60,2)   HP  4/16       │   @  the knight     (60,2)   HP  4/16
+  u  saddled pony   (61,2)   HP  7/7        │   u  saddled pony   (60,3)   HP  7/8  ← grew
+  Z  kobold zombie  (62,3)   HP  2/2        │   Z  kobold zombie  — destroyed —
 ```
 
 The `Z` disappears from the map and the pony steps forward,
-identically in every world. Now look underneath, at the same instant, with an instrument I will
-describe shortly:
+identically in every world. Underneath each frame I have printed what
+the game's memory holds at that moment — position and hit points for
+the hero `@`, the pony `u`, and the zombie `Z` — using an instrument
+I will describe shortly. None of those hit points appear anywhere on
+the screen. And notice the small change on the right: the pony's
+maximum hit points rise from 7 to 8. Two things happen in NetHack
+when a pet makes a kill, and neither of them touches the screen: the
+victim is removed from the monster ledger, and the killer grows from
+the experience. C does both on the spot. Owen's engine does both on
+the spot too — and Owen's engine *fails* this session anyway: the
+judge docks it three screens of cosmetic display misses, 57 of 60.
+Now dump the same two moments from the engine with the perfect score:
 
-```
-   THE LEDGER IN C, AND IN OWEN'S ENGINE      THE LEDGER IN THE PERFECT-SCORING ENGINE
+<pre>
+ THE SAME TWO MOMENTS INSIDE THE PERFECT-SCORING ENGINE:
 
-   pony: hp 7/8, grew from its kill           pony: hp 7/7, never grows
-   kobold zombie: buried at once              kobold zombie: still on the books at
-                                              (62,3), hp 2/2, officially alive,
-                                              for a dozen more turns
-```
+  u  saddled pony   (61,2)   HP  7/7                  │   u  saddled pony   (60,3)   HP  <span style="color:#c00">7/7  ← never grows</span>
+  Z  kobold zombie  (62,3)   HP  <span style="color:#c00">2/2  ← alive, unhurt</span> │   Z  kobold zombie  — deleted —
+</pre>
 
-Two things happen in NetHack when a pet makes a kill, and neither of
-them touches the screen. The corpse's owner is removed from the
-monster ledger, and the pet grows from the experience: the pony's
-maximum hit points rise from 7 to 8. C does both on the spot. And
-here is the detail I find most instructive: Owen's engine does both
-on the spot too — and Owen's engine *fails* this session. The judge
-docks it three screens of cosmetic display misses, 57 of 60, while
-the engine that scores perfectly does neither of the two things that
-actually happened. The exam and the truth have parted company: the
-failing engine keeps the truer world. (I checked how rare this is: I
-swept every keystroke of all forty-four public sessions for any
-moment where the failing engine has a monster's whereabouts right
-while the perfect-scoring engine has them wrong. In the entire
-public corpus there is exactly one such monster. This zombie is it —
-and the reason is worth a footnote: the contest's PRNG channel pins
-monster positions wherever an engine's random stream is faithful, so
-wherever the failing engine is right, the passing engine is pinned
-right too. Facts can escape only if they never touch the dice, like
-this burial, or the pony's growth.) The perfect-scoring engine
-does neither: its zombie lingers on the books, hit points intact,
-officially alive behind its own obituary, and its pony never grows at
-all. No screen shows a monster's hit points, so no channel the judge
-has can ever see either fact. The wrongness simply waits. A pony one
-hit point weaker than it should be is the kind of thing you discover
-much later, in some other fight, as an unexplainable desync.
+At the keystroke where the screen says the pony bites, the real
+zombie is already dead in memory — a NetHack world runs a beat ahead
+of its own message queue — while this zombie stands at full health,
+untouched. It is never touched. At the next keystroke it is deleted
+from the monster list, unwounded, and the pony that killed it stays
+at 7 maximum hit points for the rest of the session. The exam and
+the truth have parted company: the failing engine keeps the truer
+world, and the perfect scorer is right on the screen for the wrong
+reasons underneath. No screen in any session shows a monster's hit
+points, so no channel the judge has can see any of this. The
+wrongness simply waits. A pony one hit point weaker than it should
+be is the kind of thing you discover much later, in some other
+fight, as an unexplainable desync.
 
 That is what overfitting looks like in a deterministic program, at
 the smallest possible scale: the visible world exactly right, the
 hidden world quietly wrong, and the error parked precisely where the
 scoring function cannot reach.
+
+## Right for the wrong reasons
+
+How does a program get the screen exactly right while getting the
+world wrong? I went into xeophon's source to see, and the answer is
+a special case. In real NetHack the pony's kill is handled by the
+same code that handles every monster killing every other monster;
+the growth comes from a general function called `grow_up`. In
+xeophon's engine, when a pet's kill unfolds behind a `--More--`
+prompt, the work is done by a hand-built state machine whose name
+gives the story away:
+
+```js
+if (game._command_mode === 'ponyDamageMore') {
+    ...
+    d(1, 2);                        // the bite's damage dice — rolled, discarded
+    rn2(3);
+    rn2(6);
+    rn2(3);                         // C's other rolls this turn — burned to match the count
+    const messages = [`The ${targetName} is destroyed!`];
+    ...
+        rnd((data.mlevel ?? 0) + 1); // grow_up's roll — burned, growth never applied
+        recordVanquished(target, false);
+    ...
+    game.level.monsters = (game.level?.monsters || []).filter(mon => mon !== target);
+```
+
+(The comments are mine; the code has none.) Each keystroke advances
+a script that prints the right message and draws the right number of
+random values, so the screen channel and the PRNG counter both stay
+green. But the dice are rolled for their count, not their
+consequences. The damage roll's result is thrown away — that is why
+the zombie's hit points never move. The kill is an array filter, not
+a death — that is why nothing that happens at a death, corpse,
+growth, experience, happens here. The growth roll is burned with the
+growth left unapplied — that is why the pony stays at 7. The engine
+even contains a faithful port of `grow_up`, used on other paths;
+this path declines to call it and just charges the dice. And the
+whole machine is gated, one file over, on the condition
+
+```js
+if (mon.saddled && mon.data?.name === 'pony') {
+```
+
+— not "when a steed's kill resolves during message paging," but
+literally *when a saddled pony does this*, because the only creature
+that ever needed the path in the public sessions was this knight's
+pony. This is what getting it right for the wrong reasons looks like
+when you can read the source: the exam measures random numbers
+consumed and screens drawn, so the program grew organs that consume
+random numbers and draw screens, shaped around the individual
+animals in the exam.
 
 ## The grid bug
 
