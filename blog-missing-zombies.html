@@ -474,15 +474,31 @@ combat and growth correctly. On the other hand, it loses three points
 on cosmetic display differences later in the same session, scoring 57
 out of 60. The contest gives the higher score to the less faithful
 internal implementation.</p>
-<h2 id="the-most-detailed-specification-imaginable">The most detailed
-specification imaginable</h2>
-<p>This is not a story about a contestant cheating. Nobody hardcoded a
-terminal screen, and nobody asked an agent to fake a pony fight.</p>
-<p>The agent was asked to maximize a score. It was very good at doing
-so. The errors that survived were precisely the errors the judge could
-not see.</p>
-<p>That is what makes the example interesting to me.</p>
-<p>I have been using NetHack as a test of large-scale AI coding. NetHack
+<h2 id="the-challenge-of-goodharts-law">The challenge of Goodhart’s
+law</h2>
+<p>It is instructive to read xeophon’s code and see what it is doing
+wrong. But at the scale agents now work, reading the code is a
+luxury. Xeophon’s agent built its port — about 130,000 lines of
+JavaScript — in five weeks, over 1,400 commits: more than 3,500
+surviving lines and about forty commits per day, not counting
+everything it wrote and replaced along the way. At that rate,
+thorough code review becomes infeasible. How can we maintain high
+quality when we cannot see the code?</p>
+<p>The typical response is to say “test the code carefully.”
+Test-driven development is the modern approach: write the checks
+first, and let the implementation follow. But the experience of
+xeophon shows the danger of test-driven development in an AI era,
+when there is not enough code review behind it.</p>
+<p>The British economist Charles Goodhart coined his law in 1975 as
+an adviser to the Bank of England, after noticing that whenever
+policy mandated meeting some measure of the money supply, the
+measure would cease to be a good measure of the real goal. The law
+is often illustrated with an apocryphal story from colonial Delhi: a
+bounty on cobra heads, intended to eradicate an infestation, instead
+created a cobra-breeding industry.</p>
+<p>This gap between testing and intention is what makes the example
+interesting to me. I have been using NetHack as a test of large-scale
+AI coding. NetHack
 5.0 is nearly 450,000 lines of C and Lua accumulated over more than four
 decades. It implements a ridiculous quantity of detailed behavior: what
 a dwarf does with a pick-axe, what happens when you drink from a
