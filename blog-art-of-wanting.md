@@ -6,8 +6,7 @@ general audience, with specific hints for contestants. Title TBD
 at Scale"; "The Work of Wanting, in Practice"). Pending permission
 and review from Owen Lockwood and Florian Brand, whose public
 contest entries are discussed below. All program output is real.
-[TODO: link for the code-modernization writeup by the company
-recently acquired by Anthropic; technique 4 needs DB's development.]*
+[TODO: technique 4 needs DB's development.]*
 
 This week nearly two hundred people — among them fifteen Nobel
 laureates, the chief economists of OpenAI and Anthropic, Jack Clark,
@@ -88,8 +87,20 @@ wanted, and then express it in the other language while adjusting all
 the *details* to fit the other idiom. This is hard enough that there
 is a whole industry, called code modernization, in which companies
 compete for contracts to rewrite code from older languages like MUMPS
-or COBOL into modern ones. [TODO: link — a company recently acquired
-by Anthropic wrote about doing such a port.]
+or COBOL into modern ones. And it is suddenly topical: just this
+week, Bun — the JavaScript runtime company Anthropic acquired last
+December — [rewrote its 500,000 lines of Zig into more than a million
+lines of Rust](https://www.theregister.com/devops/2026/07/14/zig-creator-calls-buns-claude-rust-rewrite-unreviewed-slop/5270743)
+using parallel Claude agents: eleven days, an estimated $165,000 in
+API fees, and a 100% pass on its test suite. Zig's creator Andrew
+Kelley promptly called the result "unreviewed slop," and his
+objection is worth quoting, because it is the question of this essay:
+"The argument for shipping all the million lines of unreviewed code
+is that the test suite is good enough to catch everything. It's not
+sufficient to catch bugs in Zig code but it is sufficient to catch
+bugs in [a] million lines of unreviewed slop?" Can a passing test
+suite stand in for knowing how the work was done? Hold that
+question.
 
 And porting is a perfect test of the "just tell it what you want"
 theory, because the source program is the most detailed specification
@@ -226,7 +237,9 @@ never actually cared about the screens. The screens were a proxy — a
 convenient, checkable stand-in for the real goal, which was to
 recreate the *game*: the world, the rules, the growth of ponies. This
 is an excellent example of how we don't really care about matching
-some outcomes; we care how things are done. And when we ask AI to do
+some outcomes; we care how things are done. It is Andrew Kelley's
+question again, in miniature: every test passed, and the combat
+never happened. And when we ask AI to do
 things the way we want, it is not enough for it to match an outcome.
 We need ways to understand, guide, and constrain the way things are
 done as well.
