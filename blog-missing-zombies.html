@@ -349,14 +349,11 @@ href="https://davidbau.com/archives/2026/05/06/the_teleport_contest.html">Telepo
 contest</a> asks coding agents to port NetHack from C to JavaScript, and
 scores the resulting programs by replaying recorded games and comparing
 every screen and random-number draw against the original.</p>
-<p><img src="images/leaderboard-agentic-2026-07-14.png"
-alt="The agentic category of the Teleport leaderboard, with xeophon boxed in red and lockwo boxed in blue" /></p>
-<p>One of the highest-scoring ports contains a zombie that disappears
-without ever being killed.</p>
-<p>Here is the moment in the original C NetHack. This is session 0103, a
-short game played by Sir the Knight. A few steps earlier, the message
-line reads, “You’ve been through the dungeon on a pony with no name.”
-Then the knight’s pony meets a kobold zombie.</p>
+<p>For example, one of the test games, session 0103, is a sequence of
+59 keystrokes played by a hero called Sir the Knight. The game supplies
+its own soundtrack: a few steps in, the message line reads, “You’ve
+been through the dungeon on a pony with no name.” Then, at keystrokes
+41 and 42, the knight’s pony meets a kobold zombie:</p>
 <pre class="terminal">
  <b>NetHack session 0103: Sir the Knight</b>
 
@@ -372,18 +369,34 @@ Then the knight’s pony meets a kobold zombie.</p>
   u  saddled pony   (61,2)   HP  7/7        │   u  saddled pony   (60,3)   HP  7/8  ← grew
   Z  kobold zombie  (62,3)   HP  2/2        │   <s>Z  kobold zombie  (62,3)   HP  0/2</s>
 </pre>
-<p>The top half is what a player sees. The <code>@</code> is the knight,
-the <code>u</code> is the pony, and the <code>Z</code> is the zombie.
-The bottom half is information taken from the game’s memory: each
-creature’s position and hit points.</p>
-<p>Two invisible things happen when a pet makes a kill. First, the
-victim takes damage and is removed from the monster ledger. Second, the
-pet grows from the experience. Here the zombie is bitten down from 2 hit
-points to 0, and the pony’s maximum hit points rise from 7 to 8.</p>
-<p>The original game does both. So does one contest entry,
-<strong>lockwo</strong>.</p>
-<p>Now look at the same moment in <strong>xeophon</strong>, then the
-highest-scoring agentic entry:</p>
+<p>The maps show the output of the game: the <code>@</code> is the
+hero, the <code>u</code> is the hero’s pet pony, and the <code>Z</code>
+is the zombie. In this one move, the pony bites the zombie and kills
+it. (The tables beneath the screens show something the player never
+sees; we will come to them in a moment.)</p>
+<p>In the Teleport contest, we measure the quality of a port by how
+well it matches this output. Several contestants have produced ports
+that play the game well enough that, presented with this sequence of
+keystrokes, they match the output screens exactly, character for
+character:</p>
+<p><img src="images/leaderboard-agentic-2026-07-14.png"
+alt="The agentic category of the Teleport leaderboard, with xeophon boxed in red and lockwo boxed in blue" /></p>
+<p>Two of these contestants are interesting, for two different
+reasons, and I think the way they work is emblematic of how
+large-scale AI coding will work—worth understanding in a bit more
+detail. One is <strong>xeophon</strong>, at the top of the agentic
+category. The other is <strong>lockwo</strong>, in fourth place. And
+one of them—the higher-scoring one—contains a zombie that disappears
+without ever being killed.</p>
+<p>To see it, look at the bottom half of the figure above:
+information taken from the game’s memory, each creature’s position
+and hit points. Two invisible things happen when a pet makes a kill.
+First, the victim takes damage and is removed from the monster
+ledger. Second, the pet grows from the experience. Here the zombie is
+bitten down from 2 hit points to 0, and the pony’s maximum hit points
+rise from 7 to 8.</p>
+<p>The original game does both. So does <strong>lockwo</strong>.</p>
+<p>Now look at the same moment in <strong>xeophon</strong>:</p>
 <pre class="terminal">
  <b>xeophon's port</b>
 
