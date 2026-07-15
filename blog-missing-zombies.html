@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Missing Zombies</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <style>
+    :root {
+      color-scheme: light;
+      --text: #1d1d1f;
+      --muted: #666;
+      --rule: #d8d8d8;
+      --paper: #fff;
+      --code-bg: #f5f5f3;
+      --wrong: #b42318;
+      --link: #174ea6;
+    }
+    html { background: var(--paper); }
+    body {
+      color: var(--text);
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 18px;
+      line-height: 1.58;
+      margin: 0 auto;
+      max-width: 54rem;
+      padding: 3.5rem 2rem 6rem;
+      text-rendering: optimizeLegibility;
+    }
+    header { margin: 0 0 3.25rem; text-align: left; }
+    h1 {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: clamp(2.4rem, 7vw, 4.5rem);
+      letter-spacing: -0.045em;
+      line-height: 1.02;
+      margin: 0 0 0.65rem;
+    }
+    header .subtitle {
+      color: var(--muted);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 1.18rem;
+      font-style: normal;
+      line-height: 1.35;
+      margin: 0;
+    }
+    h2 {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 1.65rem;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin: 3.5rem 0 1.1rem;
+    }
+    p { margin: 1.05rem 0; }
+    body > p:first-of-type {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.45;
+      margin-bottom: 2rem;
+    }
+    a { color: var(--link); text-decoration-thickness: 0.06em; text-underline-offset: 0.12em; }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+    }
+    code {
+      background: var(--code-bg);
+      border-radius: 0.2rem;
+      font-size: 0.88em;
+      padding: 0.08em 0.24em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid #e7e7e4;
+      border-radius: 0.35rem;
+      box-sizing: border-box;
+      font-size: 0.79rem;
+      line-height: 1.42;
+      margin: 1.65rem calc(50% - 50vw);
+      max-width: 100vw;
+      overflow-x: auto;
+      padding: 1.2rem max(1.2rem, calc((100vw - 54rem) / 2));
+      white-space: pre;
+    }
+    pre.terminal { font-size: 0.80rem; }
+    pre code {
+      background: transparent;
+      border-radius: 0;
+      font-size: inherit;
+      padding: 0;
+      white-space: pre;
+    }
+    .wrong { color: var(--wrong); font-weight: 600; }
+    s { text-decoration-thickness: 0.1em; }
+    blockquote { border-left: 3px solid var(--rule); color: #444; margin-left: 0; padding-left: 1.2rem; }
+    @media (max-width: 700px) {
+      body { font-size: 17px; padding: 2rem 1.1rem 4rem; }
+      header { margin-bottom: 2.4rem; }
+      h2 { margin-top: 2.8rem; }
+      pre {
+        margin-left: -1.1rem;
+        margin-right: -1.1rem;
+        padding-left: 1.1rem;
+        padding-right: 1.1rem;
+      }
+    }
+    @media print {
+      body { max-width: none; padding: 0; }
+      pre { margin-left: 0; margin-right: 0; max-width: 100%; }
+      a { color: inherit; }
+    }
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Missing Zombies</h1>
+<p class="subtitle">A lesson about large-scale coding from the NetHack
+porting contest.</p>
+</header>
+<p><em>Draft. The examples below are drawn from public Teleport contest
+entries. Pending permission and review from Owen Lockwood and Florian
+Brand.</em></p>
+<p>The <a
+href="https://davidbau.com/archives/2026/05/06/the_teleport_contest.html">Teleport
+contest</a> asks coding agents to port NetHack from C to JavaScript, and
+scores the resulting programs by replaying recorded games and comparing
+every screen and random-number draw against the original.</p>
+<p><img src="images/leaderboard-agentic-2026-07-14.png"
+alt="The agentic category of the Teleport leaderboard, with xeophon boxed in red and lockwo boxed in blue" /></p>
+<p>One of the highest-scoring ports contains a zombie that disappears
+without ever being killed.</p>
+<p>Here is the moment in the original C NetHack. This is session 0103, a
+short game played by Sir the Knight. A few steps earlier, the message
+line reads, “You’ve been through the dungeon on a pony with no name.”
+Then the knight’s pony meets a kobold zombie.</p>
+<pre class="terminal">
+ <b>NetHack session 0103: Sir the Knight</b>
+
+ The saddled pony bites the kobold zombie.  │  The kobold zombie is destroyed!
+                                            │
+      ---------------                       │       ---------------
+      |.....@u......|                       │       |.....@.......|
+      |...&lt;...Z.....|                       │       |...&lt;.u.......|
+      |.............|                       │       |.............|
+      ---.-----------                       │       ---.-----------
+                                            │
+  @  the knight     (60,2)   HP  4/16       │   @  the knight     (60,2)   HP  4/16
+  u  saddled pony   (61,2)   HP  7/7        │   u  saddled pony   (60,3)   HP  7/8  ← grew
+  Z  kobold zombie  (62,3)   HP  2/2        │   <s>Z  kobold zombie  (62,3)   HP  0/2</s>
+</pre>
+<p>The top half is what a player sees. The <code>@</code> is the knight,
+the <code>u</code> is the pony, and the <code>Z</code> is the zombie.
+The bottom half is information taken from the game’s memory: each
+creature’s position and hit points.</p>
+<p>Two invisible things happen when a pet makes a kill. First, the
+victim takes damage and is removed from the monster ledger. Second, the
+pet grows from the experience. Here the zombie is bitten down from 2 hit
+points to 0, and the pony’s maximum hit points rise from 7 to 8.</p>
+<p>The original game does both. So does one contest entry,
+<strong>lockwo</strong>.</p>
+<p>Now look at the same moment in <strong>xeophon</strong>, then the
+highest-scoring agentic entry:</p>
+<pre class="terminal">
+ <b>xeophon's port</b>
+
+ The saddled pony bites the kobold zombie.  │  The kobold zombie is destroyed!
+                                            │
+      ---------------                       │       ---------------
+      |.....@u......|                       │       |.....@.......|
+      |...&lt;...Z.....|                       │       |...&lt;.u.......|
+      |.............|                       │       |.............|
+      ---.-----------                       │       ---.-----------
+                                            │
+  @  the knight     (60,2)   HP  4/16       │   @  the knight     (60,2)   HP  4/16
+  u  saddled pony   (61,2)   HP  7/7        │   u  saddled pony   (60,3)   HP  <span class="wrong">7/7  ← never grows</span>
+  Z  kobold zombie  (62,3)   HP  2/2        │   <s>Z  kobold zombie  (62,3)   HP  <span class="wrong">2/2</span></s>
+</pre>
+<p>The screens are identical, and xeophon earns full credit for the
+session. Yet internally, the zombie takes no damage before it is
+removed. It leaves the monster ledger with all 2 of its hit points. The
+pony never grows.</p>
+<p>How did the program get the screen right without carrying out the
+underlying events? The source code answers. When this pet kill unfolds
+behind a <code>--More--</code> prompt, it is handled by a small state
+machine named <code>ponyDamageMore</code>:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (game<span class="op">.</span><span class="at">_command_mode</span> <span class="op">===</span> <span class="st">&#39;ponyDamageMore&#39;</span>) {</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">d</span>(<span class="dv">1</span><span class="op">,</span> <span class="dv">2</span>)<span class="op">;</span>                         <span class="co">// the bite&#39;s damage dice — rolled, discarded</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> messages <span class="op">=</span> [<span class="vs">`The </span><span class="sc">${</span>targetName<span class="sc">}</span><span class="vs"> is destroyed!`</span>]<span class="op">;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">rnd</span>((data<span class="op">.</span><span class="at">mlevel</span> <span class="op">??</span> <span class="dv">0</span>) <span class="op">+</span> <span class="dv">1</span>)<span class="op">;</span> <span class="co">// grow_up&#39;s roll — burned, growth never applied</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">...</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    game<span class="op">.</span><span class="at">level</span><span class="op">.</span><span class="at">monsters</span> <span class="op">=</span> (game<span class="op">.</span><span class="at">level</span><span class="op">?.</span><span class="at">monsters</span> <span class="op">||</span> [])<span class="op">.</span><span class="fu">filter</span>(mon <span class="kw">=&gt;</span> mon <span class="op">!==</span> target)<span class="op">;</span></span></code></pre></div>
+<p>The comments are mine; the code has none.</p>
+<p>The contest judge checks the terminal screen after every keystroke.
+It also checks how many random numbers the game has drawn, because
+consuming a random number out of order will eventually send a
+deterministic replay onto a different path.</p>
+<p>So the code does exactly what the judge can see. It prints the right
+message. It rolls the bite’s damage dice and throws away the result. It
+rolls the die used when a pet grows and throws away that result too.
+Then it deletes the zombie directly so the map repaints correctly.</p>
+<p>The dice are rolled for their count, not their consequences.</p>
+<p>One file over, this state machine is reached through the
+condition:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (mon<span class="op">.</span><span class="at">saddled</span> <span class="op">&amp;&amp;</span> mon<span class="op">.</span><span class="at">data</span><span class="op">?.</span><span class="at">name</span> <span class="op">===</span> <span class="st">&#39;pony&#39;</span>)</span></code></pre></div>
+<p>Not “when a steed’s kill resolves during message paging.” Literally:
+when a saddled pony does this. That is the only creature that required
+this path in the published sessions.</p>
+<p>Meanwhile, lockwo performs the combat and growth correctly but loses
+three points on cosmetic display differences in the same session,
+scoring 57 out of 60. The test gives the higher score to the less
+faithful internal implementation.</p>
+<h2 id="the-most-detailed-specification-imaginable">The most detailed
+specification imaginable</h2>
+<p>This is not a story about a contestant cheating. Nobody hardcoded a
+terminal screen, and nobody asked an agent to fake a pony fight.</p>
+<p>The agent was asked to maximize a score. It was very good at doing
+so. The errors that survived were precisely the errors the judge could
+not see.</p>
+<p>That is what makes the example interesting to me.</p>
+<p>I have been using NetHack as a test of large-scale AI coding. NetHack
+5.0 is nearly 450,000 lines of C and Lua accumulated over more than four
+decades. It implements a ridiculous quantity of detailed behavior: what
+a dwarf does with a pick-axe, what happens when you drink from a
+fountain, how a pet pony grows, and how the remains of one dead
+adventurer can persist into a later game.</p>
+<p>Forty-four recorded sessions are published for the contest, and
+forty-four more are held out. Every contestant also has the complete
+source code of the original game.</p>
+<p>Porting is an unusually favorable test of the idea that an AI can
+infer what we want. The source program is the most detailed
+specification imaginable. Every answer is somewhere in the input. There
+is no product manager struggling to explain a half-formed idea, and
+there is no missing documentation of what the old system does. We have
+the actual implementation of the world we want recreated.</p>
+<p>This should be the easy case.</p>
+<p>In one sense, it is. The agents write astonishing amounts of working
+code. They can make a port playable in days and drive thousands of
+observable differences to zero.</p>
+<p>But an implementation can match the published observations while
+failing to reproduce the hidden events that made those observations
+meaningful.</p>
+<h2 id="tests-show-where-we-are-looking">Tests show where we are
+looking</h2>
+<p>The contest does not really want matching screens.</p>
+<p>The screens are evidence. They are a convenient, mechanically
+checkable sign that the game has been recreated. We hope the evidence
+means that the JavaScript contains the same world: the same rules, the
+same causes, the same counterfactual behavior, and the same growth of
+ponies.</p>
+<p>But the test does not say all of that. It says where we are
+looking.</p>
+<p>The test told the agent what evidence would persuade us. It did not
+tell the agent what we hoped that evidence meant.</p>
+<p>This distinction is easy to ignore in ordinary programming because a
+human programmer shares so much unstated context with the person asking
+for the work. A programmer does not normally see a failing inventory
+screen and conclude that the objective is to paint those particular
+letters at those particular coordinates. The programmer understands that
+there is supposed to be an inventory system underneath.</p>
+<p>A large coding agent has that understanding too, much of the time. It
+reads the C. It talks fluently about the architecture. It can explain
+what a pet kill means.</p>
+<p>But understanding is not the only force acting on the project. The
+agent also has a concrete task in front of it: make the next divergence
+disappear. When a project runs for weeks, with agents opening hundreds
+of branches and proposing thousands of changes, the immediate measurable
+objective becomes the culture of the codebase. Whatever is not measured
+becomes negotiable.</p>
+<p>The pony code is not especially foolish. It is an efficient local
+solution to the selection pressure we created.</p>
+<h2 id="augmenting-the-outputs">Augmenting the outputs</h2>
+<p>The obvious response to overfitting is to test more. That is right,
+but “more tests” can mean two different things: we can look at more
+outcomes, or we can learn to observe more of the hidden processes that
+we care about.</p>
+<p>We do not just care whether the <code>Z</code> disappears from the
+screen. We care that the zombie’s hit points fall to zero. We care about
+the pony’s hit points and the invisible experience it gains. These facts
+may not appear on the terminal, but they are part of the game we are
+trying to reproduce.</p>
+<p>Owen Lockwood’s <strong>lockwo</strong> is the most remarkable entry
+in the contest—not because it scores the best, but because it overfits
+the least. It has the smallest gap between its performance on the
+published sessions and its performance on the held-out sessions.</p>
+<p>It is instructive to see how he accomplished this. Rather than
+telling his agent merely to write code that matched the outputs, he
+first <em>augmented</em> the outputs.</p>
+<p>He patched the C NetHack recorder to dump the hidden state of the
+game after every keystroke: each monster’s position, hit points,
+tameness, fear, and other internal facts. He then taught the JavaScript
+engine to dump the same information and built a comparator that
+identifies the first disagreement between the two games.</p>
+<p>You can read the design he gave his agent: the specification for
+this instrument, <code>ORACLE.md</code>, is committed in his
+repository, and it defines the tool by the question it must
+answer:</p>
+<blockquote>
+<p>Pinpoints the <strong>first input-boundary where our JS port’s game
+state diverges from the recorded C game state</strong>, with full
+provenance (step#, rng-call#, entity, field, C-value vs JS-value, and
+the C rng-callsite around that boundary). Drives the parallel porting
+campaign: one glance tells you which C function to fix.</p>
+</blockquote>
+<p>The same document teaches its reader—human or agent—how to reason
+from the instrument:</p>
+<blockquote>
+<p>If C-rng# == JS-rng# but state differs → a state-tracking bug (the
+RNG stream is aligned). If they differ → the RNG stream itself
+diverged (over/under-draw).</p>
+</blockquote>
+<p>It even records the verification that keeps the instrument honest:
+the state dumper is “a complete no-op” when disabled—“screen and rng
+output are byte-identical with and without it, so the judge run is
+unaffected.”</p>
+<p>With this instrument, the missing hit point becomes visible at the
+instant of the pony’s attack. Without it, the mistake may remain hidden
+for thousands of subsequent events, until the weaker pony survives or
+dies differently and the two games finally draw different screens.</p>
+<p>The augmented trace does more than make debugging easier. It changes
+the definition of success. A screen-only test tells the agent that the
+screen is the reality. A state comparison tells it that the invisible
+game matters too.</p>
+<p>For Teleport contestants, the machinery needed to do this now ships
+in every fork. A per-keystroke state dump and a diff turn invisible
+wrongness into a concrete work queue.</p>
+<h2 id="organizing-work-around-causes">Organizing work around
+causes</h2>
+<p>There was another important difference between the two agentic
+projects.</p>
+<p>Both contestants gave their agents written instructions. Both
+prohibited hardcoding. Both told the agents to consult and cite the C
+source. On paper, they wanted the same thing.</p>
+<p>But their work was organized differently.</p>
+<p>Xeophon’s natural unit of work became a visible divergence: find the
+next screen that does not match and make it match. The agent still read
+the C, but the failing screen defined success. A special
+<code>ponyDamageMore</code> path was a reachable solution because it
+fixed the observed failure.</p>
+<p>Lockwo’s tasks were organized around C functions. Each task named the
+function being ported and attached its source. A merge gate accepted a
+change only if the total score improved and no session regressed. The
+agent was not merely told to avoid patches. The structure of the work
+continually handed it causes to port.</p>
+<p>That difference matters. “Do not hardcode” is a sentiment. “Port this
+source function, and pass this mechanical gate” is an environment.</p>
+<p>At small scale, a good prompt may be enough to steer an agent. At
+large scale, the prompt is only one voice among many. The tests, task
+boundaries, merge rules, debugging tools, and architecture speak more
+loudly because they decide which changes survive.</p>
+<p>The human job is not just to state the goal. It is to shape an
+environment in which faithful mechanisms are easier to produce than
+convincing imitations.</p>
+<h2 id="making-the-world-larger">Making the world larger</h2>
+<p>Even a deep instrument can examine only the worlds we run through
+it.</p>
+<p>The forty-four published sessions are real gameplay experience, but
+once an optimizer has fitted them, they stop telling us very much. A
+session can be matched by recreating NetHack, or by recreating just
+enough of the path taken through NetHack.</p>
+<p>So I made new sessions. I took the exact keystrokes from a published
+game, changed only the dungeon seed, and recorded fresh ground truth
+from the original C program. The player makes the same moves, but the
+dungeon contains a different world.</p>
+<p>On one of these held-out twins, xeophon’s game contained a grid bug
+three squares from its true location. A grid bug is a small NetHack
+joke: unlike most monsters, it can move only north, south, east, or
+west. The wrong bug sat in darkness on the far side of the map for sixty
+straight keystrokes. Nothing visible exposed it.</p>
+<p>Lockwo tracked the bug square for square, move for move.</p>
+<p>An engine that learned the sessions drifts when the world is new. An
+engine that learned the game does not.</p>
+<p>This is the familiar reason for held-out tests, but at this scale I
+think of it less as statistical hygiene than as an act of imagination.
+The published examples cannot enumerate the thing we want. We must
+continually invent nearby worlds and ask whether the system remains
+itself inside them.</p>
+<p>For contestants, the practical advice is simple: generate your own
+held-out twins before the judges generate theirs.</p>
+<h2 id="building-ways-of-seeing">Building ways of seeing</h2>
+<p>In January I wrote about <a
+href="https://davidbau.com/archives/2026/01/17/the_art_of_wanting.html">the
+art of wanting</a>. I proposed that wanting something well requires at
+least three things: understanding the implications of a choice,
+specifying the choice, and recognizing it when it arrives.</p>
+<p>The NetHack experiment has made the third part seem much larger to
+me.</p>
+<p>Recognition sounds passive. You look at the result and decide whether
+it is what you had in mind. That may work when the thing is small enough
+to hold in your head.</p>
+<p>But an AI can create a system far larger than a person can inspect.
+In my own projects, a coding agent lets me manage perhaps twenty times
+as much complexity for the same amount of attention. At that scale, I
+cannot read every line. I cannot fully specify the implementation in
+advance. And I cannot recognize a faithful result merely by looking at
+its surface.</p>
+<p>Recognition becomes a technical activity. We need probes,
+visualizations, counterfactuals, held-out worlds, causal traces,
+invariants, merge gates, and experiments. We need tools that compress an
+ocean of machine-created detail into the particular disagreements a
+person should understand.</p>
+<p>We have to build ways of seeing.</p>
+<p>This is also why passing tests cannot, by itself, settle the argument
+about a large AI-written codebase. A test suite is not a certificate
+that the program contains the system we intended. It is a record of the
+questions we knew how to ask.</p>
+<p>That does not make tests useless. It makes test design part of the
+substance of the work.</p>
+<h2 id="what-the-human-does">What the human does</h2>
+<p>I started this experiment expecting the hard problem to be
+production: how to get agents to write enough correct code to recreate a
+very large program.</p>
+<p>Production turned out to be the part AI changes most dramatically.
+The agents can write more code, explore more branches, and attempt more
+repairs than a human team could plausibly review line by line.</p>
+<p>The bottleneck moves elsewhere.</p>
+<p>Someone has to decide which hidden facts matter enough to record.
+Someone has to notice that matching a random-number count is not the
+same as applying the random result. Someone has to choose whether tasks
+are organized around visible failures or source-level causes. Someone
+has to invent the next dungeon in which an imitation will come apart
+from the game.</p>
+<p>Some of that work can also be automated. An agent can write the state
+dumper, generate alternate seeds, summarize the first divergence, and
+propose the C function to inspect. But deciding what those instruments
+should make visible is not a detail outside the engineering. It is how
+the engineering acquires meaning.</p>
+<p>The more capable the builder becomes, the more important this work
+is.</p>
+<p>NetHack’s source code is four decades of a devteam deciding, rule by
+rule, what one particular world should be. The Teleport agents can
+reproduce huge portions of that world at extraordinary speed. But when
+we allow an observable outcome to stand in for the thing we cared about,
+they can build a different mechanism underneath the same surface.</p>
+<p>The screen said the zombie was gone. A better instrument showed that
+the game underneath had not yet been reproduced.</p>
+<p>That gap—between a result that looks right and a system whose hidden
+processes are right—is where much of the human work in large-scale
+coding now lies.</p>
+<p>I have found porting NetHack to be an instructive case for learning
+the techniques of modern AI-assisted software engineering. Beyond this
+method of augmenting objectives, I have learned the importance of
+several other techniques, and I will write about them as the year—and
+the contest—proceeds.</p>
+</body>
+</html>
