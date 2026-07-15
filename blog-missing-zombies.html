@@ -350,10 +350,10 @@ contest</a> asks coding agents to port NetHack from C to JavaScript, and
 scores the resulting programs by replaying recorded games and comparing
 every screen and random-number draw against the original.</p>
 <p>For example, one of the test games, session 0103, is a sequence of
-59 keystrokes played by a hero called Sir the Knight. The game supplies
-its own soundtrack: a few steps in, the message line reads, “You’ve
-been through the dungeon on a pony with no name.” Then, at keystrokes
-41 and 42, the knight’s pony meets a kobold zombie:</p>
+59 keystrokes played by a hero called Sir the Knight. When the hero dismounts
+his pet pony, the message line reads “You’ve been through the dungeon
+on a pony with no name.” Then, at keystrokes 41 and 42, the knight’s
+pony meets a kobold zombie:</p>
 <pre class="terminal">
  <b>NetHack session 0103: Sir the Knight</b>
 
@@ -365,13 +365,15 @@ been through the dungeon on a pony with no name.” Then, at keystrokes
       |.............|                       │       |.............|
       ---.-----------                       │       ---.-----------
                                             │
+  Step 41                                   │   Step 42
   @  the knight     (60,2)   HP  4/16       │   @  the knight     (60,2)   HP  4/16
   u  saddled pony   (61,2)   HP  7/7        │   u  saddled pony   (60,3)   HP  7/8  ← grew
   Z  kobold zombie  (62,3)   HP  2/2        │   <s>Z  kobold zombie  (62,3)   HP  0/2</s>
 </pre>
-<p>The maps show the output of the game: the <code>@</code> is the
-hero, the <code>u</code> is the hero’s pet pony, and the <code>Z</code>
-is the zombie. In this one move, the pony bites the zombie and kills
+<p>The maps show the output of the game: the walls and spaces are
+drawn with ascii letters, and the <code>@</code> is the hero, the
+<code>u</code> is the hero’s pet pony, and the <code>Z</code> is the
+zombie. In this one move, the pony bites the zombie and kills
 it. (The tables beneath the screens show something the player never
 sees; we will come to them in a moment.)</p>
 <p>In the Teleport contest, we measure the quality of a port by how
@@ -385,12 +387,18 @@ alt="The agentic category of the Teleport leaderboard, with xeophon boxed in red
 reasons, and I think the way they work is emblematic of how
 large-scale AI coding will work—worth understanding in a bit more
 detail. One is <strong>xeophon</strong>, at the top of the agentic
-category. The other is <strong>lockwo</strong>, in fourth place. And
-one of them—the higher-scoring one—contains a zombie that disappears
-without ever being killed.</p>
-<p>To see it, look at the bottom half of the figure above:
-information taken from the game’s memory, each creature’s position
-and hit points. Two invisible things happen when a pet makes a kill.
+category. The other is <strong>lockwo</strong>, in fourth place. I call out
+lockwo because even though its score is not the highest (it is only at
+18.9%), the gap between its public and held-out test performance is
+the smallest: of the (approximately) 11,000 public points, it gets
+3,039, but it performs similarly on the 11,000 held-out points,
+performing well on tests that it never sees. The first-place player
+has a much bigger gap between these two halves of the score.</p>
+<h2 id="dissecting-a-zombie">Dissecting a Zombie</h2>
+<p>To understand where this difference comes from, it helps to
+dissect the zombie in the example above. Look at the bottom half of
+the figure: information taken from the game’s memory, each
+creature’s position and hit points. Two invisible things happen when a pet makes a kill.
 First, the victim takes damage and is removed from the monster
 ledger. Second, the pet grows from the experience. Here the zombie is
 bitten down from 2 hit points to 0, and the pony’s maximum hit points
@@ -408,6 +416,7 @@ rise from 7 to 8.</p>
       |.............|                       │       |.............|
       ---.-----------                       │       ---.-----------
                                             │
+  Step 41                                   │   Step 42
   @  the knight     (60,2)   HP  4/16       │   @  the knight     (60,2)   HP  4/16
   u  saddled pony   (61,2)   HP  7/7        │   u  saddled pony   (60,3)   HP  <span class="wrong">7/7  ← never grows</span>
   Z  kobold zombie  (62,3)   HP  2/2        │   <s>Z  kobold zombie  (62,3)   HP  <span class="wrong">2/2</span></s>
