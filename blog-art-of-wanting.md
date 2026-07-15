@@ -1,13 +1,13 @@
-# The Art of Wanting
+# The Practice of Wanting
 
 *Draft for davidbau.com / mazesofmenace.ai — new version for a
-general audience, with specific hints for contestants. Pending
-permission and review from Owen Lockwood and Florian Brand, whose
-public contest entries are discussed below. All program output is
-real. [TODO: links to earlier NetHack-port posts; link for the
-code-modernization writeup by the company recently acquired by
-Anthropic; the "four ways" section is drafted for review — DB was
-interrupted before enumerating them.]*
+general audience, with specific hints for contestants. Title TBD
+(the January post owns "The Art of Wanting"; alternates: "Wanting,
+at Scale"; "The Work of Wanting, in Practice"). Pending permission
+and review from Owen Lockwood and Florian Brand, whose public
+contest entries are discussed below. All program output is real.
+[TODO: link for the code-modernization writeup by the company
+recently acquired by Anthropic; technique 4 needs DB's development.]*
 
 This week nearly two hundred people — among them fifteen Nobel
 laureates, the chief economists of OpenAI and Anthropic, Jack Clark,
@@ -18,14 +18,19 @@ displacement, as well as opportunities such as major gains in living
 standards."
 
 I believe in the radical power. But I have a different prediction
-about the work. I do not think AI will simply displace white-collar
-work. I think the main effect of AI deployment will be to make the
-world dramatically more complex, and the main challenge humans will
-face is navigating that complexity: figuring out what we want, in
-detail, in a world where nearly anything can be built. Our need to
-want particular things is vast and detailed, and it is not something
-AI can do well on its own. The scarce skill will be what I have come
-to think of as the art of wanting.
+about the work. In January I wrote about
+[the art of wanting](https://davidbau.com/archives/2026/01/17/the_art_of_wanting.html):
+the idea that as AI takes over the production of things, the
+distinctly human work that remains is deciding what we want —
+understanding our choices, specifying them with care, and staying
+attentive to what we got. Here I want to make that prediction
+concrete. I do not think AI will simply displace white-collar work.
+I think the main effect of AI deployment will be to make the world
+dramatically more complex, and the main challenge humans will face
+is navigating that complexity: figuring out what we want, in detail,
+in a world where nearly anything can be built. Our need to want
+particular things is vast and detailed, and it is not something AI
+can do well on its own.
 
 ## What we want is enormous
 
@@ -96,8 +101,10 @@ is in the input. It is the type of thing an AI should be able to do
 essentially perfectly, with very little human supervision.
 
 So I have been testing the theory by executing a port of NetHack. I
-have written about the project before [TODO: links], and this spring
-it became a contest, called Teleport: port NetHack 5.0 from C to
+have written before about
+[what this project did to my view of computer science](https://davidbau.com/archives/2026/03/20/does_computer_science_still_exist.html),
+and this spring it became
+[a contest, called Teleport](https://davidbau.com/archives/2026/05/06/the_teleport_contest.html): port NetHack 5.0 from C to
 JavaScript so exactly that recorded play sessions replay bit for bit —
 same random numbers drawn, same terminal screens painted. Forty-four
 recorded sessions are public. Forty-four more are held out. Here is
@@ -224,90 +231,96 @@ things the way we want, it is not enough for it to match an outcome.
 We need ways to understand, guide, and constrain the way things are
 done as well.
 
-There are four main ways to do this, and as I have been porting
-NetHack I have found that all four are necessary.
+There are four main techniques I know for doing this, and as I have
+been porting NetHack I have found that all four are necessary. Each
+deserves an article of its own, and I will write more about them in
+the future; but they come down to these.
 
-**1. Specify the how, not just the what.** Both top contestants gave
-their agents written standing orders, and both sets of orders forbade
-hardcoding and demanded citations to the C source. The difference was
-the unit of work. **xeophon**'s loop worked on observed behaviors:
-make the next divergent step of the next failing session match, then
-move on. **lockwo**'s loop worked on causes: its triage tool traced
-every failing session to the C function responsible — its opening
-analysis found that all 44 public failures shared just 8 root causes
-in the C code — and each task handed to the agent was "port this
-function," with the C source attached. Same rules, same score
-function, opposite geometry: one process fits the observations, the
-other reconstructs the machine that generates them. *Hint for
-contestants: hand your agent the enclosing C function, never the
-failing screen.*
+**1. Taming time.** Focus not just on the endpoint but on the hidden
+processes that get there. An outcome is one moment; the work is a
+trajectory, and almost all of it is invisible in the result. This is
+where Owen's instrumentation shines. He patched the contest's C
+recorder to dump, at every keystroke, the hidden state of the
+simulation — every monster's position, hit points, tameness, fear —
+taught his own engine to dump the same, and built a comparator that
+reports the first disagreement and names the C function that was
+executing when it happened. Instrumenting the steps and states along
+the way demystifies hidden state, and lets you build assertions
+about what states you want, in what order, and when. The pony's
+missing hit point flags at the moment of the kill, while it is still
+just a wrong number in a ledger — not ten thousand events later,
+when it finally bends something visible and the archaeology begins.
+*Hint for contestants: the recorder ships in every fork; a
+per-keystroke state dump plus a diff is an afternoon of work, and it
+converts invisible wrongness into a work queue.*
 
-**2. Densify the objective.** Every fact the judge never measures is
-a free variable: it can take any value while the score stays perfect.
-The pony's growth is a free variable. So, deeper in the dungeon, are
-whole rooms of monsters: in one held-out-style probe I found a stone
-golem carrying 18 hit points instead of 100 inside a perfectly-scored
-session, because golem hit points are assigned without rolling dice,
-so no channel ever betrayed them. The defense is to measure more. A
-dense target is hard to game because it leaves few free variables — a
-model forced to predict every pixel of the dog must learn what dogs
-look like, while a classifier asked only dog-or-cat learns shortcuts.
-*Hint for contestants: score yourself on more channels than the
-judge does, because the judge's channels are a floor, not a
-definition of done.*
+**2. Regularizing the structure.** Create systematic mandates about
+the mechanisms used, the way a type-checker makes sure a system
+follows particular rules. Both top contestants gave their agents
+written standing orders, and both forbade hardcoding and required
+citations to the C source. The difference is what the rules made
+*structural*. **lockwo**'s every task was required to name the C
+function being ported, with the C source attached; its merge gate
+accepted a change only if the total score strictly improved and no
+session regressed. Under those mandates, "fake the dice" is not a
+reachable move — the structure of the work only admits ports of
+causes. **xeophon**'s rules were fine sentiments checked by nothing
+structural, and the loop's natural unit of work collapsed to "make
+the next divergent screen match." *Hint for contestants: hand your
+agent the enclosing C function, never the failing screen, and let a
+mechanical gate — not a sentiment — enforce your rules.*
 
-**3. Instrument the hidden state — with an opinion.** Owen built the
-tool this essay has been using: a differential state oracle. He
-patched the contest's C recorder to dump, at every keystroke, the
-hidden truth of the simulation — every monster's position, hit
-points, tameness, fear — and taught his engine to dump the same, and
-built a comparator that reports the first disagreement and names the
-C function that was executing when it happened. The pony's missing
-hit point flags at the moment of the kill, while it is still just a
-wrong number in a ledger, long before it can bend a die or touch a
-pixel. This is telemetry's missing verse: do not just log that the
-pony fought; log the pony's maximum hit points against an opinion of
-what they should be, and flag the first disagreement. It is this same
-oracle, pointed at **xeophon** through a small adapter, that found
-the pony and the zombie. The instrument tells the truth about
-everyone, including its maker. *Hint for contestants: the recorder
-ships in every fork; a state dump plus a diff is an afternoon of
-work, and it converts invisible wrongness into a work queue.*
+**3. Amassing experience.** Collect and compose real-world tests and
+simulated hypotheticals. The forty-four public sessions are real
+experience, but they stop measuring anything once you have fit them.
+So I manufactured hypotheticals: I took the exact keystrokes of a
+public session, changed nothing but the dungeon seed, and recorded
+fresh ground truth from the original C program — a held-out session
+of my own, one seed away from the exam. On that fresh ground,
+**xeophon**'s world held a grid bug — NetHack's little joke monster,
+which can only step north, south, east, or west — parked three
+squares from its true position, in the dark, on the far side of the
+map, for sixty straight keystrokes. **lockwo**, on the same fresh
+ground, tracked the bug square for square, move for move. An engine
+that learned the sessions drifts the moment the world is new; an
+engine that learned the game does not. *Hint for contestants:
+generate your own held-out twins before the judges generate theirs.*
 
-**4. Test on fresh ground.** The held-out sessions exist because the
-public ones stop measuring anything once you fit them. You do not
-have to wait for the judges: I manufactured my own held-out session
-by taking the exact keystrokes of a public session and changing
-nothing but the dungeon seed, then recording fresh ground truth from
-the original C program. On that fresh ground, **xeophon**'s world
-held a grid bug — NetHack's little joke monster that can only step
-north, south, east, or west — parked three squares from its true
-position, in the dark, on the far side of the map, for sixty
-straight keystrokes. **lockwo**, on the same fresh ground, tracked
-the bug square for square, move for move. An engine that learned the
-sessions drifts the moment the world is new; an engine that learned
-the game does not. *Hint for contestants: generate your own twins
-before the judges generate theirs.*
+**4. Amplifying human insight.** In the end a human must judge, and
+the tools that matter most are the ones that put human judgment
+where it counts. Owen's oracle does not just detect that something
+is wrong; it prints, at the end of each report, the name of the C
+function to fix. It converts an ocean of hidden state into a short
+list a person can reason about, prioritize, and veto. [TODO: DB to
+develop this one further — future article.]
 
-## Wanting, at scale
+I think these four techniques are emblematic of what "white-collar
+work" will entail in a world of AI. AI will make all four easier by
+automating many things — but it will not do them for us. The
+backbone of each is judgment. We need to judge what we care about
+enough to instrument, to measure, to set rules for, to understand —
+because we do not care about everything, and we cannot check
+everything. AI will not do the caring for us. In dealing with the
+complexity it creates, there will be an enormous amount of judgment
+required, and that judgment is the work.
+
+## The work ahead
 
 Which brings me back to the statement and its warning about
-displacement. The lesson of this small, controlled experiment is not
-that AI failed — the two agents here wrote, between them, more
-correct systems code in weeks than most teams write in years. The
-lesson is where the humans mattered. Every place the port went right,
-a person had decided, with attention and care, *how it should be
-done*: what the unit of work was, what would be measured, what the
-hidden state was supposed to look like, what would count as fresh
-ground. Every place it went hollow, someone had dialed it in and let
-an outcome stand in for their wants.
+large-scale displacement. What this small, controlled experiment
+suggests is not that the work disappears; it is that the work moves.
+The two agents here wrote, between them, more correct systems code
+in weeks than most teams write in years. But every place the port
+went right, a person had decided, with attention and care, how it
+should be done: what to instrument, what rules to make structural,
+what experience to amass, where to point their own attention. And
+every place it went hollow, an outcome had been allowed to stand in
+for the wanting.
 
-NetHack's 450,000 lines are four decades of a devteam writing down,
-rule by rule, what they want a world to be. That is the kind of
-document the AI era will demand of us everywhere — for our buildings,
-our restaurants, our jets, our institutions — because the machines
-can now build almost anything, which means the burden shifts to the
-specification. The work of the future is not producing the output.
-The work is knowing, in a million small decisions, what we actually
-want — and checking, underneath the perfect-looking surface, that the
-pony grew.
+NetHack's 450,000 lines are four decades of a devteam deciding, rule
+by rule, what they want a world to be. The AI era will ask that kind
+of deciding of us everywhere — in our buildings, our restaurants,
+our jets, our institutions — because when the machines can build
+almost anything, the burden shifts to knowing what we want built,
+and to noticing what we actually got. That is not a job that is
+going away. It is the job that is arriving.
