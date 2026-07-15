@@ -15,8 +15,8 @@ leaderboard as I write, with the two entries this essay is about:
 ![The agentic leaderboard, 2026-07-14, with xeophon boxed in red and lockwo boxed in blue](images/leaderboard-agentic-2026-07-14.png)
 
 In this blog post I would like to examine and contrast two
-contestants so far: xeophon (the agent deployed by
-[Florian Brand](https://florianbrand.com/)), and lockwo (Owen
+contestants so far: **xeophon** (the agent deployed by
+[Florian Brand](https://florianbrand.com/)), and **lockwo** (Owen
 Lockwood's agent). The difference between the two can be seen in
 session 0103, a short gameplay that both agents are able to reproduce
 perfectly. That is, for every keystroke of input, both programs
@@ -27,6 +27,8 @@ dungeon on a pony with no name." Then the knight's pony meets a
 kobold zombie:
 
 <pre>
+ <b>NetHack session 0103: Sir the Knight</b>
+
  The saddled pony bites the kobold zombie.  │  The kobold zombie is destroyed!
                                             │
       ---------------                       │       ---------------
@@ -50,14 +52,12 @@ neither of them touches the screen. The victim is struck from the
 monster ledger — the crossed-out row is the zombie's entry at the
 moment of removal, bitten down to 0 of its 2 hit points and taken
 off the books. And the killer grows from the experience: the pony's
-maximum hit points rise from 7 to 8. C does both on the spot.
-Owen's engine does both on the spot too — and Owen's engine *fails*
-this session anyway: the
-judge docks it three screens of cosmetic display misses, 57 of 60.
-Now the same figure, drawn from xeophon's port:
+maximum hit points rise from 7 to 8. The original C NetHack does
+both. **lockwo** does both also, matching the internals. But look at
+what **xeophon** does:
 
 <pre>
- XEOPHON'S PORT:
+ <b>xeophon's port</b>
 
  The saddled pony bites the kobold zombie.  │  The kobold zombie is destroyed!
                                             │
@@ -72,23 +72,26 @@ Now the same figure, drawn from xeophon's port:
   Z  kobold zombie  (62,3)   HP  2/2        │   <s>Z  kobold zombie  (62,3)   HP  <span style="color:#c00">2/2</span></s>
 </pre>
 
-Look closely, because there is almost nothing to see. The screens
-are identical by construction — that is what a perfect score means.
-The zombie's row at the bite, 2/2, is indistinguishable from the
-ground truth above. The differences are in the second frame, and
-the exam can see neither of them. Read the crossed-out rows: the
-real zombie went off the books at 0/2, bitten to death and then
-removed; this one goes off the books at 2/2, removed at full
-health — deleted rather than killed, because no bite ever lands in
-this world. And read the pony's row: 7/8 in C's world and in
-Owen's; 7/7 in xeophon's, and 7/7 for the rest of the session,
-because in this engine the pony never grows. No screen in any
-session shows a monster's hit points, so no channel the judge has
-can see either number. The exam and the truth have parted company:
-the failing engine keeps the truer world, and the perfect scorer is
-right on the screen for the wrong reasons underneath. The wrongness
-simply waits. A pony one hit point weaker than it should be is the
-kind of thing you discover much later, in some other fight, as an
+Look closely, because **xeophon** seems to get almost everything
+right. The screens are identical: **xeophon** scores perfectly on
+this game, matching every screen, so at this step the pony steps
+and the zombie is eliminated, exactly as they should be. But look
+at **xeophon**'s internal representation of the pony and the
+zombie, and you will notice that the hit points are wrong. The
+zombie took no damage before it was removed — it goes off the books
+at 2/2, where the real one died at 0/2 — and the pony didn't grow
+its additional maximum hit point. It is as if no combat occurred.
+
+No screen in any session shows a monster's hit points, so no
+channel the judge has can see either number. And mind the
+scoreboard: **xeophon** passes this session perfectly, while
+**lockwo**, which holds every one of these numbers true, *fails*
+it — docked three screens of cosmetic display misses, 57 of 60.
+The exam and the truth have parted company: the failing engine
+keeps the truer world, and the perfect scorer is right on the
+screen for the wrong reasons underneath. The wrongness simply
+waits. A pony one hit point weaker than it should be is the kind of
+thing you discover much later, in some other fight, as an
 unexplainable desync.
 
 That is what overfitting looks like in a deterministic program, at
@@ -99,11 +102,11 @@ scoring function cannot reach.
 ## Right for the wrong reasons
 
 How does a program get the screen exactly right while getting the
-world wrong? I went into xeophon's source to see, and the answer is
+world wrong? I went into **xeophon**'s source to see, and the answer is
 a special case. In real NetHack the pony's kill is handled by the
 same code that handles every monster killing every other monster;
 the growth comes from a general function called `grow_up`. In
-xeophon's engine, when a pet's kill unfolds behind a `--More--`
+**xeophon**, when a pet's kill unfolds behind a `--More--`
 prompt, the work is done by a hand-built state machine whose name
 gives the story away:
 
@@ -161,8 +164,8 @@ deliberation produced the pony machine happened off the books, and
 nothing on the record ever found a reason to revisit it, because
 nothing in the exam ever would.
 
-Now look at the same event in lockwo's engine — the one that fails
-this session. Owen's combat code lives in a file named `mhitm.js`,
+Now look at the same event in **lockwo** — the engine that fails
+this session. Its combat code lives in a file named `mhitm.js`,
 after `mhitm.c`, the C file it ports, and it begins by declaring its
 own limits:
 
@@ -181,16 +184,16 @@ own limits:
 ```
 
 Read that last parenthesis twice. Both engines are incomplete; every
-port is. When xeophon's engine meets something it has not truly
+port is. When **xeophon** meets something it has not truly
 implemented, it burns the right number of random values so that the
-gap cannot show. When Owen's engine meets something it has not
+gap cannot show. When **lockwo** meets something it has not
 implemented, it deliberately consumes nothing, so that the gap
 *must* show — a loud, clean failure at a known frontier, queued up
 as the next thing to port. One design hides its ignorance from the
 exam; the other converts the exam into a map of its ignorance.
 
-And where xeophon's pony path burns the dice, Owen's spends them on
-what they mean:
+And where **xeophon**'s pony path burns the dice, **lockwo** spends
+them on what they mean:
 
 ```js
     mdef.mhp -= damage;
@@ -267,7 +270,7 @@ north, south, east, or west, because it lives on a grid. Here is
 where each world believes it to be:
 
 ```
-2. IN C'S WORLD — AND IN OWEN'S ENGINE, SQUARE FOR SQUARE:
+2. IN C'S WORLD — AND IN LOCKWO'S ENGINE, SQUARE FOR SQUARE:
 
     ┌───┐
     │·@f│
@@ -277,7 +280,7 @@ where each world believes it to be:
     │···
     └───┘
 
-3. IN THE PERFECT-SCORING ENGINE:
+3. IN XEOPHON'S ENGINE:
 
     ┌───┐
     │·@f│
@@ -290,12 +293,11 @@ where each world believes it to be:
 
 Three squares apart, and it stays that way for sixty consecutive
 keystrokes while the hero putters around his room on the other side
-of the world. At this boundary Owen's engine has consumed exactly the
+of the world. At this boundary **lockwo** has consumed exactly the
 random draws C has, and holds the bug on exactly C's square; it keeps
 holding it, square for square, even when C's bug finally scuttles off
-to a new corner and Owen's follows it move for move. The
-perfect-scoring engine's bug sits parked at its wrong post the whole
-time. The top engine on the leaderboard has a grid bug: an off-by-one
+to a new corner and **lockwo**'s follows it move for move.
+**xeophon**'s bug sits parked at its wrong post the whole time. The top engine on the leaderboard has a grid bug: an off-by-one
 in the grid, in the dark, on ground it never memorized. The
 fourth-place engine, on the same fresh ground, is exact.
 
@@ -306,8 +308,8 @@ because nobody hardcoded anything.
 
 Think of a judged session as a system of equations. The recorded
 trajectory supplies one equation for every fact it actually consults:
-every random draw, every painted cell. Florian's engine satisfies all
-of them, and that took real mechanism; his repository documents 925
+every random draw, every painted cell. **xeophon** satisfies all of
+them, and that took real mechanism; Florian's repository documents 925
 source-cited porting "slices," each faithfully implementing the exact
 behavior some public session step exercises. But the game's state
 space holds vastly more unknowns than one trajectory consults, and
@@ -318,7 +320,7 @@ So is the zombie's burial date.
 The deeper into the dungeon you look, the bigger the free variables
 get. In session seed4500 the tour descends into Gehennom, where the
 level generator makes 3,147 draws in a single step, identically in
-both engines, and Owen's instrument reports of Florian's engine:
+both engines, and Owen's instrument reports of **xeophon**:
 
 ```
   MON stone golem#903 (m_id 903) . mhp :   C=100   JS=18
@@ -361,8 +363,8 @@ its cobras in the dark.
 
 ## The two prompts
 
-The interesting question is not who worked harder. Florian's engine
-was built by a Codex agent loop that ran around the clock for three
+The interesting question is not who worked harder. **xeophon** was
+built by a Codex agent loop that ran around the clock for three
 weeks, 1,417 commits authored literally by `Codex <codex@local>`; his
 repository description is the whole story in advance, crying emoji
 his: "Hill climbing model is lost when first hill is indeed climbed
@@ -403,8 +405,8 @@ his opening triage computed that all 44 failures shared just 8 root
 causes before porting anything. Same score, same rules, opposite
 geometry. One process fits the manifold. The other reconstructs the
 machine — more slowly, which is why his public score is modest, but
-with a property the perfect score lacks: on every session his engine
-matches, its hidden ledgers match too. His engine knows less, and
+with a property the perfect score lacks: on every session **lockwo**
+matches, its hidden ledgers match too. **lockwo** knows less, and
 nothing it knows is wrong.
 
 ## The instrument
@@ -433,10 +435,10 @@ labeled stream to that boundary and prints the C functions that were
 executing. The state channel finds the wrong fact; the RNG channel
 names the suspect; the join costs one integer per row.
 
-His engine has the same disease, and this is the point. In session
+**lockwo** has the same disease, and this is the point. In session
 seed4500, a knight fights a cobra beside the Oracle of Delphi, and
-Owen's own engine moves the snake through the statues on the wrong
-path. Here is what happens when the failure is yours and the
+Owen's own **lockwo** moves the snake through the statues on the
+wrong path. Here is what happens when the failure is yours and the
 instrument is running:
 
 ```
@@ -456,7 +458,7 @@ Owen's error prints itself and enters his work queue. The pony that
 never grows sits under a perfect score, congratulated by every green
 light its owner installed. The instrument tells the truth about
 everyone, including its maker — it is this same oracle, pointed at
-Florian's engine through a 76-line adapter, that found the pony, the
+**xeophon** through a 76-line adapter, that found the pony, the
 zombie, the golem, and the garrison.
 
 ## Telemetry's missing verse
