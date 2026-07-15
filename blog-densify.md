@@ -26,31 +26,33 @@ few steps in, the message line reads, "You've been through the
 dungeon on a pony with no name." Then the knight's pony meets a
 kobold zombie:
 
-```
+<pre>
  The saddled pony bites the kobold zombie.  │  The kobold zombie is destroyed!
                                             │
       ---------------                       │       ---------------
       |.....@u......|                       │       |.....@.......|
-      |...<...Z.....|                       │       |...<.u.......|
+      |...&lt;...Z.....|                       │       |...&lt;.u.......|
       |.............|                       │       |.............|
       ---.-----------                       │       ---.-----------
                                             │
   @  the knight     (60,2)   HP  4/16       │   @  the knight     (60,2)   HP  4/16
   u  saddled pony   (61,2)   HP  7/7        │   u  saddled pony   (60,3)   HP  7/8  ← grew
-  Z  kobold zombie  (62,3)   HP  2/2        │   Z  kobold zombie  — destroyed —
-```
+  Z  kobold zombie  (62,3)   HP  2/2        │   <s>Z  kobold zombie  (62,3)   HP  0/2</s>
+</pre>
 
 The `Z` disappears from the map and the pony steps forward,
 identically in every world. Underneath each frame I have printed what
 the game's memory holds at that moment — position and hit points for
 the hero `@`, the pony `u`, and the zombie `Z` — using an instrument
 I will describe shortly. None of those hit points appear anywhere on
-the screen. And notice the small change on the right: the pony's
-maximum hit points rise from 7 to 8. Two things happen in NetHack
-when a pet makes a kill, and neither of them touches the screen: the
-victim is removed from the monster ledger, and the killer grows from
-the experience. C does both on the spot. Owen's engine does both on
-the spot too — and Owen's engine *fails* this session anyway: the
+the screen. Two things happen in NetHack when a pet makes a kill, and
+neither of them touches the screen. The victim is struck from the
+monster ledger — the crossed-out row is the zombie's entry at the
+moment of removal, bitten down to 0 of its 2 hit points and taken
+off the books. And the killer grows from the experience: the pony's
+maximum hit points rise from 7 to 8. C does both on the spot.
+Owen's engine does both on the spot too — and Owen's engine *fails*
+this session anyway: the
 judge docks it three screens of cosmetic display misses, 57 of 60.
 Now the same figure, drawn from xeophon's port:
 
@@ -67,19 +69,22 @@ Now the same figure, drawn from xeophon's port:
                                             │
   @  the knight     (60,2)   HP  4/16       │   @  the knight     (60,2)   HP  4/16
   u  saddled pony   (61,2)   HP  7/7        │   u  saddled pony   (60,3)   HP  <span style="color:#c00">7/7  ← never grows</span>
-  Z  kobold zombie  (62,3)   HP  2/2        │   Z  kobold zombie  — destroyed —
+  Z  kobold zombie  (62,3)   HP  2/2        │   <s>Z  kobold zombie  (62,3)   HP  <span style="color:#c00">2/2</span></s>
 </pre>
 
 Look closely, because there is almost nothing to see. The screens
 are identical by construction — that is what a perfect score means.
 The zombie's row at the bite, 2/2, is indistinguishable from the
-ground truth above. The zombie is gone on the right, just as it
-should be. Across the entire figure exactly one cell differs: the
-pony's maximum hit points after the kill. 7/8 in C's world and in
+ground truth above. The differences are in the second frame, and
+the exam can see neither of them. Read the crossed-out rows: the
+real zombie went off the books at 0/2, bitten to death and then
+removed; this one goes off the books at 2/2, removed at full
+health — deleted rather than killed, because no bite ever lands in
+this world. And read the pony's row: 7/8 in C's world and in
 Owen's; 7/7 in xeophon's, and 7/7 for the rest of the session,
 because in this engine the pony never grows. No screen in any
 session shows a monster's hit points, so no channel the judge has
-can see that number. The exam and the truth have parted company:
+can see either number. The exam and the truth have parted company:
 the failing engine keeps the truer world, and the perfect scorer is
 right on the screen for the wrong reasons underneath. The wrongness
 simply waits. A pony one hit point weaker than it should be is the
