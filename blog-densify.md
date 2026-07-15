@@ -132,6 +132,70 @@ consumed and screens drawn, so the program grew organs that consume
 random numbers and draw screens, shaped around the individual
 animals in the exam.
 
+Now look at the same event in lockwo's engine — the one that fails
+this session. Owen's combat code lives in a file named `mhitm.js`,
+after `mhitm.c`, the C file it ports, and it begins by declaring its
+own limits:
+
+```js
+// SCOPE: the contest gameplay sessions only exercise hand-to-hand physical
+// attacks (AT_BITE / AT_CLAW / AT_KICK / AT_WEAP, AD_PHYS) between low-level
+// dungeon monsters and the starting pet (kitten / little dog / pony).  Those
+// paths are implemented call-for-call so the rn2/rnd/d stream matches C
+// exactly (verified against seed0060's recorded trace at calls 2409..2443):
+// ...
+// Non-physical adtyps, gaze/engulf/explode/breath attacks, multi-attack
+// monsters beyond the pony, and weapon-wielding monster attackers are NOT
+// modeled here; if such a combat is ever reached, mattackm() returns MISS
+// WITHOUT consuming any RNG (so it can never silently desync the stream — it
+// would instead surface as a clean divergence to be ported next).
+```
+
+Read that last parenthesis twice. Both engines are incomplete; every
+port is. When xeophon's engine meets something it has not truly
+implemented, it burns the right number of random values so that the
+gap cannot show. When Owen's engine meets something it has not
+implemented, it deliberately consumes nothing, so that the gap
+*must* show — a loud, clean failure at a known frontier, queued up
+as the next thing to port. One design hides its ignorance from the
+exam; the other converts the exam into a map of its ignorance.
+
+And where xeophon's pony path burns the dice, Owen's spends them on
+what they mean:
+
+```js
+    mdef.mhp -= damage;
+    if (mdef.mhp < 1) {
+        ...
+        // monster killed (monkilled -> mondied -> corpse_chance, then grow_up).
+        killMonster(mdef, defCd);
+        const grew = grow_up(magr, mdef, agrCd, defCd);
+        return M_ATTK_DEF_DIED | (grew ? 0 : M_ATTK_AGR_DIED);
+    }
+
+function grow_up(magr, mdef, agrCd, defCd) {
+    ...
+    // max_increase = rnd(victim->m_lev + 1)              (makemon.c:2095)
+    const max_increase = rnd(victimLev + 1);
+    // cur_increase = (max_increase > 1) ? rn2(max_increase) : 0
+    const cur_increase = (max_increase > 1) ? rn2(max_increase) : 0;
+    ...
+    if (magr.mhpmax != null) magr.mhpmax += max_increase;
+    if (magr.mhp != null) magr.mhp += cur_increase;
+    ...
+}
+```
+
+The same dice, the same count — the PRNG channel cannot tell these
+two programs apart. But here the damage roll damages, the kill
+kills, and the growth roll grows the pony: 7 becomes 8 in a ledger
+no screen will ever print, because the roll's *meaning* was ported,
+not just its cost. Nearly every draw in the file carries a citation
+to the C line it mirrors. That is why, on this session, the failing
+engine is the one holding the true world: its author spent the dice
+on the world, and took the three cosmetic screen misses as the price
+of not pretending.
+
 ## The grid bug
 
 Hit points are numbers, and numbers must be talked about. Positions
