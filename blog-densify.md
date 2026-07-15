@@ -52,28 +52,39 @@ victim is removed from the monster ledger, and the killer grows from
 the experience. C does both on the spot. Owen's engine does both on
 the spot too — and Owen's engine *fails* this session anyway: the
 judge docks it three screens of cosmetic display misses, 57 of 60.
-Now dump the same two moments from the engine with the perfect score:
+Now the same figure, drawn from xeophon's port:
 
 <pre>
- THE SAME TWO MOMENTS INSIDE THE PERFECT-SCORING ENGINE:
+ XEOPHON'S PORT:
 
-  u  saddled pony   (61,2)   HP  7/7                  │   u  saddled pony   (60,3)   HP  <span style="color:#c00">7/7  ← never grows</span>
-  Z  kobold zombie  (62,3)   HP  <span style="color:#c00">2/2  ← alive, unhurt</span> │   Z  kobold zombie  — deleted —
+ The saddled pony bites the kobold zombie.  │  The kobold zombie is destroyed!
+                                            │
+      ---------------                       │       ---------------
+      |.....@u......|                       │       |.....@.......|
+      |...&lt;...Z.....|                       │       |...&lt;.u.......|
+      |.............|                       │       |.............|
+      ---.-----------                       │       ---.-----------
+                                            │
+  @  the knight     (60,2)   HP  4/16       │   @  the knight     (60,2)   HP  4/16
+  u  saddled pony   (61,2)   HP  7/7        │   u  saddled pony   (60,3)   HP  <span style="color:#c00">7/7  ← never grows</span>
+  Z  kobold zombie  (62,3)   HP  2/2        │   Z  kobold zombie  — destroyed —
 </pre>
 
-At the keystroke where the screen says the pony bites, the real
-zombie is already dead in memory — a NetHack world runs a beat ahead
-of its own message queue — while this zombie stands at full health,
-untouched. It is never touched. At the next keystroke it is deleted
-from the monster list, unwounded, and the pony that killed it stays
-at 7 maximum hit points for the rest of the session. The exam and
-the truth have parted company: the failing engine keeps the truer
-world, and the perfect scorer is right on the screen for the wrong
-reasons underneath. No screen in any session shows a monster's hit
-points, so no channel the judge has can see any of this. The
-wrongness simply waits. A pony one hit point weaker than it should
-be is the kind of thing you discover much later, in some other
-fight, as an unexplainable desync.
+Look closely, because there is almost nothing to see. The screens
+are identical by construction — that is what a perfect score means.
+The zombie's row at the bite, 2/2, is indistinguishable from the
+ground truth above. The zombie is gone on the right, just as it
+should be. Across the entire figure exactly one cell differs: the
+pony's maximum hit points after the kill. 7/8 in C's world and in
+Owen's; 7/7 in xeophon's, and 7/7 for the rest of the session,
+because in this engine the pony never grows. No screen in any
+session shows a monster's hit points, so no channel the judge has
+can see that number. The exam and the truth have parted company:
+the failing engine keeps the truer world, and the perfect scorer is
+right on the screen for the wrong reasons underneath. The wrongness
+simply waits. A pony one hit point weaker than it should be is the
+kind of thing you discover much later, in some other fight, as an
+unexplainable desync.
 
 That is what overfitting looks like in a deterministic program, at
 the smallest possible scale: the visible world exactly right, the
